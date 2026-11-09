@@ -252,7 +252,7 @@ private fun MaterialCardItem(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (material.isMissingOrNeeded)
-                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f)
+                UrgentRed.copy(alpha = 0.08f)
             else MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
