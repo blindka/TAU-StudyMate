@@ -578,6 +578,25 @@ class StudyViewModel(
         )
     }
 
+    fun syncMoodleFeed(feedUrl: String, onComplete: (com.tau.studymate.util.MoodleSyncResult) -> Unit) {
+        viewModelScope.launch {
+            val result = com.tau.studymate.util.MoodleSyncService.fetchAndSyncMoodle(feedUrl, courses.value)
+            if (result.success && result.tasks.isNotEmpty()) {
+                result.tasks.forEach { task ->
+                    repository.insertTask(task)
+                }
+                val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+                prefs.edit().putString("moodle_feed_url", feedUrl).apply()
+            }
+            onComplete(result)
+        }
+    }
+
+    fun getSavedMoodleUrl(): String {
+        val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+        return prefs.getString("moodle_feed_url", "") ?: ""
+    }
+
     private fun calculateStreakDays(): Int {
         return 4
     }

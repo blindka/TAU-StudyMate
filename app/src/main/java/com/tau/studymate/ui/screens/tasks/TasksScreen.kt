@@ -28,6 +28,7 @@ import com.tau.studymate.data.model.Task
 import com.tau.studymate.ui.components.AddTaskDialog
 import com.tau.studymate.ui.components.DepartmentBadge
 import com.tau.studymate.ui.components.ExportDialog
+import com.tau.studymate.ui.components.MoodleSyncDialog
 import com.tau.studymate.ui.theme.*
 import com.tau.studymate.ui.viewmodel.StudyViewModel
 import com.tau.studymate.ui.viewmodel.TaskFilter
@@ -55,6 +56,7 @@ fun TasksScreen(
 
     var showAddTaskDialog by remember { mutableStateOf(false) }
     var showExportDialog by remember { mutableStateOf(false) }
+    var showMoodleSyncDialog by remember { mutableStateOf(false) }
 
     val courseMap = remember(courses) { courses.associateBy { it.id } }
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
@@ -111,6 +113,22 @@ fun TasksScreen(
                     shape = RoundedCornerShape(16.dp),
                     singleLine = true
                 )
+
+                IconButton(
+                    onClick = { showMoodleSyncDialog = true },
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(
+                            PastelLavender,
+                            RoundedCornerShape(14.dp)
+                        )
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Sync,
+                        contentDescription = "סנכרן ממודל",
+                        tint = PastelLavenderDark
+                    )
+                }
 
                 IconButton(
                     onClick = { showExportDialog = true },
@@ -276,6 +294,18 @@ fun TasksScreen(
         ExportDialog(
             exportText = viewModel.getExportText(),
             onDismiss = { showExportDialog = false }
+        )
+    }
+
+    if (showMoodleSyncDialog) {
+        MoodleSyncDialog(
+            initialUrl = viewModel.getSavedMoodleUrl(),
+            onDismiss = { showMoodleSyncDialog = false },
+            onSyncUrl = { url, onFinished ->
+                viewModel.syncMoodleFeed(url) { result ->
+                    onFinished(result.success, result.syncedCount, result.errorMessage)
+                }
+            }
         )
     }
 }

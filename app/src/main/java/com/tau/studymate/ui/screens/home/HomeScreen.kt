@@ -29,6 +29,7 @@ import com.tau.studymate.data.model.Task
 import com.tau.studymate.data.model.UserAcademicProfile
 import com.tau.studymate.ui.components.AcademicProfileDialog
 import com.tau.studymate.ui.components.DepartmentBadge
+import com.tau.studymate.ui.components.MoodleSyncDialog
 import com.tau.studymate.ui.components.ScheduleViewerDialog
 import com.tau.studymate.ui.components.SemesterTransitionDialog
 import com.tau.studymate.ui.theme.*
@@ -55,6 +56,7 @@ fun HomeScreen(
     val context = LocalContext.current
     var showProfileDialog by remember { mutableStateOf(false) }
     var showScheduleViewer by remember { mutableStateOf(false) }
+    var showMoodleSyncDialog by remember { mutableStateOf(false) }
 
     val currentActualSemester = remember { TauAcademicCalendar.getCurrentSemesterName() }
     var showSemesterTransitionDialog by remember { mutableStateOf(false) }
@@ -103,7 +105,8 @@ fun HomeScreen(
                     } else {
                         showProfileDialog = true
                     }
-                }
+                },
+                onOpenMoodleSync = { showMoodleSyncDialog = true }
             )
         }
 
@@ -415,6 +418,18 @@ fun HomeScreen(
             }
         )
     }
+
+    if (showMoodleSyncDialog) {
+        MoodleSyncDialog(
+            initialUrl = viewModel.getSavedMoodleUrl(),
+            onDismiss = { showMoodleSyncDialog = false },
+            onSyncUrl = { url, onFinished ->
+                viewModel.syncMoodleFeed(url) { result ->
+                    onFinished(result.success, result.syncedCount, result.errorMessage)
+                }
+            }
+        )
+    }
 }
 
 @Composable
@@ -425,7 +440,8 @@ private fun HeaderCard(
     pendingCount: Int,
     onStartStudy: () -> Unit,
     onOpenProfile: () -> Unit,
-    onOpenSchedule: () -> Unit
+    onOpenSchedule: () -> Unit,
+    onOpenMoodleSync: () -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(26.dp),
@@ -538,10 +554,10 @@ private fun HeaderCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Quick Schedule Button & Focus Session Bar
+            // Quick Actions: Schedule, Moodle Sync & Focus Session
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // Schedule Button (צפה במערכת שעות)
@@ -551,24 +567,52 @@ private fun HeaderCard(
                     modifier = Modifier.clickable { onOpenSchedule() }
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = if (hasSchedule) Icons.Default.CalendarMonth else Icons.Default.AddAPhoto,
                             contentDescription = null,
                             tint = Color.White,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(15.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = if (hasSchedule) "📅 הצג מערכת שעות" else "📸 צלם/העלה מערכת",
+                            text = if (hasSchedule) "📅 מערכת" else "📸 מערכת",
                             color = Color.White,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
+
+                // Direct Moodle Sync Button
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White.copy(alpha = 0.22f),
+                    modifier = Modifier.clickable { onOpenMoodleSync() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Sync,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "🎓 מודל",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.weight(1f))
 
                 Button(
                     onClick = onStartStudy,

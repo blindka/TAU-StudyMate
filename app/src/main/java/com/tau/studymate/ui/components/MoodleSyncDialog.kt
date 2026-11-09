@@ -1,0 +1,374 @@
+package com.tau.studymate.ui.components
+
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.webkit.CookieManager
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import com.tau.studymate.ui.theme.*
+
+@Composable
+fun MoodleSyncDialog(
+    initialUrl: String = "",
+    onDismiss: () -> Unit,
+    onSyncUrl: (url: String, onFinished: (success: Boolean, count: Int, message: String?) -> Unit) -> Unit
+) {
+    val context = LocalContext.current
+    var feedUrl by remember { mutableStateOf(initialUrl) }
+    var isLoading by remember { mutableStateOf(false) }
+    var resultMessage by remember { mutableStateOf<String?>(null) }
+    var isSuccess by remember { mutableStateOf(false) }
+    var showInstructions by remember { mutableStateOf(initialUrl.isBlank()) }
+    var showWebViewLogin by remember { mutableStateOf(false) }
+
+    if (showWebViewLogin) {
+        Dialog(
+            onDismissRequest = { showWebViewLogin = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                modifier = Modifier
+                    .fillMaxWidth(0.95f)
+                    .fillMaxHeight(0.85f)
+                    .padding(8.dp)
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "התחברות למודל אוניברסיטת תל אביב 🎓",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = PastelLavenderDark
+                        )
+                        IconButton(onClick = { showWebViewLogin = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "סגור")
+                        }
+                    }
+
+                    AndroidView(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f),
+                        factory = { ctx ->
+                            WebView(ctx).apply {
+                                settings.javaScriptEnabled = true
+                                settings.domStorageEnabled = true
+                                webViewClient = object : WebViewClient() {
+                                    override fun onPageFinished(view: WebView?, url: String?) {
+                                        super.onPageFinished(view, url)
+                                        // Once logged in to TAU Moodle, we can extract cookies or direct link
+                                        if (url != null && url.contains("moodle.tau.ac.il") && !url.contains("login")) {
+                                            val cookies = CookieManager.getInstance().getCookie(url)
+                                            // Provide feedback
+                                        }
+                                    }
+                                }
+                                loadUrl("https://moodle.tau.ac.il/login/index.php")
+                            }
+                        }
+                    )
+                }
+            }
+        }
+        return
+    }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(26.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(22.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                // Header Icon
+                Box(
+                    modifier = Modifier
+                        .size(54.dp)
+                        .background(
+                            color = PastelSky,
+                            shape = CircleShape
+                        )
+                        .align(Alignment.CenterHorizontally),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Sync,
+                        contentDescription = null,
+                        tint = PastelSkyDark,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "סנכרון ישיר ממודל אתו\"א 🎓",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                Text(
+                    text = "משיכת כל המטלות, התרגילים ומועדי ההגשה ישירות מחשבון ה-Moodle שלך באוניברסיטת תל אביב.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(18.dp))
+
+                // URL Input Field
+                OutlinedTextField(
+                    value = feedUrl,
+                    onValueChange = {
+                        feedUrl = it
+                        resultMessage = null
+                    },
+                    label = { Text("קישור לוח שנה ממודל (iCal / WebCal)") },
+                    placeholder = { Text("הדבק כאן קישור מ-moodle.tau.ac.il...") },
+                    singleLine = false,
+                    maxLines = 3,
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    trailingIcon = {
+                        IconButton(onClick = {
+                            val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                            val clipText = clipboard.primaryClip?.getItemAt(0)?.text?.toString() ?: ""
+                            if (clipText.isNotBlank()) {
+                                feedUrl = clipText
+                                resultMessage = null
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Default.ContentPaste,
+                                contentDescription = "הדבק מהלוח",
+                                tint = PastelLavenderDark
+                            )
+                        }
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Action: Sync Button
+                Button(
+                    onClick = {
+                        if (feedUrl.isBlank()) {
+                            resultMessage = "יש להזין או להדביק קישור לוח שנה מהמודל."
+                            isSuccess = false
+                            return@Button
+                        }
+                        isLoading = true
+                        resultMessage = null
+                        onSyncUrl(feedUrl) { success, count, message ->
+                            isLoading = false
+                            isSuccess = success
+                            resultMessage = if (success) {
+                                if (count > 0) "סונכרנו בהצלחה $count מטלות חדשות מהמודל! 🎉" else message ?: "הסנכרון הצליח!"
+                            } else {
+                                message ?: "שגיאה בחיבור למודל."
+                            }
+                        }
+                    },
+                    enabled = !isLoading,
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PastelLavenderDark),
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(vertical = 12.dp)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("מושך נתונים מהמודל...", fontWeight = FontWeight.Bold)
+                    } else {
+                        Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("סנכרן מטלות עכשיו 🔄", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+
+                // Result message card
+                if (resultMessage != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isSuccess) PastelMint else PastelCoral,
+                        border = BorderStroke(1.dp, if (isSuccess) PastelMintBorder else PastelCoralBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = if (isSuccess) Icons.Default.CheckCircle else Icons.Default.ErrorOutline,
+                                contentDescription = null,
+                                tint = if (isSuccess) PastelMintDark else PastelCoralDark,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = resultMessage ?: "",
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isSuccess) PastelMintDark else PastelCoralDark
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Explanatory Accordion: How to get Moodle Calendar link
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = PastelLavender.copy(alpha = 0.45f),
+                    border = BorderStroke(1.dp, PastelLavenderBorder),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showInstructions = !showInstructions },
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.HelpOutline,
+                                    contentDescription = null,
+                                    tint = PastelLavenderDark,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "איך משיגים את הקישור במודל של אתו\"א?",
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PastelLavenderDark
+                                )
+                            }
+                            Icon(
+                                imageVector = if (showInstructions) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                contentDescription = null,
+                                tint = PastelLavenderDark,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        if (showInstructions) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Text(
+                                text = "1. כנס לאתר המודל של אתו\"א (moodle.tau.ac.il)\n" +
+                                        "2. בתפריט הצד לחץ על 'לוח שנה'\n" +
+                                        "3. גלול למטה ולחץ על 'ייצוא לוח שנה'\n" +
+                                        "4. בחר 'כל האירועים' -> לחץ 'קבלת כתובת URL ללוח שנה'\n" +
+                                        "5. העתק את הקישור שנוצר והדבק אותו כאן 🚀",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 18.sp
+                            )
+
+                            Spacer(modifier = Modifier.height(10.dp))
+
+                            OutlinedButton(
+                                onClick = {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://moodle.tau.ac.il/calendar/view.php?view=month"))
+                                    context.startActivity(intent)
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                                contentPadding = PaddingValues(vertical = 6.dp)
+                            ) {
+                                Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("פתח את לוח השנה במודל בדפדפן 🌐", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Alternative: In-App Browser Login
+                OutlinedButton(
+                    onClick = { showWebViewLogin = true },
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(vertical = 10.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = PastelSkyDark,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "התחברות לאתו\"א בחלון פנימי 🔑",
+                        color = PastelSkyDark,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(14.dp))
+
+                // Close Button
+                TextButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.align(Alignment.End)
+                ) {
+                    Text("סגור")
+                }
+            }
+        }
+    }
+}
