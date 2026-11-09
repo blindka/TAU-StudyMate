@@ -8,31 +8,34 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val LightColorScheme = lightColorScheme(
-    primary = TauBluePrimary,
+    primary = TauPurplePrimary,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFD6E4FF),
-    onPrimaryContainer = Color(0xFF001B3E),
-    secondary = LaborGreen,
+    primaryContainer = TauPurpleLight,
+    onPrimaryContainer = TauPurpleDark,
+    secondary = TauMagentaAccent,
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFB7F397),
-    onSecondaryContainer = Color(0xFF042100),
+    secondaryContainer = Color(0xFFFAE8FF),
+    onSecondaryContainer = Color(0xFF701A75),
     tertiary = TauCyanAccent,
+    tertiaryContainer = TauTealLight,
+    onTertiaryContainer = Color(0xFF115E59),
     background = SurfaceLight,
     surface = CardBackgroundLight,
+    surfaceVariant = Color(0xFFF1F5F9),
     onBackground = TextPrimaryLight,
     onSurface = TextPrimaryLight,
     error = UrgentRed
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = TauBlueLight,
-    onPrimary = Color.Black,
-    primaryContainer = TauBluePrimary,
-    onPrimaryContainer = Color(0xFFD6E4FF),
-    secondary = LaborGreenLight,
-    onSecondary = Color.Black,
-    secondaryContainer = LaborGreen,
-    onSecondaryContainer = Color(0xFFB7F397),
+    primary = TauPurpleVibrant,
+    onPrimary = Color.White,
+    primaryContainer = TauPurpleDark,
+    onPrimaryContainer = TauPurpleLight,
+    secondary = TauMagentaAccent,
+    onSecondary = Color.White,
+    secondaryContainer = Color(0xFF4A044E),
+    onSecondaryContainer = Color(0xFFF5D0FE),
     tertiary = TauCyanAccent,
     background = SurfaceDark,
     surface = CardBackgroundDark,
@@ -44,7 +47,7 @@ private val DarkColorScheme = darkColorScheme(
 @Composable
 fun TAUStudyMateTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

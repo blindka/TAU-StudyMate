@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.screens.courses
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -14,11 +15,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.foundation.Image
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tau.studymate.R
@@ -27,6 +27,8 @@ import com.tau.studymate.data.model.Department
 import com.tau.studymate.ui.components.AcademicProfileDialog
 import com.tau.studymate.ui.components.AddCourseDialog
 import com.tau.studymate.ui.components.DepartmentBadge
+import com.tau.studymate.ui.components.ScheduleViewerDialog
+import com.tau.studymate.ui.theme.*
 import com.tau.studymate.ui.viewmodel.StudyViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,14 +54,18 @@ fun CoursesScreen(
     }
 
     val academicProfile by viewModel.academicProfile.collectAsState()
+    val scheduleBitmap by viewModel.scheduleBitmap.collectAsState()
+    val scheduleFileName by viewModel.scheduleFileName.collectAsState()
+
     var showProfileDialog by remember { mutableStateOf(false) }
+    var showScheduleViewer by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddCourseDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary,
+                containerColor = TauPurplePrimary,
                 contentColor = Color.White,
                 shape = RoundedCornerShape(18.dp)
             ) {
@@ -72,7 +78,7 @@ fun CoursesScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Search Bar & Degree Academic Cap Button
+            // Search Bar & Actions (Schedule button + Degree cap)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -84,7 +90,7 @@ fun CoursesScreen(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     placeholder = { Text("חיפוש לפי מספר קורס או שם...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TauPurplePrimary) },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { searchQuery = "" }) {
@@ -97,13 +103,39 @@ fun CoursesScreen(
                     singleLine = true
                 )
 
+                // Quick Schedule Button
+                IconButton(
+                    onClick = {
+                        if (scheduleBitmap != null || scheduleFileName != null) {
+                            showScheduleViewer = true
+                        } else {
+                            showProfileDialog = true
+                        }
+                    },
+                    modifier = Modifier
+                        .size(50.dp)
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(TauPurpleVibrant.copy(alpha = 0.2f), TauMagentaAccent.copy(alpha = 0.2f))
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                ) {
+                    Icon(
+                        imageVector = if (scheduleBitmap != null || scheduleFileName != null) Icons.Default.CalendarMonth else Icons.Default.AddAPhoto,
+                        contentDescription = "מערכת שעות",
+                        tint = TauPurplePrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
                 // Degree Cap Quick Switcher Icon
                 IconButton(
                     onClick = { showProfileDialog = true },
                     modifier = Modifier
                         .size(50.dp)
                         .background(
-                            MaterialTheme.colorScheme.primaryContainer,
+                            TauPurpleLight.copy(alpha = 0.7f),
                             RoundedCornerShape(16.dp)
                         )
                 ) {
@@ -115,31 +147,31 @@ fun CoursesScreen(
                 }
             }
 
-            // Degree Header Banner pill
+            // Degree Header Banner pill with Purple accent
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                color = TauPurpleLight.copy(alpha = 0.45f),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
                     .clickable { showProfileDialog = true }
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "תואר: ${academicProfile.degreeName} • ${academicProfile.year}",
+                        text = "תואר: ${academicProfile.degreeName} • ${academicProfile.year} • ${academicProfile.semester}",
                         fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        fontWeight = FontWeight.SemiBold,
+                        color = TauPurpleDark
                     )
                     Text(
                         text = "החלף תואר 🎓",
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        color = TauPurplePrimary
                     )
                 }
             }
@@ -182,7 +214,7 @@ fun CoursesScreen(
                         Icon(
                             imageVector = Icons.Default.School,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                            tint = TauPurplePrimary.copy(alpha = 0.4f),
                             modifier = Modifier.size(60.dp)
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -236,8 +268,10 @@ fun CoursesScreen(
     if (showProfileDialog) {
         AcademicProfileDialog(
             currentProfile = academicProfile,
+            initialScheduleBitmap = scheduleBitmap,
+            initialScheduleFileName = scheduleFileName,
             onDismiss = { showProfileDialog = false },
-            onSave = { degree, isDouble, year, semester, imported ->
+            onSave = { degree, isDouble, year, semester, imported, sBitmap, sFileName ->
                 val ok = viewModel.updateDegreeProgram(
                     degreeName = degree,
                     isDoubleMajor = isDouble,
@@ -245,7 +279,28 @@ fun CoursesScreen(
                     semester = semester,
                     importedCourses = imported
                 )
+                if (ok) {
+                    if (sBitmap != null) {
+                        viewModel.saveSchedulePhoto(sBitmap)
+                    } else if (sFileName != null) {
+                        viewModel.saveScheduleFile(sFileName)
+                    } else {
+                        viewModel.clearSchedule()
+                    }
+                }
                 ok
+            }
+        )
+    }
+
+    if (showScheduleViewer) {
+        ScheduleViewerDialog(
+            bitmap = scheduleBitmap,
+            fileName = scheduleFileName,
+            onDismiss = { showScheduleViewer = false },
+            onOpenEdit = {
+                showScheduleViewer = false
+                showProfileDialog = true
             }
         )
     }
@@ -278,14 +333,14 @@ private fun CourseCard(
                 // Course Number Pill (TAU format)
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
+                    color = TauPurpleLight.copy(alpha = 0.6f)
                 ) {
                     Text(
                         text = "קורס: ${course.courseNumber}",
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                        color = TauPurpleDark
                     )
                 }
 
@@ -328,8 +383,8 @@ private fun CourseCard(
 
                 Text(
                     text = "${course.credits} נק\"ז",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.primary
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                    color = TauPurplePrimary
                 )
             }
 
@@ -357,7 +412,7 @@ private fun CourseCard(
                                 imageVector = Icons.Default.Folder,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary
+                                tint = TauPurplePrimary
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text("חומרים וסיכומים", fontSize = 11.sp)

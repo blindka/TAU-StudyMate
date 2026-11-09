@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.screens.home
 
+import android.graphics.Bitmap
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -15,10 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.foundation.Image
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tau.studymate.R
@@ -27,10 +28,9 @@ import com.tau.studymate.data.model.Task
 import com.tau.studymate.data.model.UserAcademicProfile
 import com.tau.studymate.ui.components.AcademicProfileDialog
 import com.tau.studymate.ui.components.DepartmentBadge
+import com.tau.studymate.ui.components.ScheduleViewerDialog
 import com.tau.studymate.ui.components.SemesterTransitionDialog
-import com.tau.studymate.ui.theme.LaborGreen
-import com.tau.studymate.ui.theme.TauBluePrimary
-import com.tau.studymate.ui.theme.UrgentRed
+import com.tau.studymate.ui.theme.*
 import com.tau.studymate.ui.viewmodel.StudyViewModel
 import com.tau.studymate.util.TauAcademicCalendar
 import java.text.SimpleDateFormat
@@ -48,9 +48,12 @@ fun HomeScreen(
     val courses by viewModel.courses.collectAsState()
     val missingMaterials by viewModel.missingMaterials.collectAsState()
     val academicProfile by viewModel.academicProfile.collectAsState()
+    val scheduleBitmap by viewModel.scheduleBitmap.collectAsState()
+    val scheduleFileName by viewModel.scheduleFileName.collectAsState()
 
     val context = LocalContext.current
     var showProfileDialog by remember { mutableStateOf(false) }
+    var showScheduleViewer by remember { mutableStateOf(false) }
 
     val currentActualSemester = remember { TauAcademicCalendar.getCurrentSemesterName() }
     var showSemesterTransitionDialog by remember { mutableStateOf(false) }
@@ -84,14 +87,22 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp)
     ) {
-        // Top Header Banner with Academic Profile switch
+        // Top Header Banner with Purple aesthetic & Quick Schedule View
         item {
             HeaderCard(
                 academicProfile = academicProfile,
+                hasSchedule = scheduleBitmap != null || scheduleFileName != null,
                 streakDays = 4,
                 pendingCount = pendingTasks.size,
                 onStartStudy = onNavigateToHabits,
-                onOpenProfile = { showProfileDialog = true }
+                onOpenProfile = { showProfileDialog = true },
+                onOpenSchedule = {
+                    if (scheduleBitmap != null || scheduleFileName != null) {
+                        showScheduleViewer = true
+                    } else {
+                        showProfileDialog = true
+                    }
+                }
             )
         }
 
@@ -122,7 +133,7 @@ fun HomeScreen(
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -164,7 +175,7 @@ fun HomeScreen(
                                 Text(
                                     text = material.contentOrUri,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.primary
+                                    color = TauPurplePrimary
                                 )
                             }
                         }
@@ -188,7 +199,7 @@ fun HomeScreen(
                 val containerColor = if (academicStatus.isExamPeriod) {
                     MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
                 } else {
-                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                    TauPurpleLight.copy(alpha = 0.5f)
                 }
                 val iconVector = if (academicStatus.isExamPeriod) {
                     Icons.Default.School
@@ -198,37 +209,37 @@ fun HomeScreen(
                 val iconTint = if (academicStatus.isExamPeriod) {
                     MaterialTheme.colorScheme.error
                 } else {
-                    MaterialTheme.colorScheme.primary
+                    TauPurplePrimary
                 }
                 val textColor = if (academicStatus.isExamPeriod) {
                     MaterialTheme.colorScheme.onErrorContainer
                 } else {
-                    MaterialTheme.colorScheme.onPrimaryContainer
+                    TauPurpleDark
                 }
 
                 // TAU Official Academic Calendar Status Banner
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(14.dp),
                     color = containerColor,
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { showSemesterTransitionDialog = true }
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = iconVector,
                             contentDescription = null,
                             tint = iconTint,
-                            modifier = Modifier.size(15.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = academicStatus.displayText,
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontWeight = FontWeight.SemiBold,
                             color = textColor,
                             modifier = Modifier.weight(1f)
                         )
@@ -236,7 +247,7 @@ fun HomeScreen(
                             imageVector = Icons.Default.SwapHoriz,
                             contentDescription = "מעבר סמסטר",
                             tint = iconTint.copy(alpha = 0.7f),
-                            modifier = Modifier.size(14.dp)
+                            modifier = Modifier.size(15.dp)
                         )
                     }
                 }
@@ -253,7 +264,11 @@ fun HomeScreen(
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                     TextButton(onClick = onNavigateToTasks) {
-                        Text("לכל המטלות (${tasks.size})")
+                        Text(
+                            text = "לכל המטלות (${tasks.size})",
+                            color = TauPurplePrimary,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
             }
@@ -264,7 +279,7 @@ fun HomeScreen(
                 Card(
                     shape = RoundedCornerShape(16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -294,7 +309,7 @@ fun HomeScreen(
             }
         }
 
-        // Quick Courses overview card
+        // Quick Courses overview card with colorful styling
         item {
             Card(
                 shape = RoundedCornerShape(20.dp),
@@ -316,14 +331,19 @@ fun HomeScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Box(
                             modifier = Modifier
-                                .size(44.dp)
-                                .background(TauBluePrimary.copy(alpha = 0.12f), CircleShape),
+                                .size(46.dp)
+                                .background(
+                                    brush = Brush.linearGradient(
+                                        colors = listOf(TauPurpleVibrant.copy(alpha = 0.2f), TauMagentaAccent.copy(alpha = 0.2f))
+                                    ),
+                                    shape = CircleShape
+                                ),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.FolderSpecial,
                                 contentDescription = null,
-                                tint = TauBluePrimary
+                                tint = TauPurplePrimary
                             )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
@@ -343,7 +363,7 @@ fun HomeScreen(
                         imageVector = Icons.Default.ArrowBackIosNew,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        tint = TauPurplePrimary
                     )
                 }
             }
@@ -353,8 +373,10 @@ fun HomeScreen(
     if (showProfileDialog) {
         AcademicProfileDialog(
             currentProfile = academicProfile,
+            initialScheduleBitmap = scheduleBitmap,
+            initialScheduleFileName = scheduleFileName,
             onDismiss = { showProfileDialog = false },
-            onSave = { degree, isDouble, year, semester, imported ->
+            onSave = { degree, isDouble, year, semester, imported, sBitmap, sFileName ->
                 val ok = viewModel.updateDegreeProgram(
                     degreeName = degree,
                     isDoubleMajor = isDouble,
@@ -363,6 +385,13 @@ fun HomeScreen(
                     importedCourses = imported
                 )
                 if (ok) {
+                    if (sBitmap != null) {
+                        viewModel.saveSchedulePhoto(sBitmap)
+                    } else if (sFileName != null) {
+                        viewModel.saveScheduleFile(sFileName)
+                    } else {
+                        viewModel.clearSchedule()
+                    }
                     val prefs = context.getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
                     prefs.edit().putBoolean("has_completed_onboarding", true).apply()
                 }
@@ -375,12 +404,31 @@ fun HomeScreen(
         SemesterTransitionDialog(
             currentProfile = academicProfile,
             newSemester = currentActualSemester,
+            initialScheduleBitmap = scheduleBitmap,
+            initialScheduleFileName = scheduleFileName,
             onDismiss = { showSemesterTransitionDialog = false },
-            onConfirmTransition = { importedCourses ->
+            onConfirmTransition = { importedCourses, sBitmap, sFileName ->
                 viewModel.transitionSemester(currentActualSemester, importedCourses)
+                if (sBitmap != null) {
+                    viewModel.saveSchedulePhoto(sBitmap)
+                } else if (sFileName != null) {
+                    viewModel.saveScheduleFile(sFileName)
+                }
                 val prefs = context.getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
                 prefs.edit().putString("last_seen_semester", currentActualSemester).apply()
                 showSemesterTransitionDialog = false
+            }
+        )
+    }
+
+    if (showScheduleViewer) {
+        ScheduleViewerDialog(
+            bitmap = scheduleBitmap,
+            fileName = scheduleFileName,
+            onDismiss = { showScheduleViewer = false },
+            onOpenEdit = {
+                showScheduleViewer = false
+                showProfileDialog = true
             }
         )
     }
@@ -389,21 +437,28 @@ fun HomeScreen(
 @Composable
 private fun HeaderCard(
     academicProfile: UserAcademicProfile,
+    hasSchedule: Boolean,
     streakDays: Int,
     pendingCount: Int,
     onStartStudy: () -> Unit,
-    onOpenProfile: () -> Unit
+    onOpenProfile: () -> Unit,
+    onOpenSchedule: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(26.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier
             .fillMaxWidth()
             .background(
                 brush = Brush.horizontalGradient(
-                    colors = listOf(TauBluePrimary, Color(0xFF0D47A1))
+                    colors = listOf(
+                        TauPurplePrimary,
+                        Color(0xFF5B21B6),
+                        TauPurpleVibrant
+                    )
                 ),
-                shape = RoundedCornerShape(24.dp)
+                shape = RoundedCornerShape(26.dp)
             )
     ) {
         Column(
@@ -426,7 +481,7 @@ private fun HeaderCard(
                     Box(
                         modifier = Modifier
                             .size(52.dp)
-                            .background(Color.White.copy(alpha = 0.18f), CircleShape),
+                            .background(Color.White.copy(alpha = 0.2f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
@@ -443,13 +498,13 @@ private fun HeaderCard(
                             Text(
                                 text = "אוניברסיטת תל אביב • ${academicProfile.year}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.8f)
+                                color = Color.White.copy(alpha = 0.85f)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "ערוך תואר",
-                                tint = Color.White.copy(alpha = 0.7f),
+                                tint = Color.White.copy(alpha = 0.75f),
                                 modifier = Modifier.size(12.dp)
                             )
                         }
@@ -464,7 +519,7 @@ private fun HeaderCard(
                         Text(
                             text = "${if (academicProfile.isDoubleMajor) "דו-חוגי" else "חד-חוגי"} • ${academicProfile.semester}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF90CAF9)
+                            color = TauPurpleLight
                         )
                     }
                 }
@@ -473,7 +528,7 @@ private fun HeaderCard(
 
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = Color.White.copy(alpha = 0.2f)
+                    color = Color.White.copy(alpha = 0.22f)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -496,27 +551,48 @@ private fun HeaderCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
+            // Quick Schedule Button & Focus Session Bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "נותרו לך $pendingCount מטלות לביצוע",
-                    color = Color.White.copy(alpha = 0.9f),
-                    style = MaterialTheme.typography.bodyLarge
-                )
+                // Schedule Button (צפה במערכת שעות)
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color.White.copy(alpha = 0.18f),
+                    modifier = Modifier.clickable { onOpenSchedule() }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (hasSchedule) Icons.Default.CalendarMonth else Icons.Default.AddAPhoto,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (hasSchedule) "📅 הצג מערכת שעות" else "📸 צלם/העלה מערכת",
+                            color = Color.White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
 
                 Button(
                     onClick = onStartStudy,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White,
-                        contentColor = TauBluePrimary
+                        contentColor = TauPurplePrimary
                     ),
                     shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
@@ -531,6 +607,14 @@ private fun HeaderCard(
                     )
                 }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "נותרו לך $pendingCount מטלות לביצוע",
+                color = Color.White.copy(alpha = 0.85f),
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
     }
 }
@@ -557,7 +641,10 @@ private fun HomeTaskItem(
             Checkbox(
                 checked = task.isCompleted,
                 onCheckedChange = { onToggle() },
-                colors = CheckboxDefaults.colors(checkedColor = LaborGreen)
+                colors = CheckboxDefaults.colors(
+                    checkedColor = LaborGreen,
+                    uncheckedColor = TauPurplePrimary.copy(alpha = 0.6f)
+                )
             )
 
             Spacer(modifier = Modifier.width(8.dp))
@@ -586,13 +673,14 @@ private fun HomeTaskItem(
 
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant
+                color = TauPurpleLight.copy(alpha = 0.5f)
             ) {
                 Text(
                     text = dueDateStr,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TauPurpleDark,
                     maxLines = 1,
                     softWrap = false
                 )

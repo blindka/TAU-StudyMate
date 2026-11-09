@@ -1,8 +1,6 @@
 package com.tau.studymate.ui.components
 
-import android.net.Uri
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -19,6 +17,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -34,6 +33,8 @@ import com.tau.studymate.data.model.TaskTemplate
 import com.tau.studymate.data.model.Priority
 import com.tau.studymate.data.model.UserAcademicProfile
 import com.tau.studymate.ui.theme.LaborGreen
+import com.tau.studymate.ui.theme.TauPurplePrimary
+import com.tau.studymate.ui.theme.TauPurpleVibrant
 import com.tau.studymate.ui.theme.UrgentRed
 import com.tau.studymate.util.ScheduleParser
 
@@ -41,13 +42,17 @@ import com.tau.studymate.util.ScheduleParser
 @Composable
 fun AcademicProfileDialog(
     currentProfile: UserAcademicProfile,
+    initialScheduleBitmap: Bitmap? = null,
+    initialScheduleFileName: String? = null,
     onDismiss: () -> Unit,
     onSave: (
         degreeName: String,
         isDoubleMajor: Boolean,
         year: String,
         semester: String,
-        importedCourses: List<CourseTemplate>?
+        importedCourses: List<CourseTemplate>?,
+        scheduleBitmap: Bitmap?,
+        scheduleFileName: String?
     ) -> Boolean
 ) {
     var degreeName by remember { mutableStateOf(currentProfile.degreeName) }
@@ -56,32 +61,9 @@ fun AcademicProfileDialog(
     var selectedSemester by remember { mutableStateOf(currentProfile.semester) }
 
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var importedFileName by remember { mutableStateOf<String?>(null) }
+    var importedFileName by remember { mutableStateOf(initialScheduleFileName) }
+    var capturedScheduleBitmap by remember { mutableStateOf(initialScheduleBitmap) }
     var parsedScheduleCourses by remember { mutableStateOf<List<CourseTemplate>?>(null) }
-
-    val context = LocalContext.current
-
-    // File Picker for Schedule File (ICS, CSV, TXT, PDF)
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            val fileName = uri.lastPathSegment?.substringAfterLast('/') ?: "מערכת_שעות.txt"
-            importedFileName = fileName
-
-            // Try to read content or generate tailored courses from imported schedule
-            try {
-                val inputStream = context.contentResolver.openInputStream(uri)
-                val content = inputStream?.bufferedReader()?.use { it.readText() } ?: ""
-                val courses = ScheduleParser.parseScheduleContent(content, selectedSemester, degreeName)
-                parsedScheduleCourses = courses
-                errorMessage = null
-            } catch (_: Exception) {
-                // Fallback mock schedule parse
-                parsedScheduleCourses = ScheduleParser.parseScheduleContent("", selectedSemester, degreeName)
-            }
-        }
-    }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -107,7 +89,11 @@ fun AcademicProfileDialog(
                         modifier = Modifier
                             .size(54.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primaryContainer),
+                            .background(
+                                brush = Brush.linearGradient(
+                                    colors = listOf(TauPurplePrimary, TauPurpleVibrant)
+                                )
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
@@ -282,110 +268,19 @@ fun AcademicProfileDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Schedule File Import Box
-                Card(
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CalendarMonth,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(10.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "ייבוא מערכת שעות",
-                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = "התאמה אוטומטית לקורסים ומטלות",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.outline
-                                )
-                            }
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Full width upload button
-                        FilledTonalButton(
-                            onClick = { filePickerLauncher.launch("*/*") },
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(vertical = 10.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.UploadFile,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = if (importedFileName != null) "החלף קובץ מערכת שעות" else "העלאת קובץ מערכת שעות",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-
-                        if (importedFileName != null) {
-                            Spacer(modifier = Modifier.height(10.dp))
-                            Surface(
-                                shape = RoundedCornerShape(10.dp),
-                                color = LaborGreen.copy(alpha = 0.15f),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.CheckCircle,
-                                        contentDescription = null,
-                                        tint = LaborGreen,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "קובץ נטען: $importedFileName (${parsedScheduleCourses?.size ?: 0} קורסים אותרו)",
-                                        fontSize = 12.sp,
-                                        color = LaborGreen,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            }
-                        } else {
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                text = "תומך בקובצי לוח שנה (ICS), רשימת קורסים (TXT/CSV) או סילבוס",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.outline,
-                                fontSize = 11.sp
-                            )
-                        }
+                // Schedule Picker with Camera & Multi-format Files + Live Preview ("ומציג")
+                SchedulePickerAndPreview(
+                    currentSemester = selectedSemester,
+                    fallbackDegree = degreeName,
+                    initialBitmap = capturedScheduleBitmap,
+                    initialFileName = importedFileName,
+                    onScheduleChanged = { bmp, name, courses ->
+                        capturedScheduleBitmap = bmp
+                        importedFileName = name
+                        parsedScheduleCourses = courses
+                        errorMessage = null
                     }
-                }
+                )
 
                 Spacer(modifier = Modifier.height(22.dp))
 
@@ -409,7 +304,9 @@ fun AcademicProfileDialog(
                                 isDoubleMajor,
                                 selectedYear,
                                 selectedSemester,
-                                parsedScheduleCourses
+                                parsedScheduleCourses,
+                                capturedScheduleBitmap,
+                                importedFileName
                             )
                             if (!success) {
                                 errorMessage = "התואר '$degreeName' אינו קיים במאגר. נא לבחור תואר מוכר או להעלות קובץ מערכת שעות."
@@ -417,7 +314,8 @@ fun AcademicProfileDialog(
                                 onDismiss()
                             }
                         },
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = TauPurplePrimary)
                     ) {
                         Icon(Icons.Default.Done, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))

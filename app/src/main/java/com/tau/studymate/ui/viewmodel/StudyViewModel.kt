@@ -1,6 +1,8 @@
 package com.tau.studymate.ui.viewmodel
 
 import android.app.Application
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.tau.studymate.data.model.*
@@ -12,6 +14,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
 
 data class CelebrationReward(
     val title: String,
@@ -33,6 +37,13 @@ class StudyViewModel(
     private val _academicProfile = MutableStateFlow(UserAcademicProfile())
     val academicProfile: StateFlow<UserAcademicProfile> = _academicProfile.asStateFlow()
 
+    // Saved Schedule Photo & File
+    private val _scheduleBitmap = MutableStateFlow<Bitmap?>(null)
+    val scheduleBitmap: StateFlow<Bitmap?> = _scheduleBitmap.asStateFlow()
+
+    private val _scheduleFileName = MutableStateFlow<String?>(null)
+    val scheduleFileName: StateFlow<String?> = _scheduleFileName.asStateFlow()
+
     init {
         loadSavedProfile()
     }
@@ -52,6 +63,53 @@ class StudyViewModel(
                 semester = semester,
                 faculty = faculty
             )
+        }
+
+        val scheduleName = prefs.getString("saved_schedule_file_name", null)
+        _scheduleFileName.value = scheduleName
+        val scheduleFile = File(getApplication<Application>().filesDir, "saved_schedule_photo.jpg")
+        if (scheduleFile.exists()) {
+            try {
+                _scheduleBitmap.value = BitmapFactory.decodeFile(scheduleFile.absolutePath)
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun saveSchedulePhoto(bitmap: Bitmap, fileName: String = "צילום_מערכת_שעות.jpg") {
+        viewModelScope.launch {
+            try {
+                val file = File(getApplication<Application>().filesDir, "saved_schedule_photo.jpg")
+                FileOutputStream(file).use { out ->
+                    bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+                }
+                _scheduleBitmap.value = bitmap
+                _scheduleFileName.value = fileName
+                val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+                prefs.edit().putString("saved_schedule_file_name", fileName).apply()
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun saveScheduleFile(fileName: String, bitmap: Bitmap? = null) {
+        viewModelScope.launch {
+            _scheduleFileName.value = fileName
+            if (bitmap != null) {
+                saveSchedulePhoto(bitmap, fileName)
+            } else {
+                val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+                prefs.edit().putString("saved_schedule_file_name", fileName).apply()
+            }
+        }
+    }
+
+    fun clearSchedule() {
+        viewModelScope.launch {
+            _scheduleBitmap.value = null
+            _scheduleFileName.value = null
+            val file = File(getApplication<Application>().filesDir, "saved_schedule_photo.jpg")
+            if (file.exists()) file.delete()
+            val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+            prefs.edit().remove("saved_schedule_file_name").apply()
         }
     }
 
