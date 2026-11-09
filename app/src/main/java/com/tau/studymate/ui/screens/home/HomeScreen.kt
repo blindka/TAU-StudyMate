@@ -459,7 +459,7 @@ private fun HeaderCard(
                                 fontWeight = FontWeight.Bold,
                                 color = Color.White
                             ),
-                            maxLines = 1
+                            maxLines = 2
                         )
                         Text(
                             text = "${if (academicProfile.isDoubleMajor) "דו-חוגי" else "חד-חוגי"} • ${academicProfile.semester}",

@@ -52,6 +52,15 @@ android {
     buildFeatures {
         compose = true
     }
+
+    applicationVariants.all {
+        outputs.all {
+            val output = this
+            if (output is com.android.build.gradle.internal.api.BaseVariantOutputImpl) {
+                output.outputFileName = "TAU-StudyMate.apk"
+            }
+        }
+    }
 }
 
 dependencies {

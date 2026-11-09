@@ -6,6 +6,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -228,26 +229,22 @@ fun AcademicProfileDialog(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     listOf("שנה א'", "שנה ב'", "שנה ג'", "שנה ד'").forEach { y ->
                         FilterChip(
                             selected = selectedYear == y,
                             onClick = { selectedYear = y },
-                            modifier = Modifier.weight(1f),
                             label = {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = y,
-                                        fontSize = 11.sp,
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
-                                }
+                                Text(
+                                    text = y,
+                                    fontSize = 12.sp,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
                         )
                     }
@@ -262,26 +259,22 @@ fun AcademicProfileDialog(
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     listOf("סמסטר א'", "סמסטר ב'", "סמסטר קיץ").forEach { s ->
                         FilterChip(
                             selected = selectedSemester == s,
                             onClick = { selectedSemester = s },
-                            modifier = Modifier.weight(1f),
                             label = {
-                                Box(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = s,
-                                        fontSize = 11.sp,
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
-                                }
+                                Text(
+                                    text = s,
+                                    fontSize = 12.sp,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
                             }
                         )
                     }

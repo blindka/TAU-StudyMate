@@ -97,10 +97,11 @@ fun CourseDetailScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Course Tabs
-            TabRow(
+            // Course Tabs - Scrollable to prevent overflow on large display scales
+            ScrollableTabRow(
                 selectedTabIndex = selectedTab.ordinal,
-                containerColor = MaterialTheme.colorScheme.surface
+                containerColor = MaterialTheme.colorScheme.surface,
+                edgePadding = 16.dp
             ) {
                 CourseSubTab.entries.forEach { tab ->
                     Tab(
@@ -110,7 +111,9 @@ fun CourseDetailScreen(
                             Text(
                                 text = tab.title,
                                 fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal,
-                                fontSize = 13.sp
+                                fontSize = 13.sp,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     )

@@ -31,7 +31,9 @@ fun BottomNavigationBar(
                 label = {
                     Text(
                         text = screen.title,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
+                        maxLines = 1,
+                        softWrap = false,
                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
                     )
                 },
