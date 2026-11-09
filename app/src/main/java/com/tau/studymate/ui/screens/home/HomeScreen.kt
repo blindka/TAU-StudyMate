@@ -31,6 +31,7 @@ import com.tau.studymate.ui.theme.LaborGreen
 import com.tau.studymate.ui.theme.TauBluePrimary
 import com.tau.studymate.ui.theme.UrgentRed
 import com.tau.studymate.ui.viewmodel.StudyViewModel
+import com.tau.studymate.util.TauAcademicCalendar
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -171,10 +172,32 @@ fun HomeScreen(
         // Section: "מטלות קרובות להגשה" with TAU Academic Calendar Banner
         item {
             Column(modifier = Modifier.fillMaxWidth()) {
+                val academicStatus = remember { TauAcademicCalendar.getCurrentStatus() }
+                val containerColor = if (academicStatus.isExamPeriod) {
+                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
+                } else {
+                    MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f)
+                }
+                val iconVector = if (academicStatus.isExamPeriod) {
+                    Icons.Default.School
+                } else {
+                    Icons.Default.CalendarToday
+                }
+                val iconTint = if (academicStatus.isExamPeriod) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    MaterialTheme.colorScheme.primary
+                }
+                val textColor = if (academicStatus.isExamPeriod) {
+                    MaterialTheme.colorScheme.onErrorContainer
+                } else {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                }
+
                 // TAU Official Academic Calendar Status Banner
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                    color = containerColor,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -182,17 +205,17 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Default.CalendarToday,
+                            imageVector = iconVector,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = iconTint,
                             modifier = Modifier.size(15.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "סמסטר א' תשפ\"ז • 18/10/2026 – 18/01/2027 (שבוע 4)",
+                            text = academicStatus.displayText,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                            color = textColor
                         )
                     }
                 }

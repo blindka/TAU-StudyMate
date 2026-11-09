@@ -263,7 +263,6 @@ class StudyViewModel(
             }
 
             repository.replaceDegreeCurriculum(newCourses, newTasks)
-            SoundManager.playTaskCompletedSound(getApplication())
         }
 
         return true

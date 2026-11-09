@@ -2,12 +2,14 @@ package com.tau.studymate.util
 
 import android.content.Context
 import android.media.AudioManager
+import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.media.ToneGenerator
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import com.tau.studymate.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -16,21 +18,24 @@ import kotlinx.coroutines.launch
 object SoundManager {
 
     /**
-     * צליל שמחה והצלחה נעים בעת השלמת מטלה (טון עולה + רטט קצר)
+     * צליל שמחה והצלחה ייעודי בהשלמת מטלה (מבוסס על meldix-success-340660.mp3)
      */
     fun playTaskCompletedSound(context: Context) {
-        CoroutineScope(Dispatchers.Default).launch {
+        CoroutineScope(Dispatchers.Main).launch {
             try {
                 // רטט קצר של סיפוק והשלמה
                 vibrate(context, longArrayOf(0, 40, 50, 70), intArrayOf(0, 150, 0, 255))
 
-                // הפקת צליל הצלחה באמצעות ToneGenerator
-                val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 85)
-                toneGen.startTone(ToneGenerator.TONE_PROP_ACK, 220)
-                delay(220)
-                toneGen.release()
-            } catch (e: Exception) {
-                playSystemNotification(context)
+                // נגינת קובץ הסאונד המותאם מ-res/raw/task_success.mp3
+                val mediaPlayer = MediaPlayer.create(context.applicationContext, R.raw.task_success)
+                mediaPlayer?.setOnCompletionListener { mp ->
+                    mp.reset()
+                    mp.release()
+                }
+                mediaPlayer?.start()
+            } catch (_: Exception) {
+                // גיבוי למקרה חירום
+                playFallbackTone(context)
             }
         }
     }
@@ -50,9 +55,22 @@ object SoundManager {
                     delay(320)
                 }
                 toneGen.release()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 playSystemAlarm(context)
             }
+        }
+    }
+
+    private fun playFallbackTone(context: Context) {
+        try {
+            val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 85)
+            toneGen.startTone(ToneGenerator.TONE_PROP_ACK, 220)
+            CoroutineScope(Dispatchers.Default).launch {
+                delay(220)
+                toneGen.release()
+            }
+        } catch (_: Exception) {
+            playSystemNotification(context)
         }
     }
 
