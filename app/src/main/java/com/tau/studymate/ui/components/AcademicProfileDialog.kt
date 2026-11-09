@@ -237,16 +237,23 @@ fun AcademicProfileDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    listOf("שנה א'", "שנה ב'", "שנה ג'", "שנה ד' / מוסמך").forEach { y ->
+                    listOf("שנה א'", "שנה ב'", "שנה ג'", "שנה ד'", "מוסמך").forEach { y ->
                         FilterChip(
                             selected = selectedYear == y,
                             onClick = { selectedYear = y },
-                            label = { Text(y, fontSize = 12.sp) }
+                            label = {
+                                Text(
+                                    text = y,
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
                         )
                     }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(14.dp))
 
                 // Semester Selection
                 Text(
@@ -256,13 +263,20 @@ fun AcademicProfileDialog(
                 Spacer(modifier = Modifier.height(6.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     listOf("סמסטר א'", "סמסטר ב'", "סמסטר קיץ").forEach { s ->
                         FilterChip(
                             selected = selectedSemester == s,
                             onClick = { selectedSemester = s },
-                            label = { Text(s, fontSize = 12.sp) }
+                            label = {
+                                Text(
+                                    text = s,
+                                    fontSize = 12.sp,
+                                    maxLines = 1,
+                                    softWrap = false
+                                )
+                            }
                         )
                     }
                 }
@@ -271,73 +285,104 @@ fun AcademicProfileDialog(
 
                 // Schedule File Import Box
                 Card(
-                    shape = RoundedCornerShape(16.dp),
+                    shape = RoundedCornerShape(18.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f), CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
                                 Icon(
                                     imageVector = Icons.Default.CalendarMonth,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = "ייבוא מערכת שעות",
-                                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.primary
+                                    modifier = Modifier.size(20.dp)
                                 )
                             }
 
-                            FilledTonalButton(
-                                onClick = { filePickerLauncher.launch("*/*") },
-                                shape = RoundedCornerShape(10.dp),
-                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
-                            ) {
-                                Icon(Icons.Default.UploadFile, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("העלאת קובץ", fontSize = 12.sp)
+                            Spacer(modifier = Modifier.width(10.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "ייבוא מערכת שעות",
+                                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = "התאמה אוטומטית לקורסים ומטלות",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.outline
+                                )
                             }
                         }
 
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Full width upload button
+                        FilledTonalButton(
+                            onClick = { filePickerLauncher.launch("*/*") },
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            contentPadding = PaddingValues(vertical = 10.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.UploadFile,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = if (importedFileName != null) "החלף קובץ מערכת שעות" else "העלאת קובץ מערכת שעות",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
                         if (importedFileName != null) {
-                            Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(10.dp))
                             Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = LaborGreen.copy(alpha = 0.15f)
+                                shape = RoundedCornerShape(10.dp),
+                                color = LaborGreen.copy(alpha = 0.15f),
+                                modifier = Modifier.fillMaxWidth()
                             ) {
                                 Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
                                         imageVector = Icons.Default.CheckCircle,
                                         contentDescription = null,
                                         tint = LaborGreen,
-                                        modifier = Modifier.size(16.dp)
+                                        modifier = Modifier.size(18.dp)
                                     )
-                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text(
-                                        text = "נטען: $importedFileName (${parsedScheduleCourses?.size ?: 0} קורסים אותרו)",
-                                        fontSize = 11.sp,
+                                        text = "קובץ נטען: $importedFileName (${parsedScheduleCourses?.size ?: 0} קורסים אותרו)",
+                                        fontSize = 12.sp,
                                         color = LaborGreen,
                                         fontWeight = FontWeight.Medium
                                     )
                                 }
                             }
                         } else {
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
                             Text(
                                 text = "תומך בקובצי לוח שנה (ICS), רשימת קורסים (TXT/CSV) או סילבוס",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.outline
+                                color = MaterialTheme.colorScheme.outline,
+                                fontSize = 11.sp
                             )
                         }
                     }
