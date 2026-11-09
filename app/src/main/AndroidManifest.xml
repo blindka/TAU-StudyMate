@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Permissions for notifications and reminders -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <application
+        android:name=".StudyMateApp"
+        android:allowBackup="true"
+        android:icon="@drawable/ic_tau_logo"
+        android:label="@string/app_name"
+        android:roundIcon="@drawable/ic_tau_logo"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.TAUStudyMate">
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.TAUStudyMate"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name=".receiver.TaskAlarmReceiver"
+            android:exported="false" />
+    </application>
+
+</manifest>
