@@ -1,6 +1,7 @@
 package com.tau.studymate.ui.screens.home
 
 import android.graphics.Bitmap
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -87,7 +88,7 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp)
     ) {
-        // Top Header Banner with Purple aesthetic & Quick Schedule View
+        // Top Header Banner with Diverse Pastel Gradient & Quick Schedule View
         item {
             HeaderCard(
                 academicProfile = academicProfile,
@@ -106,7 +107,7 @@ fun HomeScreen(
             )
         }
 
-        // Section: "מה חסר לי" (Study gaps & alerts)
+        // Section: "מה חסר לי" (Study gaps & alerts in Pastel Coral)
         if (missingMaterials.isNotEmpty()) {
             item {
                 Row(
@@ -116,7 +117,7 @@ fun HomeScreen(
                     Icon(
                         imageVector = Icons.Default.WarningAmber,
                         contentDescription = null,
-                        tint = UrgentRed,
+                        tint = PastelCoralDark,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
@@ -131,10 +132,9 @@ fun HomeScreen(
             items(missingMaterials) { material ->
                 val course = courseMap[material.courseId]
                 Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
-                    ),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = PastelCoral.copy(alpha = 0.45f)),
+                    border = BorderStroke(1.dp, PastelCoralBorder),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -146,13 +146,13 @@ fun HomeScreen(
                         Box(
                             modifier = Modifier
                                 .size(36.dp)
-                                .background(UrgentRed.copy(alpha = 0.15f), CircleShape),
+                                .background(PastelCoral, CircleShape),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.HelpOutline,
                                 contentDescription = null,
-                                tint = UrgentRed,
+                                tint = PastelCoralDark,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -175,7 +175,7 @@ fun HomeScreen(
                                 Text(
                                     text = material.contentOrUri,
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = TauPurplePrimary
+                                    color = PastelLavenderDark
                                 )
                             }
                         }
@@ -184,7 +184,7 @@ fun HomeScreen(
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = "הושלם",
-                                tint = LaborGreen
+                                tint = PastelMintDark
                             )
                         }
                     }
@@ -192,35 +192,21 @@ fun HomeScreen(
             }
         }
 
-        // Section: "מטלות קרובות להגשה" with TAU Academic Calendar Banner
+        // Section: "מטלות קרובות להגשה" with TAU Academic Calendar Banner in Pastel Sky
         item {
             Column(modifier = Modifier.fillMaxWidth()) {
                 val academicStatus = remember { TauAcademicCalendar.getCurrentStatus() }
-                val containerColor = if (academicStatus.isExamPeriod) {
-                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
-                } else {
-                    TauPurpleLight.copy(alpha = 0.5f)
-                }
-                val iconVector = if (academicStatus.isExamPeriod) {
-                    Icons.Default.School
-                } else {
-                    Icons.Default.CalendarToday
-                }
-                val iconTint = if (academicStatus.isExamPeriod) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    TauPurplePrimary
-                }
-                val textColor = if (academicStatus.isExamPeriod) {
-                    MaterialTheme.colorScheme.onErrorContainer
-                } else {
-                    TauPurpleDark
-                }
+                val containerColor = if (academicStatus.isExamPeriod) PastelCoral.copy(alpha = 0.5f) else PastelSky.copy(alpha = 0.6f)
+                val borderColor = if (academicStatus.isExamPeriod) PastelCoralBorder else PastelSkyBorder
+                val iconVector = if (academicStatus.isExamPeriod) Icons.Default.School else Icons.Default.CalendarToday
+                val iconTint = if (academicStatus.isExamPeriod) PastelCoralDark else PastelSkyDark
+                val textColor = if (academicStatus.isExamPeriod) PastelCoralDark else PastelSkyDeep
 
                 // TAU Official Academic Calendar Status Banner
                 Surface(
                     shape = RoundedCornerShape(14.dp),
                     color = containerColor,
+                    border = BorderStroke(1.dp, borderColor),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { showSemesterTransitionDialog = true }
@@ -246,8 +232,8 @@ fun HomeScreen(
                         Icon(
                             imageVector = Icons.Default.SwapHoriz,
                             contentDescription = "מעבר סמסטר",
-                            tint = iconTint.copy(alpha = 0.7f),
-                            modifier = Modifier.size(15.dp)
+                            tint = iconTint.copy(alpha = 0.8f),
+                            modifier = Modifier.size(16.dp)
                         )
                     }
                 }
@@ -266,8 +252,8 @@ fun HomeScreen(
                     TextButton(onClick = onNavigateToTasks) {
                         Text(
                             text = "לכל המטלות (${tasks.size})",
-                            color = TauPurplePrimary,
-                            fontWeight = FontWeight.SemiBold
+                            color = PastelLavenderDark,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
@@ -277,10 +263,8 @@ fun HomeScreen(
         if (pendingTasks.isEmpty()) {
             item {
                 Card(
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                    ),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Box(
@@ -309,13 +293,12 @@ fun HomeScreen(
             }
         }
 
-        // Quick Courses overview card with colorful styling
+        // Quick Courses overview card with Pastel Rose / Lavender Gradient
         item {
             Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
+                shape = RoundedCornerShape(22.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, PastelLavenderBorder.copy(alpha = 0.6f)),
                 elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -334,7 +317,7 @@ fun HomeScreen(
                                 .size(46.dp)
                                 .background(
                                     brush = Brush.linearGradient(
-                                        colors = listOf(TauPurpleVibrant.copy(alpha = 0.2f), TauMagentaAccent.copy(alpha = 0.2f))
+                                        colors = listOf(PastelLavender, PastelSky)
                                     ),
                                     shape = CircleShape
                                 ),
@@ -343,13 +326,13 @@ fun HomeScreen(
                             Icon(
                                 imageVector = Icons.Default.FolderSpecial,
                                 contentDescription = null,
-                                tint = TauPurplePrimary
+                                tint = PastelLavenderDark
                             )
                         }
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "תיקיות קורסים וחומרים",
+                                text = "תיקיות קורסים וחומרים 📚",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                             Text(
@@ -363,7 +346,7 @@ fun HomeScreen(
                         imageVector = Icons.Default.ArrowBackIosNew,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
-                        tint = TauPurplePrimary
+                        tint = PastelLavenderDark
                     )
                 }
             }
@@ -453,9 +436,9 @@ private fun HeaderCard(
             .background(
                 brush = Brush.horizontalGradient(
                     colors = listOf(
-                        TauPurplePrimary,
-                        Color(0xFF5B21B6),
-                        TauPurpleVibrant
+                        PastelLavenderDark,
+                        Color(0xFF6366F1),
+                        Color(0xFF38BDF8)
                     )
                 ),
                 shape = RoundedCornerShape(26.dp)
@@ -481,7 +464,7 @@ private fun HeaderCard(
                     Box(
                         modifier = Modifier
                             .size(52.dp)
-                            .background(Color.White.copy(alpha = 0.2f), CircleShape),
+                            .background(Color.White.copy(alpha = 0.22f), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
@@ -498,13 +481,13 @@ private fun HeaderCard(
                             Text(
                                 text = "אוניברסיטת תל אביב • ${academicProfile.year}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.85f)
+                                color = Color.White.copy(alpha = 0.9f)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "ערוך תואר",
-                                tint = Color.White.copy(alpha = 0.75f),
+                                tint = Color.White.copy(alpha = 0.8f),
                                 modifier = Modifier.size(12.dp)
                             )
                         }
@@ -519,16 +502,18 @@ private fun HeaderCard(
                         Text(
                             text = "${if (academicProfile.isDoubleMajor) "דו-חוגי" else "חד-חוגי"} • ${academicProfile.semester}",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TauPurpleLight
+                            color = PastelSky
                         )
                     }
                 }
 
                 Spacer(modifier = Modifier.width(8.dp))
 
+                // Streak in Pastel Butter
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = Color.White.copy(alpha = 0.22f)
+                    color = PastelButter,
+                    border = BorderStroke(1.dp, PastelButterBorder)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -537,13 +522,13 @@ private fun HeaderCard(
                         Icon(
                             imageVector = Icons.Default.LocalFireDepartment,
                             contentDescription = "Streak",
-                            tint = Color(0xFFFFB300),
+                            tint = PastelButterDark,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = "$streakDays ימים",
-                            color = Color.White,
+                            color = PastelButterDark,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp
                         )
@@ -562,7 +547,7 @@ private fun HeaderCard(
                 // Schedule Button (צפה במערכת שעות)
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = Color.White.copy(alpha = 0.18f),
+                    color = Color.White.copy(alpha = 0.22f),
                     modifier = Modifier.clickable { onOpenSchedule() }
                 ) {
                     Row(
@@ -589,10 +574,11 @@ private fun HeaderCard(
                     onClick = onStartStudy,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White,
-                        contentColor = TauPurplePrimary
+                        contentColor = PastelLavenderDark
                     ),
                     shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.PlayArrow,
@@ -612,7 +598,7 @@ private fun HeaderCard(
 
             Text(
                 text = "נותרו לך $pendingCount מטלות לביצוע",
-                color = Color.White.copy(alpha = 0.85f),
+                color = Color.White.copy(alpha = 0.9f),
                 style = MaterialTheme.typography.bodyMedium
             )
         }
@@ -627,23 +613,24 @@ private fun HomeTaskItem(
     onToggle: () -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(
                 checked = task.isCompleted,
                 onCheckedChange = { onToggle() },
                 colors = CheckboxDefaults.colors(
-                    checkedColor = LaborGreen,
-                    uncheckedColor = TauPurplePrimary.copy(alpha = 0.6f)
+                    checkedColor = PastelMintDark,
+                    uncheckedColor = PastelLavenderDark.copy(alpha = 0.6f)
                 )
             )
 
@@ -655,7 +642,7 @@ private fun HomeTaskItem(
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
 
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(3.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     DepartmentBadge(department = task.department)
@@ -671,16 +658,18 @@ private fun HomeTaskItem(
                 }
             }
 
+            // Pastel Due Date Pill
             Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = TauPurpleLight.copy(alpha = 0.5f)
+                shape = RoundedCornerShape(10.dp),
+                color = PastelLavender,
+                border = BorderStroke(1.dp, PastelLavenderBorder)
             ) {
                 Text(
                     text = dueDateStr,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TauPurpleDark,
+                    fontWeight = FontWeight.Bold,
+                    color = PastelLavenderDark,
                     maxLines = 1,
                     softWrap = false
                 )

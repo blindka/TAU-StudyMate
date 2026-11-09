@@ -8,30 +8,33 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val LightColorScheme = lightColorScheme(
-    primary = TauPurplePrimary,
+    primary = PastelLavenderDark,
     onPrimary = Color.White,
-    primaryContainer = TauPurpleLight,
-    onPrimaryContainer = TauPurpleDark,
-    secondary = TauMagentaAccent,
+    primaryContainer = PastelLavender,
+    onPrimaryContainer = PastelLavenderDeep,
+    secondary = PastelSkyDark,
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFFAE8FF),
-    onSecondaryContainer = Color(0xFF701A75),
-    tertiary = TauCyanAccent,
-    tertiaryContainer = TauTealLight,
-    onTertiaryContainer = Color(0xFF115E59),
+    secondaryContainer = PastelSky,
+    onSecondaryContainer = PastelSkyDeep,
+    tertiary = PastelMintDark,
+    onTertiary = Color.White,
+    tertiaryContainer = PastelMint,
+    onTertiaryContainer = PastelMintDeep,
     background = SurfaceLight,
     surface = CardBackgroundLight,
     surfaceVariant = Color(0xFFF1F5F9),
     onBackground = TextPrimaryLight,
     onSurface = TextPrimaryLight,
-    error = UrgentRed
+    error = PastelCoralDark,
+    errorContainer = PastelCoral,
+    onErrorContainer = PastelCoralDark
 )
 
 private val DarkColorScheme = darkColorScheme(
     primary = TauPurpleVibrant,
     onPrimary = Color.White,
-    primaryContainer = TauPurpleDark,
-    onPrimaryContainer = TauPurpleLight,
+    primaryContainer = PastelLavenderDeep,
+    onPrimaryContainer = PastelLavender,
     secondary = TauMagentaAccent,
     onSecondary = Color.White,
     secondaryContainer = Color(0xFF4A044E),

@@ -1,10 +1,10 @@
 package com.tau.studymate.ui.screens.habits
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -14,16 +14,24 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tau.studymate.data.model.Department
-import com.tau.studymate.ui.theme.LaborGreen
-import com.tau.studymate.ui.theme.TauBluePrimary
-import com.tau.studymate.ui.theme.UrgentRed
+import com.tau.studymate.ui.theme.*
 import com.tau.studymate.ui.viewmodel.StudyViewModel
+
+private data class PresetItem(
+    val isCount: Boolean,
+    val mins: Int,
+    val label: String,
+    val emoji: String,
+    val pastelBg: Color,
+    val pastelBorder: Color,
+    val pastelDark: Color
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,7 +56,16 @@ fun HabitsAnalyticsScreen(
     val timerDisplay = "%02d:%02d".format(minutes, seconds)
 
     val totalMinutesStudied = remember(sessions) {
-        sessions.sumOf { it.durationMinutes } + 140 // sample starter minutes
+        sessions.sumOf { it.durationMinutes } + 140
+    }
+
+    val presets = remember {
+        listOf(
+            PresetItem(true, 25, "פומודורו 25 ד'", "🍅", PastelRose, PastelRoseBorder, PastelRoseDark),
+            PresetItem(true, 45, "45 דקות", "⏱️", PastelSky, PastelSkyBorder, PastelSkyDark),
+            PresetItem(true, 60, "60 דקות", "⏳", PastelMint, PastelMintBorder, PastelMintDark),
+            PresetItem(false, 0, "סטופר חופשי", "♾️", PastelLavender, PastelLavenderBorder, PastelLavenderDark)
+        )
     }
 
     LazyColumn(
@@ -58,12 +75,13 @@ fun HabitsAnalyticsScreen(
         contentPadding = PaddingValues(top = 16.dp, bottom = 80.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Study Timer Section
+        // Study Timer Section with Pastel Lavender Background
         item {
             Card(
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(26.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+                border = BorderStroke(1.5.dp, PastelLavenderBorder),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -73,12 +91,12 @@ fun HabitsAnalyticsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "טיימר פוקוס ללמידה מודעת",
+                        text = "טיימר פוקוס ללמידה מודעת 🧠",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary
+                        color = PastelLavenderDark
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     // Course picker for the session
                     ExposedDropdownMenuBox(
@@ -95,7 +113,13 @@ fun HabitsAnalyticsScreen(
                             modifier = Modifier
                                 .menuAnchor()
                                 .fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(14.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = PastelLavenderDark,
+                                unfocusedBorderColor = PastelLavenderBorder,
+                                focusedContainerColor = PastelLavender.copy(alpha = 0.25f),
+                                unfocusedContainerColor = Color.Transparent
+                            )
                         )
                         ExposedDropdownMenu(
                             expanded = expandedCourseDropdown,
@@ -113,73 +137,115 @@ fun HabitsAnalyticsScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    // Preset Mode Selection (Pomodoro 25, 45, 60, Stopwatch) - Scalable & Scrollable
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)
-                    ) {
-                        listOf(
-                            Triple(true, 25, "פומודורו (25 ד')"),
-                            Triple(true, 45, "45 ד'"),
-                            Triple(true, 60, "60 ד'"),
-                            Triple(false, 0, "סטופר חופשי")
-                        ).forEach { (isCount, mins, label) ->
-                            val isSelected = (isCountdown == isCount) && (!isCount || targetMinutes == mins)
-                            FilterChip(
-                                selected = isSelected,
-                                onClick = {
-                                    if (!isRunning) {
-                                        viewModel.setTimerPreset(isCount, mins)
-                                    }
-                                },
-                                enabled = !isRunning,
-                                label = {
-                                    Text(
-                                        text = label,
-                                        fontSize = 11.sp,
-                                        maxLines = 1,
-                                        softWrap = false
-                                    )
-                                }
-                            )
-                        }
-                    }
-
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Circular Timer Display
-                    Box(
-                        modifier = Modifier
-                            .size(160.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (isRunning) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                                else MaterialTheme.colorScheme.surfaceVariant
-                            ),
-                        contentAlignment = Alignment.Center
+                    // Pastel Preset Mode Selection (2x2 Grid - Never squished or clipped!)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                text = timerDisplay,
-                                fontSize = 38.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = if (isCountdown) "ספירה לאחור • צליל סיום פעיל 🔔" else "סטופר פתוח",
-                                fontSize = 11.sp,
-                                color = MaterialTheme.colorScheme.outline
-                            )
+                        // Row 1: 25 mins & 45 mins
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            presets.take(2).forEach { preset ->
+                                val isSelected = (isCountdown == preset.isCount) && (!preset.isCount || targetMinutes == preset.mins)
+                                PresetCard(
+                                    preset = preset,
+                                    isSelected = isSelected,
+                                    enabled = !isRunning,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        if (!isRunning) {
+                                            viewModel.setTimerPreset(preset.isCount, preset.mins)
+                                        }
+                                    }
+                                )
+                            }
+                        }
+
+                        // Row 2: 60 mins & Stopwatch
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            presets.drop(2).forEach { preset ->
+                                val isSelected = (isCountdown == preset.isCount) && (!preset.isCount || targetMinutes == preset.mins)
+                                PresetCard(
+                                    preset = preset,
+                                    isSelected = isSelected,
+                                    enabled = !isRunning,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = {
+                                        if (!isRunning) {
+                                            viewModel.setTimerPreset(preset.isCount, preset.mins)
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // Timer Controls
+                    // Circular Timer Display with Pastel Rings
+                    Box(
+                        modifier = Modifier
+                            .size(174.dp)
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        PastelLavender.copy(alpha = 0.7f),
+                                        PastelSky.copy(alpha = 0.4f),
+                                        Color.White
+                                    )
+                                ),
+                                shape = CircleShape
+                            )
+                            .clip(CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            modifier = Modifier.size(158.dp),
+                            shape = CircleShape,
+                            color = Color.White,
+                            border = BorderStroke(3.dp, if (isRunning) PastelLavenderDark else PastelLavenderBorder),
+                            shadowElevation = 3.dp
+                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Text(
+                                    text = timerDisplay,
+                                    fontSize = 40.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = PastelLavenderDark
+                                )
+
+                                Spacer(modifier = Modifier.height(2.dp))
+
+                                Surface(
+                                    shape = RoundedCornerShape(8.dp),
+                                    color = if (isCountdown) PastelButter.copy(alpha = 0.8f) else PastelSky.copy(alpha = 0.8f)
+                                ) {
+                                    Text(
+                                        text = if (isCountdown) "🔔 ספירה לאחור" else "♾️ סטופר פתוח",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = if (isCountdown) PastelButterDark else PastelSkyDark,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(22.dp))
+
+                    // Timer Controls with Pastel Styling
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -187,38 +253,65 @@ fun HabitsAnalyticsScreen(
                         if (!isRunning) {
                             Button(
                                 onClick = { viewModel.startTimer(courseId = selectedCourseId) },
-                                shape = RoundedCornerShape(14.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = PastelLavenderDark,
+                                    contentColor = Color.White
+                                ),
+                                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+                                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
                             ) {
-                                Icon(Icons.Default.PlayArrow, contentDescription = null)
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text("התחל למידה", fontWeight = FontWeight.Bold)
+                                Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("התחל למידה", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                             }
                         } else {
+                            // Pause button in Pastel Butter
                             Button(
                                 onClick = { viewModel.pauseTimer() },
-                                shape = RoundedCornerShape(14.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = PastelButter,
+                                    contentColor = PastelButterDark
+                                ),
+                                border = BorderStroke(1.dp, PastelButterBorder),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
                             ) {
                                 Icon(Icons.Default.Pause, contentDescription = null)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("השהה")
+                                Text("השהה", fontWeight = FontWeight.Bold)
                             }
 
+                            // Finish & Save button in Pastel Mint
                             Button(
                                 onClick = { viewModel.finishTimerSession() },
-                                shape = RoundedCornerShape(14.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = LaborGreen)
+                                shape = RoundedCornerShape(16.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = PastelMint,
+                                    contentColor = PastelMintDark
+                                ),
+                                border = BorderStroke(1.dp, PastelMintBorder),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp)
                             ) {
                                 Icon(Icons.Default.Check, contentDescription = null)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("סיים ושמור")
+                                Text("סיים ושמור", fontWeight = FontWeight.Bold)
                             }
                         }
 
                         if (timerSeconds > 0 && !isRunning) {
-                            IconButton(onClick = { viewModel.resetTimer() }) {
-                                Icon(Icons.Default.Refresh, contentDescription = "איפוס")
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                modifier = Modifier.size(46.dp)
+                            ) {
+                                IconButton(onClick = { viewModel.resetTimer() }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Refresh,
+                                        contentDescription = "איפוס",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
                             }
                         }
                     }
@@ -229,146 +322,229 @@ fun HabitsAnalyticsScreen(
         // Adaptive Habits & Insights Section
         item {
             Text(
-                text = "תובנות הרגלי למידה מותאמות אישית",
+                text = "תובנות הרגלי למידה מותאמות אישית 📊",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
         }
 
-        // Stats summary cards
+        // Stats summary cards in Pastel Sky & Mint
         item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                StatCard(
+                PastelStatCard(
                     modifier = Modifier.weight(1f),
                     title = "זמן למידה כולל",
                     value = "${totalMinutesStudied / 60} שעות",
                     icon = Icons.Default.AccessTime,
-                    tint = TauBluePrimary
+                    containerColor = PastelSky,
+                    borderColor = PastelSkyBorder,
+                    accentColor = PastelSkyDark
                 )
-                StatCard(
+                PastelStatCard(
                     modifier = Modifier.weight(1f),
                     title = "מטלות שהושלמו",
                     value = "${tasks.count { it.isCompleted }} מתוך ${tasks.size}",
                     icon = Icons.Default.DoneAll,
-                    tint = LaborGreen
+                    containerColor = PastelMint,
+                    borderColor = PastelMintBorder,
+                    accentColor = PastelMintDark
                 )
             }
         }
 
-        // Track Balance Bar (Communication vs Labor Studies)
+        // Track Balance Bar (Communication vs Labor Studies) with Pastel Pills
         item {
             Card(
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(18.dp)
                 ) {
                     Text(
                         text = "חלוקת זמן לפי חוג בתואר הדו-חוגי",
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                     )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
                     // Progress bar
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(14.dp)
-                            .clip(RoundedCornerShape(7.dp))
+                            .height(16.dp)
+                            .clip(RoundedCornerShape(8.dp))
                     ) {
                         Box(
                             modifier = Modifier
                                 .weight(0.55f)
                                 .fillMaxHeight()
-                                .background(Department.COMMUNICATION.color)
+                                .background(PastelSkyDark)
                         )
                         Box(
                             modifier = Modifier
                                 .weight(0.45f)
                                 .fillMaxHeight()
-                                .background(Department.LABOR_STUDIES.color)
+                                .background(PastelMintDark)
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = "🔵 תקשורת: 55%",
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                            color = Department.COMMUNICATION.color
-                        )
-                        Text(
-                            text = "🟢 לימודי עבודה: 45%",
-                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                            color = Department.LABOR_STUDIES.color
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = PastelSky,
+                            border = BorderStroke(1.dp, PastelSkyBorder)
+                        ) {
+                            Text(
+                                text = "🔵 תקשורת: 55%",
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                color = PastelSkyDark,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = PastelMint,
+                            border = BorderStroke(1.dp, PastelMintBorder)
+                        ) {
+                            Text(
+                                text = "🟢 לימודי עבודה: 45%",
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                color = PastelMintDark,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
                     }
                 }
             }
         }
 
-        // Smart Recommendation Card 1: Velocity & Planning
+        // Smart Recommendation Card 1: Velocity & Planning in Pastel Rose
         item {
-            InsightCard(
+            PastelInsightCard(
                 icon = Icons.Default.AutoGraph,
                 title = "מדד דיוק הערכת זמן (Velocity)",
                 description = "שמנו לב שמטלות כתיבה לוקחות לך בממוצע 20% יותר מהזמן שהוערך. מומלץ לתזמן סשן עבודה 3 ימים לפני מועד ההגשה במקום יום לפני.",
-                badgeText = "המלצה מותאמת"
+                badgeText = "המלצה מותאמת",
+                cardColor = PastelRose.copy(alpha = 0.5f),
+                borderColor = PastelRoseBorder,
+                badgeBg = PastelRose,
+                badgeTextCol = PastelRoseDark
             )
         }
 
-        // Smart Recommendation Card 2: Study Habits & Consistency
+        // Smart Recommendation Card 2: Study Habits & Consistency in Pastel Teal
         item {
-            InsightCard(
+            PastelInsightCard(
                 icon = Icons.Default.Psychology,
                 title = "עקביות ותדירות שימוש",
                 description = "נכנסת לאפליקציה 5 ימים ברציפות השבוע! הרגלי הלמידה שלך הולכים ומתייצבים. שמירה על סשן יומי קצר של 45 דקות מונעת עומס בתקופת הבחינות.",
-                badgeText = "מגמת שיפור"
+                badgeText = "מגמת שיפור",
+                cardColor = PastelTeal.copy(alpha = 0.5f),
+                borderColor = PastelTealBorder,
+                badgeBg = PastelTeal,
+                badgeTextCol = PastelTealDark
+            )
+        }
+
+        // Smart Recommendation Card 3: Focus & Recovery in Pastel Butter
+        item {
+            PastelInsightCard(
+                icon = Icons.Default.Lightbulb,
+                title = "טיפ לפוקוס ורענון מחשבתי",
+                description = "שילוב הפסקה של 5 דקות בין סשנים של פומודורו הוכח כמסייע להטמעת חומר הלימוד בזיכרון לטווח ארוך ולמניעת עייפות.",
+                badgeText = "טיפ שבועי",
+                cardColor = PastelButter.copy(alpha = 0.45f),
+                borderColor = PastelButterBorder,
+                badgeBg = PastelButter,
+                badgeTextCol = PastelButterDark
             )
         }
     }
 }
 
 @Composable
-private fun StatCard(
-    modifier: Modifier = Modifier,
+private fun PresetCard(
+    preset: PresetItem,
+    isSelected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(14.dp),
+        color = if (isSelected) preset.pastelBg else Color.White,
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) preset.pastelDark else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
+        ),
+        shadowElevation = if (isSelected) 2.dp else 0.dp,
+        modifier = modifier
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(text = preset.emoji, fontSize = 16.sp)
+            Spacer(modifier = Modifier.width(6.dp))
+            Text(
+                text = preset.label,
+                fontSize = 12.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = if (isSelected) preset.pastelDark else MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+private fun PastelStatCard(
     title: String,
     value: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
-    tint: Color
+    containerColor: Color,
+    borderColor: Color,
+    accentColor: Color,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        border = BorderStroke(1.dp, borderColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = modifier
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp)
+                .padding(16.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(36.dp)
-                    .background(tint.copy(alpha = 0.15f), CircleShape),
+                    .size(38.dp)
+                    .background(Color.White.copy(alpha = 0.85f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = tint,
+                    tint = accentColor,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -377,30 +553,35 @@ private fun StatCard(
 
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = accentColor,
+                fontWeight = FontWeight.Medium
             )
         }
     }
 }
 
 @Composable
-private fun InsightCard(
+private fun PastelInsightCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     description: String,
-    badgeText: String
+    badgeText: String,
+    cardColor: Color,
+    borderColor: Color,
+    badgeBg: Color,
+    badgeTextCol: Color
 ) {
     Card(
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = cardColor),
+        border = BorderStroke(1.dp, borderColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -411,38 +592,51 @@ private fun InsightCard(
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(22.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Box(
+                        modifier = Modifier
+                            .size(34.dp)
+                            .background(Color.White.copy(alpha = 0.8f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = badgeTextCol,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.primaryContainer
+                    color = badgeBg,
+                    border = BorderStroke(1.dp, borderColor)
                 ) {
                     Text(
                         text = badgeText,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        color = badgeTextCol,
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                         maxLines = 1,
                         softWrap = false
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
             Text(
                 text = description,

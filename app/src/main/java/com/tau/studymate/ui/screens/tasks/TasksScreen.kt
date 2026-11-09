@@ -1,6 +1,7 @@
 package com.tau.studymate.ui.screens.tasks
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -27,12 +28,18 @@ import com.tau.studymate.data.model.Task
 import com.tau.studymate.ui.components.AddTaskDialog
 import com.tau.studymate.ui.components.DepartmentBadge
 import com.tau.studymate.ui.components.ExportDialog
-import com.tau.studymate.ui.theme.LaborGreen
-import com.tau.studymate.ui.theme.UrgentRed
+import com.tau.studymate.ui.theme.*
 import com.tau.studymate.ui.viewmodel.StudyViewModel
 import com.tau.studymate.ui.viewmodel.TaskFilter
 import java.text.SimpleDateFormat
 import java.util.*
+
+private data class TaskFilterTab(
+    val filter: TaskFilter,
+    val label: String,
+    val bg: Color,
+    val text: Color
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,12 +59,20 @@ fun TasksScreen(
     val courseMap = remember(courses) { courses.associateBy { it.id } }
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
 
+    val filterTabs = remember {
+        listOf(
+            TaskFilterTab(TaskFilter.ALL, "הכל", PastelLavender, PastelLavenderDark),
+            TaskFilterTab(TaskFilter.PENDING, "ממתין לביצוע", PastelSky, PastelSkyDark),
+            TaskFilterTab(TaskFilter.COMPLETED, "הושלמו", PastelMint, PastelMintDark)
+        )
+    }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddTaskDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary,
+                containerColor = PastelLavenderDark,
                 contentColor = Color.White,
                 shape = RoundedCornerShape(18.dp)
             ) {
@@ -70,7 +85,7 @@ fun TasksScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Search & Export Bar
+            // Search & Pastel Export / Alert Buttons
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -83,7 +98,7 @@ fun TasksScreen(
                     onValueChange = { viewModel.setSearchQuery(it) },
                     placeholder = { Text("חיפוש מטלה או נושא...") },
                     leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = null)
+                        Icon(Icons.Default.Search, contentDescription = null, tint = PastelLavenderDark)
                     },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
@@ -100,30 +115,32 @@ fun TasksScreen(
                 IconButton(
                     onClick = { showExportDialog = true },
                     modifier = Modifier
+                        .size(48.dp)
                         .background(
-                            MaterialTheme.colorScheme.primaryContainer,
+                            PastelSky,
                             RoundedCornerShape(14.dp)
                         )
                 ) {
                     Icon(
                         imageVector = Icons.Default.Share,
                         contentDescription = "ייצוא",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = PastelSkyDark
                     )
                 }
 
                 IconButton(
                     onClick = { viewModel.sendTestNotification() },
                     modifier = Modifier
+                        .size(48.dp)
                         .background(
-                            MaterialTheme.colorScheme.secondaryContainer,
+                            PastelButter,
                             RoundedCornerShape(14.dp)
                         )
                 ) {
                     Icon(
                         imageVector = Icons.Default.NotificationsActive,
                         contentDescription = "בדיקת התראה",
-                        tint = MaterialTheme.colorScheme.secondary
+                        tint = PastelButterDark
                     )
                 }
             }
@@ -150,31 +167,30 @@ fun TasksScreen(
                 }
             }
 
-            // Completion Filter Tabs (All / Pending / Completed)
+            // Completion Filter Tabs (All / Pending / Completed) in Pastel Styling
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val filters = listOf(
-                    TaskFilter.ALL to "הכל",
-                    TaskFilter.PENDING to "ממתין לביצוע",
-                    TaskFilter.COMPLETED to "הושלמו"
-                )
-                filters.forEach { (filter, label) ->
-                    val isSelected = taskFilter == filter
-                    val bg = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface
-                    val textColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                filterTabs.forEach { tab ->
+                    val isSelected = taskFilter == tab.filter
+                    val bg = if (isSelected) tab.bg else MaterialTheme.colorScheme.surface
+                    val textColor = if (isSelected) tab.text else MaterialTheme.colorScheme.onSurfaceVariant
                     Surface(
                         shape = RoundedCornerShape(12.dp),
                         color = bg,
+                        border = BorderStroke(
+                            1.dp,
+                            if (isSelected) tab.text.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                        ),
                         modifier = Modifier
                             .weight(1f)
-                            .clickable { viewModel.setTaskFilter(filter) }
+                            .clickable { viewModel.setTaskFilter(tab.filter) }
                     ) {
                         Text(
-                            text = label,
+                            text = tab.label,
                             modifier = Modifier.padding(vertical = 8.dp),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                             fontSize = 12.sp,
@@ -199,7 +215,7 @@ fun TasksScreen(
                         Icon(
                             imageVector = Icons.Default.TaskAlt,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                            tint = PastelLavenderDark.copy(alpha = 0.4f),
                             modifier = Modifier.size(64.dp)
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -274,8 +290,8 @@ private fun TaskItemCard(
     onDelete: () -> Unit
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value == SwipeToDismissBoxValue.EndToStart || value == SwipeToDismissBoxValue.StartToEnd) {
+        confirmValueChange = { dismissValue ->
+            if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
                 onDelete()
                 true
             } else {
@@ -286,15 +302,17 @@ private fun TaskItemCard(
 
     SwipeToDismissBox(
         state = dismissState,
+        enableDismissFromStartToEnd = false,
         backgroundContent = {
             val color by animateColorAsState(
-                if (dismissState.targetValue != SwipeToDismissBoxValue.Settled) UrgentRed else Color.Transparent,
-                label = "dismiss_color"
+                targetValue = if (dismissState.targetValue == SwipeToDismissBoxValue.EndToStart)
+                    PastelCoralDark else Color.Transparent,
+                label = "color"
             )
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(color, RoundedCornerShape(16.dp))
+                    .background(color, RoundedCornerShape(18.dp))
                     .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.CenterEnd
             ) {
@@ -307,13 +325,14 @@ private fun TaskItemCard(
         }
     ) {
         Card(
-            shape = RoundedCornerShape(16.dp),
+            shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(
                 containerColor = if (task.isCompleted)
                     MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                 else MaterialTheme.colorScheme.surface
             ),
-            elevation = CardDefaults.cardElevation(defaultElevation = if (task.isCompleted) 0.dp else 2.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = if (task.isCompleted) 0.dp else 1.5.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -328,7 +347,10 @@ private fun TaskItemCard(
                     Checkbox(
                         checked = task.isCompleted,
                         onCheckedChange = { onToggle() },
-                        colors = CheckboxDefaults.colors(checkedColor = LaborGreen)
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = PastelMintDark,
+                            uncheckedColor = PastelLavenderDark.copy(alpha = 0.6f)
+                        )
                     )
 
                     Spacer(modifier = Modifier.width(8.dp))
@@ -392,11 +414,16 @@ private fun TaskItemCard(
                         }
                     }
 
-                    // Due date badge
+                    // Pastel Due date badge
+                    val isUrgent = task.priority == Priority.HIGH
+                    val badgeBg = if (isUrgent) PastelCoral else PastelLavender
+                    val badgeBorder = if (isUrgent) PastelCoralBorder else PastelLavenderBorder
+                    val badgeText = if (isUrgent) PastelCoralDark else PastelLavenderDark
+
                     Surface(
                         shape = RoundedCornerShape(8.dp),
-                        color = if (task.priority == Priority.HIGH) UrgentRed.copy(alpha = 0.12f)
-                        else MaterialTheme.colorScheme.surfaceVariant
+                        color = badgeBg,
+                        border = BorderStroke(1.dp, badgeBorder)
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
@@ -406,7 +433,7 @@ private fun TaskItemCard(
                                 imageVector = Icons.Default.Event,
                                 contentDescription = null,
                                 modifier = Modifier.size(12.dp),
-                                tint = if (task.priority == Priority.HIGH) UrgentRed else MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = badgeText
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
@@ -414,7 +441,8 @@ private fun TaskItemCard(
                                 fontSize = 11.sp,
                                 maxLines = 1,
                                 softWrap = false,
-                                color = if (task.priority == Priority.HIGH) UrgentRed else MaterialTheme.colorScheme.onSurfaceVariant
+                                fontWeight = FontWeight.Bold,
+                                color = badgeText
                             )
                         }
                     }
