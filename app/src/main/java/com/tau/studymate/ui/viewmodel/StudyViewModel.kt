@@ -29,6 +29,10 @@ class StudyViewModel(
     private val repository: StudyRepository
 ) : AndroidViewModel(application) {
 
+    // User Academic Profile (Degree, Track, Year, Semester)
+    private val _academicProfile = MutableStateFlow(UserAcademicProfile())
+    val academicProfile: StateFlow<UserAcademicProfile> = _academicProfile.asStateFlow()
+
     // Department Filter
     private val _selectedDepartment = MutableStateFlow<Department?>(null)
     val selectedDepartment: StateFlow<Department?> = _selectedDepartment.asStateFlow()
@@ -190,6 +194,79 @@ class StudyViewModel(
     fun sendTestNotification() {
         NotificationHelper.showTestNotification(getApplication())
         SoundManager.playTaskCompletedSound(getApplication())
+    }
+
+    /**
+     * Switch or update the degree curriculum.
+     * Looks up matching courses and tasks from the catalog or creates a customized track.
+     */
+    fun updateDegreeProgram(
+        degreeName: String,
+        isDoubleMajor: Boolean,
+        year: String,
+        semester: String,
+        importedCourses: List<CourseTemplate>? = null
+    ): Boolean {
+        val trimmed = degreeName.trim()
+        val foundTrack = AcademicCatalog.findProgram(trimmed)
+
+        // If not found and no imported courses provided, return false to trigger error message
+        if (foundTrack == null && (importedCourses == null || importedCourses.isEmpty())) {
+            return false
+        }
+
+        val trackCourses = importedCourses ?: foundTrack?.defaultCourses ?: emptyList()
+
+        _academicProfile.value = UserAcademicProfile(
+            degreeName = foundTrack?.name ?: trimmed,
+            isDoubleMajor = isDoubleMajor,
+            year = year,
+            semester = semester,
+            faculty = foundTrack?.faculty ?: "הפקולטה למדעי החברה"
+        )
+
+        viewModelScope.launch {
+            val now = System.currentTimeMillis()
+            val oneDay = 24 * 60 * 60 * 1000L
+
+            val newCourses = trackCourses.mapIndexed { index, ct ->
+                Course(
+                    id = (index + 1).toLong(),
+                    courseNumber = ct.courseNumber,
+                    name = ct.name,
+                    department = ct.department,
+                    lecturer = ct.lecturer,
+                    semester = semester,
+                    credits = ct.credits
+                )
+            }
+
+            var taskIdCounter = 1L
+            val newTasks = mutableListOf<Task>()
+            trackCourses.forEachIndexed { index, ct ->
+                val courseId = (index + 1).toLong()
+                ct.sampleTasks.forEach { tt ->
+                    newTasks.add(
+                        Task(
+                            id = taskIdCounter++,
+                            courseId = courseId,
+                            title = tt.title,
+                            description = tt.description,
+                            dueDate = now + (tt.daysFromNow * oneDay),
+                            isCompleted = false,
+                            estimatedMinutes = tt.estimatedMinutes,
+                            department = ct.department,
+                            priority = tt.priority
+                        )
+                    )
+                }
+            }
+
+            repository.replaceDegreeCurriculum(newCourses, newTasks)
+            SoundManager.playTaskCompletedSound(getApplication())
+        }
+
+        return true
     }
 
     fun addCourse(

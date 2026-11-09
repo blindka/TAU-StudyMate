@@ -1,0 +1,63 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+
+    <!-- Gradient circular glow badge behind hat -->
+    <path
+        android:pathData="M32,32m-30,0a30,30 0 1,1 60,0a30,30 0 1,1 -60,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:angle="135"
+                android:endColor="#001B3E"
+                android:startColor="#0D47A1"
+                android:type="linear" />
+        </aapt:attr>
+    </path>
+
+    <!-- Outer rim shine -->
+    <path
+        android:fillColor="#00000000"
+        android:pathData="M32,32m-29,0a29,29 0 1,1 58,0a29,29 0 1,1 -58,0"
+        android:strokeWidth="1.5"
+        android:strokeColor="#40FFFFFF" />
+
+    <!-- Cap Base / Crown under the mortarboard -->
+    <path
+        android:fillColor="#00B0FF"
+        android:pathData="M18,34v9c0,6.63 6.27,12 14,12s14,-5.37 14,-12v-9c-3.5,2.4 -8.5,3.8 -14,3.8s-10.5,-1.4 -14,-3.8z" />
+
+    <!-- Cap Crown depth shading -->
+    <path
+        android:fillColor="#1565C0"
+        android:pathData="M18,34v3c0,6.63 6.27,12 14,12s14,-5.37 14,-12v-3c-3.5,2.4 -8.5,3.8 -14,3.8s-10.5,-1.4 -14,-3.8z" />
+
+    <!-- Diamond Mortarboard Top -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M32,15L10,26l22,11 22,-11L32,15z" />
+
+    <!-- Top Highlight accent -->
+    <path
+        android:fillColor="#E3F2FD"
+        android:pathData="M32,17L14,26l18,9 18,-9L32,17z" />
+
+    <!-- Button on top -->
+    <path
+        android:fillColor="#FFD54F"
+        android:pathData="M32,24m-2.5,0a2.5,2.5 0 1,1 5,0a2.5,2.5 0 1,1 -5,0" />
+
+    <!-- Golden Tassel Band -->
+    <path
+        android:fillColor="#FFC107"
+        android:strokeWidth="1.8"
+        android:strokeColor="#FFA000"
+        android:pathData="M33,25 C37,28 43,32 44,36" />
+
+    <!-- Tassel Ribbon & Fringe -->
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M43,35h4l1.5,9l-3.5,-2l-3.5,2z" />
+</vector>

@@ -28,9 +28,18 @@ class StudyRepository(
 
     suspend fun insertCourse(course: Course): Long = courseDao.insertCourse(course)
 
+    suspend fun insertCourses(courses: List<Course>) = courseDao.insertCourses(courses)
+
     suspend fun updateCourse(course: Course) = courseDao.updateCourse(course)
 
     suspend fun deleteCourse(course: Course) = courseDao.deleteCourse(course)
+
+    suspend fun replaceDegreeCurriculum(courses: List<Course>, tasks: List<Task>) {
+        courseDao.deleteAllCourses()
+        taskDao.deleteAllTasks()
+        courseDao.insertCourses(courses)
+        taskDao.insertTasks(tasks)
+    }
 
     // Tasks
     val allTasks: Flow<List<Task>> = taskDao.getAllTasks()

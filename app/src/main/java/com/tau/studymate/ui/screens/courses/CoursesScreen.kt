@@ -16,10 +16,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.Image
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tau.studymate.R
 import com.tau.studymate.data.model.Course
 import com.tau.studymate.data.model.Department
+import com.tau.studymate.ui.components.AcademicProfileDialog
 import com.tau.studymate.ui.components.AddCourseDialog
 import com.tau.studymate.ui.components.DepartmentBadge
 import com.tau.studymate.ui.viewmodel.StudyViewModel
@@ -46,6 +51,9 @@ fun CoursesScreen(
         }
     }
 
+    val academicProfile by viewModel.academicProfile.collectAsState()
+    var showProfileDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         floatingActionButton = {
@@ -64,25 +72,79 @@ fun CoursesScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Search Bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                placeholder = { Text("חיפוש לפי מספר קורס או שם...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { searchQuery = "" }) {
-                            Icon(Icons.Default.Clear, contentDescription = "נקה")
-                        }
-                    }
-                },
+            // Search Bar & Degree Academic Cap Button
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
-                shape = RoundedCornerShape(16.dp),
-                singleLine = true
-            )
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("חיפוש לפי מספר קורס או שם...") },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Default.Clear, contentDescription = "נקה")
+                            }
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                    singleLine = true
+                )
+
+                // Degree Cap Quick Switcher Icon
+                IconButton(
+                    onClick = { showProfileDialog = true },
+                    modifier = Modifier
+                        .size(50.dp)
+                        .background(
+                            MaterialTheme.colorScheme.primaryContainer,
+                            RoundedCornerShape(16.dp)
+                        )
+                ) {
+                    Image(
+                        painter = painterResource(id = R.drawable.ic_academic_cap),
+                        contentDescription = "החלפת תואר ומערכת שעות",
+                        modifier = Modifier.size(34.dp)
+                    )
+                }
+            }
+
+            // Degree Header Banner pill
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .clickable { showProfileDialog = true }
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "תואר: ${academicProfile.degreeName} • ${academicProfile.year}",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "החלף תואר 🎓",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Department Filters
             LazyRow(
@@ -167,6 +229,23 @@ fun CoursesScreen(
                     credits = credits
                 )
                 showAddCourseDialog = false
+            }
+        )
+    }
+
+    if (showProfileDialog) {
+        AcademicProfileDialog(
+            currentProfile = academicProfile,
+            onDismiss = { showProfileDialog = false },
+            onSave = { degree, isDouble, year, semester, imported ->
+                val ok = viewModel.updateDegreeProgram(
+                    degreeName = degree,
+                    isDoubleMajor = isDouble,
+                    year = year,
+                    semester = semester,
+                    importedCourses = imported
+                )
+                ok
             }
         )
     }

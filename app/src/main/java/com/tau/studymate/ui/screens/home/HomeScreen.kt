@@ -16,10 +16,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tau.studymate.R
 import com.tau.studymate.data.model.Course
 import com.tau.studymate.data.model.Task
+import com.tau.studymate.data.model.UserAcademicProfile
+import com.tau.studymate.ui.components.AcademicProfileDialog
 import com.tau.studymate.ui.components.DepartmentBadge
 import com.tau.studymate.ui.theme.LaborGreen
 import com.tau.studymate.ui.theme.TauBluePrimary
@@ -39,6 +44,9 @@ fun HomeScreen(
     val tasks by viewModel.filteredTasks.collectAsState()
     val courses by viewModel.courses.collectAsState()
     val missingMaterials by viewModel.missingMaterials.collectAsState()
+    val academicProfile by viewModel.academicProfile.collectAsState()
+
+    var showProfileDialog by remember { mutableStateOf(false) }
 
     val pendingTasks = remember(tasks) { tasks.filter { !it.isCompleted } }
     val courseMap = remember(courses) { courses.associateBy { it.id } }
@@ -52,12 +60,14 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(top = 16.dp, bottom = 32.dp)
     ) {
-        // Top Header Banner
+        // Top Header Banner with Academic Profile switch
         item {
             HeaderCard(
+                academicProfile = academicProfile,
                 streakDays = 4,
                 pendingCount = pendingTasks.size,
-                onStartStudy = onNavigateToHabits
+                onStartStudy = onNavigateToHabits,
+                onOpenProfile = { showProfileDialog = true }
             )
         }
 
@@ -238,7 +248,7 @@ fun HomeScreen(
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                             Text(
-                                text = "${courses.size} קורסים פעילים (תקשורת + עבודה)",
+                                text = "${courses.size} קורסים פעילים (${academicProfile.degreeName})",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -254,13 +264,32 @@ fun HomeScreen(
             }
         }
     }
+
+    if (showProfileDialog) {
+        AcademicProfileDialog(
+            currentProfile = academicProfile,
+            onDismiss = { showProfileDialog = false },
+            onSave = { degree, isDouble, year, semester, imported ->
+                val ok = viewModel.updateDegreeProgram(
+                    degreeName = degree,
+                    isDoubleMajor = isDouble,
+                    year = year,
+                    semester = semester,
+                    importedCourses = imported
+                )
+                ok
+            }
+        )
+    }
 }
 
 @Composable
 private fun HeaderCard(
+    academicProfile: UserAcademicProfile,
     streakDays: Int,
     pendingCount: Int,
-    onStartStudy: () -> Unit
+    onStartStudy: () -> Unit,
+    onOpenProfile: () -> Unit
 ) {
     Card(
         shape = RoundedCornerShape(24.dp),
@@ -284,20 +313,60 @@ private fun HeaderCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
-                    Text(
-                        text = "אוניברסיטת תל אביב",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.8f)
-                    )
-                    Text(
-                        text = "תקשורת ולימודי עבודה",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onOpenProfile() }
+                ) {
+                    // Modern academic cap icon with subtle ring
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .background(Color.White.copy(alpha = 0.18f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.ic_academic_cap),
+                            contentDescription = "החלף תואר ומסלול",
+                            modifier = Modifier.size(38.dp)
                         )
-                    )
+                    }
+
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    Column {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = "אוניברסיטת תל אביב • ${academicProfile.year}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.8f)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "ערוך תואר",
+                                tint = Color.White.copy(alpha = 0.7f),
+                                modifier = Modifier.size(12.dp)
+                            )
+                        }
+                        Text(
+                            text = academicProfile.degreeName,
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            ),
+                            maxLines = 1
+                        )
+                        Text(
+                            text = "${if (academicProfile.isDoubleMajor) "דו-חוגי" else "חד-חוגי"} • ${academicProfile.semester}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF90CAF9)
+                        )
+                    }
                 }
+
+                Spacer(modifier = Modifier.width(8.dp))
 
                 Surface(
                     shape = RoundedCornerShape(14.dp),
