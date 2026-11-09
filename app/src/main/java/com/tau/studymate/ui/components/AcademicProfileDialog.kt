@@ -34,6 +34,7 @@ import com.tau.studymate.data.model.Priority
 import com.tau.studymate.data.model.UserAcademicProfile
 import com.tau.studymate.ui.theme.LaborGreen
 import com.tau.studymate.ui.theme.UrgentRed
+import com.tau.studymate.util.ScheduleParser
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,19 +72,12 @@ fun AcademicProfileDialog(
             try {
                 val inputStream = context.contentResolver.openInputStream(uri)
                 val content = inputStream?.bufferedReader()?.use { it.readText() } ?: ""
-                val courses = parseScheduleContent(content, degreeName)
+                val courses = ScheduleParser.parseScheduleContent(content, selectedSemester, degreeName)
                 parsedScheduleCourses = courses
                 errorMessage = null
             } catch (_: Exception) {
                 // Fallback mock schedule parse
-                parsedScheduleCourses = listOf(
-                    CourseTemplate("1001.0001", "קורס ממערכת שעות 1", Department.GENERAL, "מרצה מועדכן", selectedSemester, 3.0f,
-                        listOf(TaskTemplate("הגשת תרגיל ראשון", "תרגיל מערכת שעות", 5, Priority.MEDIUM, 120))
-                    ),
-                    CourseTemplate("1001.0002", "קורס ממערכת שעות 2", Department.GENERAL, "מרצה מועדכן", selectedSemester, 3.0f,
-                        listOf(TaskTemplate("קריאת סילבוס ומאמרים", "חומרי מערכת שעות", 7, Priority.LOW, 90))
-                    )
-                )
+                parsedScheduleCourses = ScheduleParser.parseScheduleContent("", selectedSemester, degreeName)
             }
         }
     }
@@ -237,17 +231,23 @@ fun AcademicProfileDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    listOf("שנה א'", "שנה ב'", "שנה ג'", "שנה ד'", "מוסמך").forEach { y ->
+                    listOf("שנה א'", "שנה ב'", "שנה ג'", "שנה ד'").forEach { y ->
                         FilterChip(
                             selected = selectedYear == y,
                             onClick = { selectedYear = y },
+                            modifier = Modifier.weight(1f),
                             label = {
-                                Text(
-                                    text = y,
-                                    fontSize = 11.sp,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
+                                Box(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = y,
+                                        fontSize = 11.sp,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
                             }
                         )
                     }
@@ -269,13 +269,19 @@ fun AcademicProfileDialog(
                         FilterChip(
                             selected = selectedSemester == s,
                             onClick = { selectedSemester = s },
+                            modifier = Modifier.weight(1f),
                             label = {
-                                Text(
-                                    text = s,
-                                    fontSize = 12.sp,
-                                    maxLines = 1,
-                                    softWrap = false
-                                )
+                                Box(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = s,
+                                        fontSize = 11.sp,
+                                        maxLines = 1,
+                                        softWrap = false
+                                    )
+                                }
                             }
                         )
                     }
@@ -428,52 +434,4 @@ fun AcademicProfileDialog(
             }
         }
     }
-}
-
-/**
- * Parses user schedule file text into CourseTemplates
- */
-private fun parseScheduleContent(content: String, fallbackDegree: String): List<CourseTemplate> {
-    val lines = content.lines().filter { it.isNotBlank() }
-    val courses = mutableListOf<CourseTemplate>()
-
-    var currentNumber = ""
-    var currentName = ""
-
-    lines.forEach { line ->
-        val trimmed = line.trim()
-        val numMatch = Regex("\\b\\d{4}[.-]\\d{4}\\b").find(trimmed)
-        if (numMatch != null) {
-            currentNumber = numMatch.value
-            currentName = trimmed.replace(numMatch.value, "").trim()
-            if (currentName.isBlank()) currentName = "קורס $currentNumber"
-            courses.add(
-                CourseTemplate(
-                    courseNumber = currentNumber,
-                    name = currentName,
-                    department = Department.GENERAL,
-                    lecturer = "סגל הקורס",
-                    semester = "סמסטר א'",
-                    credits = 3.0f,
-                    sampleTasks = listOf(
-                        TaskTemplate("מטלה ראשונה: הגשה ממערכת השעות", "מטלה שחולצה מהקובץ", 6, Priority.MEDIUM, 120)
-                    )
-                )
-            )
-        }
-    }
-
-    if (courses.isEmpty()) {
-        // Fallback default course if no course numbers matched
-        return listOf(
-            CourseTemplate("1000.0101", "$fallbackDegree - קורס מבוא", Department.GENERAL, "פרופ' מוביל", "סמסטר א'", 4.0f,
-                listOf(TaskTemplate("קריאת חומר ראשוני", "עמודים 1-30", 4, Priority.HIGH, 90))
-            ),
-            CourseTemplate("1000.0102", "$fallbackDegree - סדנה מתקדמת", Department.GENERAL, "ד\"ר מנחה", "סמסטר א'", 3.0f,
-                listOf(TaskTemplate("הגשת רפרט ביניים", "עבודה ראשונית", 8, Priority.MEDIUM, 150))
-            )
-        )
-    }
-
-    return courses
 }

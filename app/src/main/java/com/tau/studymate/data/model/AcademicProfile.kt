@@ -29,7 +29,7 @@ data class TaskTemplate(
 data class UserAcademicProfile(
     val degreeName: String = "תקשורת ולימודי עבודה",
     val isDoubleMajor: Boolean = true,
-    val year: String = "שנה ב'",
+    val year: String = "שנה א'",
     val semester: String = "סמסטר א'",
     val faculty: String = "מדעי החברה"
 )

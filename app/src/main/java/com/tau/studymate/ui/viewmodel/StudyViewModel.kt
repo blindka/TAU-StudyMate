@@ -33,6 +33,28 @@ class StudyViewModel(
     private val _academicProfile = MutableStateFlow(UserAcademicProfile())
     val academicProfile: StateFlow<UserAcademicProfile> = _academicProfile.asStateFlow()
 
+    init {
+        loadSavedProfile()
+    }
+
+    private fun loadSavedProfile() {
+        val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+        val savedDegree = prefs.getString("profile_degree_name", null)
+        if (savedDegree != null) {
+            val isDouble = prefs.getBoolean("profile_is_double_major", true)
+            val year = prefs.getString("profile_year", "שנה א'") ?: "שנה א'"
+            val semester = prefs.getString("profile_semester", "סמסטר א'") ?: "סמסטר א'"
+            val faculty = prefs.getString("profile_faculty", "הפקולטה למדעי החברה") ?: "הפקולטה למדעי החברה"
+            _academicProfile.value = UserAcademicProfile(
+                degreeName = savedDegree,
+                isDoubleMajor = isDouble,
+                year = year,
+                semester = semester,
+                faculty = faculty
+            )
+        }
+    }
+
     // Department Filter
     private val _selectedDepartment = MutableStateFlow<Department?>(null)
     val selectedDepartment: StateFlow<Department?> = _selectedDepartment.asStateFlow()
@@ -217,13 +239,24 @@ class StudyViewModel(
 
         val trackCourses = importedCourses ?: foundTrack?.defaultCourses ?: emptyList()
 
-        _academicProfile.value = UserAcademicProfile(
+        val newProfile = UserAcademicProfile(
             degreeName = foundTrack?.name ?: trimmed,
             isDoubleMajor = isDoubleMajor,
             year = year,
             semester = semester,
             faculty = foundTrack?.faculty ?: "הפקולטה למדעי החברה"
         )
+        _academicProfile.value = newProfile
+
+        val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString("profile_degree_name", newProfile.degreeName)
+            .putBoolean("profile_is_double_major", newProfile.isDoubleMajor)
+            .putString("profile_year", newProfile.year)
+            .putString("profile_semester", newProfile.semester)
+            .putString("profile_faculty", newProfile.faculty)
+            .putString("last_seen_semester", newProfile.semester)
+            .apply()
 
         viewModelScope.launch {
             val now = System.currentTimeMillis()
@@ -266,6 +299,67 @@ class StudyViewModel(
         }
 
         return true
+    }
+
+    /**
+     * Updates the academic profile for a semester transition without resetting the chosen degree.
+     * Optionally imports new courses and tasks from a schedule file.
+     */
+    fun transitionSemester(
+        newSemester: String,
+        importedCourses: List<CourseTemplate>? = null
+    ) {
+        val current = _academicProfile.value
+        val updatedProfile = current.copy(semester = newSemester)
+        _academicProfile.value = updatedProfile
+
+        val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString("profile_semester", newSemester)
+            .putString("last_seen_semester", newSemester)
+            .apply()
+
+        if (!importedCourses.isNullOrEmpty()) {
+            viewModelScope.launch {
+                val now = System.currentTimeMillis()
+                val oneDay = 24 * 60 * 60 * 1000L
+
+                val newCourses = importedCourses.mapIndexed { index, ct ->
+                    Course(
+                        id = (index + 1).toLong(),
+                        courseNumber = ct.courseNumber,
+                        name = ct.name,
+                        department = ct.department,
+                        lecturer = ct.lecturer,
+                        semester = newSemester,
+                        credits = ct.credits
+                    )
+                }
+
+                var taskIdCounter = 1L
+                val newTasks = mutableListOf<Task>()
+                importedCourses.forEachIndexed { index, ct ->
+                    val courseId = (index + 1).toLong()
+                    ct.sampleTasks.forEach { tt ->
+                        newTasks.add(
+                            Task(
+                                id = taskIdCounter++,
+                                courseId = courseId,
+                                title = tt.title,
+                                description = tt.description,
+                                dueDate = now + (tt.daysFromNow * oneDay),
+                                isCompleted = false,
+                                estimatedMinutes = tt.estimatedMinutes,
+                                department = ct.department,
+                                priority = tt.priority
+                            )
+                        )
+                    }
+                }
+
+                repository.replaceDegreeCurriculum(newCourses, newTasks)
+            }
+        }
     }
 
     fun addCourse(

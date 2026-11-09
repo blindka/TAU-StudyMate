@@ -116,4 +116,26 @@ object TauAcademicCalendar {
             isExamPeriod = false
         )
     }
+
+    /**
+     * מחזיר את שם הסמסטר הנוכחי הרשמי לפי לוח השנה האקדמי של אוניברסיטת תל אביב
+     */
+    fun getCurrentSemesterName(date: LocalDate = LocalDate.now()): String {
+        val year = date.year
+        val month = date.monthValue
+        val day = date.dayOfMonth
+
+        return when {
+            // סמסטר ב' תשפ"ז: מ-9 במרץ 2027 עד 17 ביולי 2027
+            (year == 2027 && ((month == 3 && day >= 9) || (month in 4..6) || (month == 7 && day <= 17))) -> "סמסטר ב'"
+            // סמסטר קיץ תשפ"ז: מ-18 ביולי 2027 עד 15 באוקטובר 2027
+            (year == 2027 && ((month == 7 && day >= 18) || (month in 8..9) || (month == 10 && day <= 15))) -> "סמסטר קיץ"
+            // סמסטר ב' כללי
+            (month in 4..6 || (month == 3 && day >= 10) || (month == 7 && day <= 15)) -> "סמסטר ב'"
+            // סמסטר קיץ כללי
+            (month in 8..9 || (month == 7 && day > 15) || (month == 10 && day < 15)) -> "סמסטר קיץ"
+            // סמסטר א'
+            else -> "סמסטר א'"
+        }
+    }
 }

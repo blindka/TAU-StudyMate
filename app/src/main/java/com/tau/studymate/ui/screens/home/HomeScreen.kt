@@ -27,6 +27,7 @@ import com.tau.studymate.data.model.Task
 import com.tau.studymate.data.model.UserAcademicProfile
 import com.tau.studymate.ui.components.AcademicProfileDialog
 import com.tau.studymate.ui.components.DepartmentBadge
+import com.tau.studymate.ui.components.SemesterTransitionDialog
 import com.tau.studymate.ui.theme.LaborGreen
 import com.tau.studymate.ui.theme.TauBluePrimary
 import com.tau.studymate.ui.theme.UrgentRed
@@ -51,12 +52,23 @@ fun HomeScreen(
     val context = LocalContext.current
     var showProfileDialog by remember { mutableStateOf(false) }
 
-    // Automatic onboarding: show degree selection dialog on first app open
-    LaunchedEffect(Unit) {
+    val currentActualSemester = remember { TauAcademicCalendar.getCurrentSemesterName() }
+    var showSemesterTransitionDialog by remember { mutableStateOf(false) }
+
+    // Automatic onboarding & semester transition checks
+    LaunchedEffect(academicProfile.semester) {
         val prefs = context.getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
         val hasCompletedOnboarding = prefs.getBoolean("has_completed_onboarding", false)
         if (!hasCompletedOnboarding) {
             showProfileDialog = true
+        } else {
+            val lastSeenSemester = prefs.getString("last_seen_semester", null)
+            if (lastSeenSemester != null && lastSeenSemester != currentActualSemester) {
+                // A new semester has started based on TAU academic calendar
+                showSemesterTransitionDialog = true
+            } else if (lastSeenSemester == null) {
+                prefs.edit().putString("last_seen_semester", currentActualSemester).apply()
+            }
         }
     }
 
@@ -198,7 +210,9 @@ fun HomeScreen(
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = containerColor,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showSemesterTransitionDialog = true }
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
@@ -215,7 +229,14 @@ fun HomeScreen(
                             text = academicStatus.displayText,
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
-                            color = textColor
+                            color = textColor,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            imageVector = Icons.Default.SwapHoriz,
+                            contentDescription = "מעבר סמסטר",
+                            tint = iconTint.copy(alpha = 0.7f),
+                            modifier = Modifier.size(14.dp)
                         )
                     }
                 }
@@ -346,6 +367,20 @@ fun HomeScreen(
                     prefs.edit().putBoolean("has_completed_onboarding", true).apply()
                 }
                 ok
+            }
+        )
+    }
+
+    if (showSemesterTransitionDialog) {
+        SemesterTransitionDialog(
+            currentProfile = academicProfile,
+            newSemester = currentActualSemester,
+            onDismiss = { showSemesterTransitionDialog = false },
+            onConfirmTransition = { importedCourses ->
+                viewModel.transitionSemester(currentActualSemester, importedCourses)
+                val prefs = context.getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+                prefs.edit().putString("last_seen_semester", currentActualSemester).apply()
+                showSemesterTransitionDialog = false
             }
         )
     }
