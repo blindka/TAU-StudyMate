@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.Image
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,7 +47,17 @@ fun HomeScreen(
     val missingMaterials by viewModel.missingMaterials.collectAsState()
     val academicProfile by viewModel.academicProfile.collectAsState()
 
+    val context = LocalContext.current
     var showProfileDialog by remember { mutableStateOf(false) }
+
+    // Automatic onboarding: show degree selection dialog on first app open
+    LaunchedEffect(Unit) {
+        val prefs = context.getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+        val hasCompletedOnboarding = prefs.getBoolean("has_completed_onboarding", false)
+        if (!hasCompletedOnboarding) {
+            showProfileDialog = true
+        }
+    }
 
     val pendingTasks = remember(tasks) { tasks.filter { !it.isCompleted } }
     val courseMap = remember(courses) { courses.associateBy { it.id } }
@@ -157,19 +168,49 @@ fun HomeScreen(
             }
         }
 
-        // Section: "מטלות קרובות להגשה"
+        // Section: "מטלות קרובות להגשה" with TAU Academic Calendar Banner
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "מטלות קרובות להגשה",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                )
-                TextButton(onClick = onNavigateToTasks) {
-                    Text("לכל המטלות (${tasks.size})")
+            Column(modifier = Modifier.fillMaxWidth()) {
+                // TAU Official Academic Calendar Status Banner
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.45f),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarToday,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(15.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "סמסטר א' תשפ\"ז • 18/10/2026 – 18/01/2027 (שבוע 4)",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "מטלות קרובות להגשה",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    )
+                    TextButton(onClick = onNavigateToTasks) {
+                        Text("לכל המטלות (${tasks.size})")
+                    }
                 }
             }
         }
@@ -277,6 +318,10 @@ fun HomeScreen(
                     semester = semester,
                     importedCourses = imported
                 )
+                if (ok) {
+                    val prefs = context.getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+                    prefs.edit().putBoolean("has_completed_onboarding", true).apply()
+                }
                 ok
             }
         )
