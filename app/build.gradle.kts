@@ -1,4 +1,4 @@
-val appVersion = "0.0.3"
+val appVersion = "0.1.0"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -86,5 +86,6 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
 
     debugImplementation(libs.androidx.ui.tooling)
+    implementation("com.google.mlkit:genai-prompt:1.0.0-beta5")
     testImplementation("junit:junit:4.13.2")
 }

@@ -45,6 +45,10 @@ class MainActivity : ComponentActivity() {
         ViewModelFactory(application, (application as StudyMateApp).repository)
     }
 
+    private val readingsViewModel: com.tau.studymate.ui.viewmodel.ReadingsViewModel by viewModels {
+        ViewModelFactory(application, (application as StudyMateApp).repository)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -52,7 +56,7 @@ class MainActivity : ComponentActivity() {
                 // Ensure RTL layout for full Hebrew support
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                     NotificationPermissionHandler()
-                    MainAppContent(viewModel = viewModel)
+                    MainAppContent(viewModel = viewModel, readingsViewModel = readingsViewModel)
                 }
             }
         }
@@ -80,8 +84,13 @@ private fun NotificationPermissionHandler() {
 }
 
 @Composable
-fun MainAppContent(viewModel: StudyViewModel) {
+fun MainAppContent(viewModel: StudyViewModel, readingsViewModel: com.tau.studymate.ui.viewmodel.ReadingsViewModel) {
     var currentRoute by remember { mutableStateOf(NavScreen.Home.route) }
+    var openReadingId by remember { mutableStateOf<Long?>(null) }
+    openReadingId?.let { id ->
+        com.tau.studymate.ui.screens.readings.ReaderScreen(id, readingsViewModel, onBack = { openReadingId = null })
+        return
+    }
     var selectedCourseForDetail by remember { mutableStateOf<Course?>(null) }
 
     val celebrationReward by viewModel.celebrationReward.collectAsState()
@@ -127,6 +136,11 @@ fun MainAppContent(viewModel: StudyViewModel) {
                     NavScreen.Courses.route -> CoursesScreen(
                         viewModel = viewModel,
                         onCourseClick = { course -> selectedCourseForDetail = course },
+                        modifier = Modifier.padding(paddingValues)
+                    )
+                    NavScreen.Readings.route -> com.tau.studymate.ui.screens.readings.ReadingsScreen(
+                        viewModel = readingsViewModel,
+                        onOpen = { openReadingId = it.id },
                         modifier = Modifier.padding(paddingValues)
                     )
                     NavScreen.Habits.route -> HabitsAnalyticsScreen(

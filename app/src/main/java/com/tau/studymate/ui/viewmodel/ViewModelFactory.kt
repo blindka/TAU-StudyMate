@@ -14,6 +14,10 @@ class ViewModelFactory(
         if (modelClass.isAssignableFrom(StudyViewModel::class.java)) {
             return StudyViewModel(application, repository) as T
         }
+        if (modelClass.isAssignableFrom(ReadingsViewModel::class.java)) {
+            val app = application as com.tau.studymate.StudyMateApp
+            return ReadingsViewModel(application, app.database.readingDao(), repository.allCourses) as T
+        }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }

@@ -46,7 +46,7 @@ val PastelTealBorder = Color(0xFF99F6E4)        // Teal border
 val PastelTealDark = Color(0xFF0F766E)          // Deep teal text
 
 // Surface and Base Canvas
-val SurfaceLight = Color(0xFFF8FAFC)            // Crisp clean light background
+val SurfaceLight = Color(0xFFF7F5FF)            // Soft lavender-white app background (Figma: color/bg)
 val SurfaceDark = Color(0xFF0F172A)
 val CardBackgroundLight = Color(0xFFFFFFFF)     // Clean white cards
 val CardBackgroundDark = Color(0xFF1E293B)

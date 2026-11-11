@@ -1,0 +1,101 @@
+package com.tau.studymate.ui.viewmodel
+
+import android.app.Application
+import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.tau.studymate.data.local.ReadingDao
+import com.tau.studymate.data.model.Course
+import com.tau.studymate.data.model.Reading
+import com.tau.studymate.util.PdfStore
+import com.tau.studymate.util.Summarizer
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import java.io.File
+import java.time.LocalDate
+
+/** Israeli study weeks start on Sunday. */
+fun weekStartOf(date: LocalDate): LocalDate = date.minusDays((date.dayOfWeek.value % 7).toLong())
+
+@OptIn(ExperimentalCoroutinesApi::class)
+class ReadingsViewModel(
+    application: Application,
+    private val dao: ReadingDao,
+    coursesFlow: Flow<List<Course>>
+) : AndroidViewModel(application) {
+
+    val courses: StateFlow<List<Course>> = coursesFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _week = MutableStateFlow(weekStartOf(LocalDate.now()))
+    val week: StateFlow<LocalDate> = _week.asStateFlow()
+
+    private val _courseFilter = MutableStateFlow<Long?>(null)
+    val courseFilter: StateFlow<Long?> = _courseFilter.asStateFlow()
+
+    private val weekReadings = _week.flatMapLatest { dao.getForWeek(it.toEpochDay()) }
+
+    /** All readings of the selected week; used for the progress line regardless of the filter. */
+    val allThisWeek: StateFlow<List<Reading>> = weekReadings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val readings: StateFlow<List<Reading>> = combine(weekReadings, _courseFilter) { list, cid ->
+        if (cid == null) list else list.filter { it.courseId == cid }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _message = MutableStateFlow<String?>(null)
+    val message: StateFlow<String?> = _message.asStateFlow()
+    fun clearMessage() { _message.value = null }
+
+    fun shiftWeek(delta: Long) { _week.value = _week.value.plusWeeks(delta) }
+    fun setCourseFilter(id: Long?) { _courseFilter.value = id }
+
+    fun import(uris: List<Uri>, courseId: Long?, week: LocalDate) {
+        viewModelScope.launch {
+            var ok = 0
+            for (uri in uris) {
+                try {
+                    val f = PdfStore.import(getApplication(), uri)
+                    dao.insert(Reading(courseId = courseId, title = f.title, filePath = f.path, pageCount = f.pageCount, weekStartEpochDay = week.toEpochDay()))
+                    ok++
+                } catch (e: Exception) {
+                    _message.value = e.message ?: "שגיאה בייבוא קובץ"
+                }
+            }
+            if (ok > 0) _message.value = if (ok == 1) "המסמך נוסף" else "נוספו $ok מסמכים"
+            _week.value = week
+        }
+    }
+
+    fun toggleRead(r: Reading) = viewModelScope.launch { dao.update(r.copy(isRead = !r.isRead)) }
+    fun markRead(r: Reading) = viewModelScope.launch { dao.update(r.copy(isRead = true)) }
+
+    fun delete(r: Reading) = viewModelScope.launch {
+        dao.delete(r)
+        File(r.filePath).delete()
+    }
+
+    fun observe(id: Long): Flow<Reading?> = dao.observe(id)
+
+    // --- Summary (Gemini Nano, on device) ---
+    private val _summaryStatus = MutableStateFlow<String?>(null)
+    val summaryStatus: StateFlow<String?> = _summaryStatus.asStateFlow()
+
+    fun summarize(r: Reading) {
+        if (_summaryStatus.value != null) return
+        viewModelScope.launch {
+            _summaryStatus.value = "קורא את המסמך…"
+            try {
+                val text = PdfStore.extractText(r.filePath, Summarizer.MAX_INPUT_CHARS)
+                when {
+                    text == null -> _message.value = "לא ניתן לחלץ טקסט מהקובץ (נדרש Android 15 ומעלה, וקובץ שאינו סרוק)."
+                    else -> when (val res = Summarizer.summarize(text) { _summaryStatus.value = it }) {
+                        is Summarizer.Result.Ok -> dao.update(r.copy(summary = res.text))
+                        is Summarizer.Result.Error -> _message.value = res.message
+                    }
+                }
+            } finally {
+                _summaryStatus.value = null
+            }
+        }
+    }
+}

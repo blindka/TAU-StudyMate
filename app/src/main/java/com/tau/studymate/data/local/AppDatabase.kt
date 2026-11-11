@@ -10,6 +10,7 @@ import com.tau.studymate.data.model.Course
 import com.tau.studymate.data.model.Department
 import com.tau.studymate.data.model.MaterialType
 import com.tau.studymate.data.model.Priority
+import com.tau.studymate.data.model.Reading
 import com.tau.studymate.data.model.StudyMaterial
 import com.tau.studymate.data.model.StudySession
 import com.tau.studymate.data.model.Task
@@ -18,8 +19,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Database(
-    entities = [Course::class, Task::class, StudyMaterial::class, StudySession::class],
-    version = 2,
+    entities = [Course::class, Task::class, StudyMaterial::class, StudySession::class, Reading::class],
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -29,11 +30,20 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
     abstract fun studyMaterialDao(): StudyMaterialDao
     abstract fun studySessionDao(): StudySessionDao
+    abstract fun readingDao(): ReadingDao
 
     companion object {
         private val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE tasks ADD COLUMN reminderEnabled INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
+        private val MIGRATION_2_3 = object : androidx.room.migration.Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `readings` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `courseId` INTEGER, `title` TEXT NOT NULL, `filePath` TEXT NOT NULL, `pageCount` INTEGER NOT NULL, `weekStartEpochDay` INTEGER NOT NULL, `isRead` INTEGER NOT NULL, `summary` TEXT, `addedAt` INTEGER NOT NULL, FOREIGN KEY(`courseId`) REFERENCES `courses`(`id`) ON UPDATE NO ACTION ON DELETE SET NULL )")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_readings_courseId` ON `readings` (`courseId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_readings_weekStartEpochDay` ON `readings` (`weekStartEpochDay`)")
             }
         }
 
@@ -48,7 +58,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "tau_study_mate_db"
                 )
                     .addCallback(AppDatabaseCallback(scope))
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                 INSTANCE = instance
                 instance
