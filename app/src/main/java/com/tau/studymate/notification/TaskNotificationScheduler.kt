@@ -11,7 +11,7 @@ import com.tau.studymate.receiver.TaskAlarmReceiver
 object TaskNotificationScheduler {
 
     fun scheduleTask(context: Context, task: Task, courseName: String? = null) {
-        if (task.isCompleted) return
+        if (task.isCompleted || !task.reminderEnabled) return
 
         val now = System.currentTimeMillis()
         // If due date is in the future, schedule for due date (or 9:00 AM on the due date)

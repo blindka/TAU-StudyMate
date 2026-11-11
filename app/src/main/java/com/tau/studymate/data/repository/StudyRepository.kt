@@ -5,11 +5,13 @@ import com.tau.studymate.data.local.StudyMaterialDao
 import com.tau.studymate.data.local.StudySessionDao
 import com.tau.studymate.data.local.TaskDao
 import com.tau.studymate.data.model.*
+import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import java.text.SimpleDateFormat
 import java.util.*
 
 class StudyRepository(
+    private val db: androidx.room.RoomDatabase,
     private val courseDao: CourseDao,
     private val taskDao: TaskDao,
     private val studyMaterialDao: StudyMaterialDao,
@@ -34,11 +36,14 @@ class StudyRepository(
 
     suspend fun deleteCourse(course: Course) = courseDao.deleteCourse(course)
 
-    suspend fun replaceDegreeCurriculum(courses: List<Course>, tasks: List<Task>) {
+    /** Replaces all courses and tasks atomically. Returns the ids of the removed tasks so their alarms can be cancelled. */
+    suspend fun replaceDegreeCurriculum(courses: List<Course>, tasks: List<Task>): List<Long> = db.withTransaction {
+        val oldIds = taskDao.getAllTaskIds()
         courseDao.deleteAllCourses()
         taskDao.deleteAllTasks()
         courseDao.insertCourses(courses)
         taskDao.insertTasks(tasks)
+        oldIds
     }
 
     // Tasks
@@ -132,7 +137,6 @@ class StudyRepository(
 
         val sb = StringBuilder()
         sb.append("📋 דוח משימות ולימודים - אוניברסיטת תל אביב\n")
-        sb.append("תקשורת ולימודי עבודה\n")
         sb.append("נוצר בתאריך: ${dateFormat.format(Date())}\n")
         sb.append("═══════════════════════════════\n\n")
 

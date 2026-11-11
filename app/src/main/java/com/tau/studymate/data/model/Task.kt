@@ -29,5 +29,7 @@ data class Task(
     val estimatedMinutes: Int = 60, // Estimated time to complete
     val actualMinutes: Int = 0,     // Actual time tracked
     val department: Department = Department.GENERAL,
-    val priority: Priority = Priority.MEDIUM
+    val priority: Priority = Priority.MEDIUM,
+    @androidx.room.ColumnInfo(defaultValue = "1")
+    val reminderEnabled: Boolean = true
 )

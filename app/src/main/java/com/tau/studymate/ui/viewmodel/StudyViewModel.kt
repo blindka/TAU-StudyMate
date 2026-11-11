@@ -159,6 +159,11 @@ class StudyViewModel(
     val studySessions: StateFlow<List<StudySession>> = repository.allSessions
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Consecutive days (ending today or yesterday) with a completed task or a study session
+    val streakDays: StateFlow<Int> = combine(repository.allTasks, repository.allSessions) { tasks, sessions ->
+        computeStreak(tasks.mapNotNull { it.completedAt } + sessions.map { it.timestamp })
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
     // Reward / Celebration Event
     private val _celebrationReward = MutableStateFlow<CelebrationReward?>(null)
     val celebrationReward: StateFlow<CelebrationReward?> = _celebrationReward.asStateFlow()
@@ -260,7 +265,8 @@ class StudyViewModel(
                 courseId = courseId,
                 department = department,
                 priority = priority,
-                estimatedMinutes = estimatedMinutes
+                estimatedMinutes = estimatedMinutes,
+                reminderEnabled = enableReminder
             )
             val insertedId = repository.insertTask(task)
             if (enableReminder) {
@@ -354,6 +360,7 @@ class StudyViewModel(
             }
 
             repository.replaceDegreeCurriculum(newCourses, newTasks)
+                .forEach { TaskNotificationScheduler.cancelReminder(getApplication(), it) }
         }
 
         return true
@@ -416,6 +423,7 @@ class StudyViewModel(
                 }
 
                 repository.replaceDegreeCurriculum(newCourses, newTasks)
+                .forEach { TaskNotificationScheduler.cancelReminder(getApplication(), it) }
             }
         }
     }
@@ -573,7 +581,7 @@ class StudyViewModel(
 
     fun getExportText(): String {
         return repository.generateExportSummary(
-            tasks = filteredTasks.value.ifEmpty { courses.value.let { emptyList() } },
+            tasks = filteredTasks.value,
             courses = courses.value
         )
     }
@@ -582,9 +590,13 @@ class StudyViewModel(
         viewModelScope.launch {
             val result = com.tau.studymate.util.MoodleSyncService.fetchAndSyncMoodle(feedUrl, courses.value)
             if (result.success && result.tasks.isNotEmpty()) {
-                result.tasks.forEach { task ->
-                    repository.insertTask(task)
-                }
+                val existing = repository.allTasks.first().map { it.title to it.dueDate }.toSet()
+                result.tasks.filter { (it.title to it.dueDate) !in existing }
+                    .forEach { task ->
+                        val id = repository.insertTask(task)
+                        val courseName = task.courseId?.let { cid -> courses.value.find { it.id == cid }?.name }
+                        TaskNotificationScheduler.scheduleTask(getApplication(), task.copy(id = id), courseName)
+                    }
                 val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
                 prefs.edit().putString("moodle_feed_url", feedUrl).apply()
             }
@@ -597,7 +609,17 @@ class StudyViewModel(
         return prefs.getString("moodle_feed_url", "") ?: ""
     }
 
-    private fun calculateStreakDays(): Int {
-        return 4
-    }
+    private suspend fun calculateStreakDays(): Int =
+        computeStreak(repository.allTasks.first().mapNotNull { it.completedAt } + repository.allSessions.first().map { it.timestamp })
+}
+
+/** Days in a row with activity, counting back from today (or yesterday, so the streak survives until tonight). */
+internal fun computeStreak(timestamps: List<Long>, now: Long = System.currentTimeMillis()): Int {
+    val zone = java.time.ZoneId.systemDefault()
+    val days = timestamps.map { java.time.Instant.ofEpochMilli(it).atZone(zone).toLocalDate() }.toSet()
+    var day = java.time.Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
+    if (day !in days) day = day.minusDays(1)
+    var count = 0
+    while (day in days) { count++; day = day.minusDays(1) }
+    return count
 }

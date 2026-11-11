@@ -95,7 +95,7 @@ fun HomeScreen(
             HeaderCard(
                 academicProfile = academicProfile,
                 hasSchedule = scheduleBitmap != null || scheduleFileName != null,
-                streakDays = 4,
+                streakDays = viewModel.streakDays.collectAsState().value,
                 pendingCount = pendingTasks.size,
                 onStartStudy = onNavigateToHabits,
                 onOpenProfile = { showProfileDialog = true },

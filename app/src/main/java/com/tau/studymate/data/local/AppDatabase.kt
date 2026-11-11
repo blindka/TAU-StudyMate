@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 
 @Database(
     entities = [Course::class, Task::class, StudyMaterial::class, StudySession::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -31,6 +31,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun studySessionDao(): StudySessionDao
 
     companion object {
+        private val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN reminderEnabled INTEGER NOT NULL DEFAULT 1")
+            }
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -42,7 +48,7 @@ abstract class AppDatabase : RoomDatabase() {
                     "tau_study_mate_db"
                 )
                     .addCallback(AppDatabaseCallback(scope))
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_1_2)
                     .build()
                 INSTANCE = instance
                 instance

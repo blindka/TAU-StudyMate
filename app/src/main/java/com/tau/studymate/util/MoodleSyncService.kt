@@ -89,7 +89,9 @@ object MoodleSyncService {
      */
     fun parseIcsContent(content: String, existingCourses: List<Course>): List<Task> {
         val tasks = mutableListOf<Task>()
-        val events = content.split("BEGIN:VEVENT")
+        // RFC 5545: long lines are folded onto the next line starting with a space or tab
+        val unfolded = content.replace(Regex("\r?\n[ \t]"), "")
+        val events = unfolded.split("BEGIN:VEVENT")
         if (events.size <= 1) return emptyList()
 
         val courseNumberRegex = Regex("\\b\\d{4}[.-]\\d{4}\\b")
@@ -106,14 +108,14 @@ object MoodleSyncService {
             block.lines().forEach { rawLine ->
                 val line = rawLine.trim()
                 when {
-                    line.startsWith("SUMMARY:", ignoreCase = true) -> {
-                        summary = line.substring(8).trim()
+                    line.startsWith("SUMMARY", ignoreCase = true) -> {
+                        summary = unescapeIcs(line.substringAfter(':'))
                     }
-                    line.startsWith("DESCRIPTION:", ignoreCase = true) -> {
-                        description = line.substring(12).trim().replace("\\n", "\n")
+                    line.startsWith("DESCRIPTION", ignoreCase = true) -> {
+                        description = unescapeIcs(line.substringAfter(':'))
                     }
-                    line.startsWith("CATEGORIES:", ignoreCase = true) -> {
-                        category = line.substring(11).trim()
+                    line.startsWith("CATEGORIES", ignoreCase = true) -> {
+                        category = unescapeIcs(line.substringAfter(':'))
                     }
                     line.startsWith("DTEND", ignoreCase = true) || (dtEndMillis == 0L && line.startsWith("DTSTART", ignoreCase = true)) -> {
                         val dateStr = line.substringAfter(':').trim()
@@ -131,12 +133,13 @@ object MoodleSyncService {
             }
 
             // Cleanup Moodle summary text (e.g. "מועד סופי למטלה", "is due")
-            var cleanedTitle = summary
+            val cleanedTitle = summary
                 .replace(" is due", "", ignoreCase = true)
                 .replace("מועד הגשה:", "", ignoreCase = true)
                 .trim()
 
-            if (cleanedTitle.isBlank()) continue
+            // Skip blank titles and deadlines that already passed
+            if (cleanedTitle.isBlank() || (dtEndMillis in 1 until now)) continue
 
             // Determine dueDate
             val dueDate = if (dtEndMillis > 0L) dtEndMillis else now + (7L * 24 * 60 * 60 * 1000)
@@ -171,4 +174,8 @@ object MoodleSyncService {
 
         return tasks
     }
+
+    private fun unescapeIcs(value: String): String = value.trim()
+        .replace("\\n", "\n").replace("\\N", "\n")
+        .replace("\\,", ",").replace("\\;", ";").replace("\\\\", "\\")
 }
