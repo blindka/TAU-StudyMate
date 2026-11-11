@@ -1,5 +1,6 @@
 package com.tau.studymate.notification
 
+import com.tau.studymate.R
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
@@ -12,7 +13,7 @@ object TaskNotificationScheduler {
 
     private const val HOUR = 60 * 60 * 1000L
     /** Reminder offsets before the deadline, with the text shown in the notification. */
-    private val LEADS = listOf(24 * HOUR to "ההגשה מחר", 3 * HOUR to "ההגשה בעוד 3 שעות")
+    private val LEADS = listOf(24 * HOUR to R.string.reminder_due_tomorrow, 3 * HOUR to R.string.reminder_due_3h)
 
     /** Schedules "a day before" and "3 hours before" reminders. Past ones are skipped, never fired late. */
     fun scheduleTask(context: Context, task: Task, courseName: String? = null) {
@@ -21,7 +22,7 @@ object TaskNotificationScheduler {
         val now = System.currentTimeMillis()
         LEADS.forEachIndexed { i, (lead, label) ->
             val at = task.dueDate - lead
-            if (at > now) scheduleReminder(context, task.id, requestCode(task.id, i), task.title, label, courseName, at)
+            if (at > now) scheduleReminder(context, task.id, requestCode(task.id, i), task.title, context.getString(label), courseName, at)
         }
     }
 

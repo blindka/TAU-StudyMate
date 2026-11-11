@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.components
 
+import com.tau.studymate.R
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import com.tau.studymate.util.decodeScaled
 import android.graphics.Bitmap
@@ -47,6 +49,8 @@ fun SchedulePickerAndPreview(
     onScheduleChanged: (bitmap: Bitmap?, fileName: String?, courses: List<CourseTemplate>?) -> Unit
 ) {
     val context = LocalContext.current
+    // Configuration-aware resources (follow a language change)
+    val res = androidx.compose.ui.platform.LocalResources.current
     var scheduleBitmap by remember { mutableStateOf(initialBitmap) }
     var scheduleFileName by remember { mutableStateOf(initialFileName) }
     var parsedCourses by remember { mutableStateOf<List<CourseTemplate>?>(null) }
@@ -67,7 +71,7 @@ fun SchedulePickerAndPreview(
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         if (ok) scope.launch {
             val bmp = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { decodeScaled(photoFile, 2048) }
-            if (bmp != null) publish(bmp, "צילום_מערכת_שעות.jpg", null)
+            if (bmp != null) publish(bmp, "schedule.jpg", null)
         }
     }
 
@@ -78,7 +82,7 @@ fun SchedulePickerAndPreview(
             val mime = cr.getType(uri) ?: ""
             val name = cr.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
                 if (c.moveToFirst()) c.getString(0) else null
-            } ?: "מערכת_שעות"
+            } ?: "schedule"
             val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 runCatching {
                     when {
@@ -100,7 +104,7 @@ fun SchedulePickerAndPreview(
                 }.getOrNull()
             }
             if (result == null) {
-                android.widget.Toast.makeText(context, "לא ניתן לקרוא את הקובץ", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(context, res.getString(R.string.err_read_file), android.widget.Toast.LENGTH_SHORT).show()
             } else {
                 publish(result.first, name, result.second)
             }
@@ -148,12 +152,12 @@ fun SchedulePickerAndPreview(
 
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "מערכת שעות לקורסי $currentSemester",
+                        text = stringResource(R.string.schedule_for, com.tau.studymate.ui.components.profileLabel(currentSemester)),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.primary
                     )
                     Text(
-                        text = "צלם במצלמה או העלה קובץ (PDF, תמונה, ICS, TXT)",
+                        text = stringResource(R.string.schedule_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.outline
                     )
@@ -182,7 +186,7 @@ fun SchedulePickerAndPreview(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "צלם תמונה 📸",
+                        text = stringResource(R.string.take_photo),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -204,7 +208,7 @@ fun SchedulePickerAndPreview(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "העלאת קובץ 📁",
+                        text = stringResource(R.string.upload_file),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = TauPurplePrimary
@@ -216,7 +220,7 @@ fun SchedulePickerAndPreview(
             if (scheduleBitmap != null) {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
-                    text = "תצוגת מערכת שעות שנקלטה:",
+                    text = stringResource(R.string.schedule_preview),
                     style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -232,7 +236,7 @@ fun SchedulePickerAndPreview(
                     Box(modifier = Modifier.fillMaxSize()) {
                         Image(
                             bitmap = scheduleBitmap!!.asImageBitmap(),
-                            contentDescription = "תמונת מערכת שעות",
+                            contentDescription = stringResource(R.string.a11y_schedule_image),
                             contentScale = ContentScale.Fit,
                             modifier = Modifier
                                 .fillMaxSize()
@@ -259,7 +263,7 @@ fun SchedulePickerAndPreview(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = scheduleFileName ?: "תמונת מערכת שעות",
+                                    text = scheduleFileName ?: stringResource(R.string.a11y_schedule_image),
                                     color = Color.White,
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Medium
@@ -283,7 +287,7 @@ fun SchedulePickerAndPreview(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "הסר",
+                                contentDescription = stringResource(R.string.a11y_remove),
                                 tint = Color.White,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -317,7 +321,7 @@ fun SchedulePickerAndPreview(
                                 color = LaborGreen
                             )
                             Text(
-                                text = "קובץ מסמך נקלט בהצלחה (${parsedCourses?.size ?: 0} קורסים אותרו)",
+                                text = androidx.compose.ui.res.pluralStringResource(R.plurals.schedule_courses_found, parsedCourses?.size ?: 0, parsedCourses?.size ?: 0),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -332,7 +336,7 @@ fun SchedulePickerAndPreview(
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
-                                contentDescription = "הסר",
+                                contentDescription = stringResource(R.string.a11y_remove),
                                 tint = MaterialTheme.colorScheme.outline,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -342,7 +346,7 @@ fun SchedulePickerAndPreview(
             } else {
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "תומך בקובצי לוח שנה (ICS), מסמכי PDF, רשימות קורסים (TXT/CSV) וצילום ישיר",
+                    text = stringResource(R.string.schedule_supported),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline,
                     fontSize = 11.sp

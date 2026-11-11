@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.viewmodel
 
+import com.tau.studymate.R
 import android.app.Application
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
@@ -75,8 +76,8 @@ class TimerViewModel(application: Application, private val repository: StudyRepo
         anchor = 0; frozen = minutes * 60
         _timerSeconds.value = 0
         save()
-        repository.logStudySession(courseId = courseId, taskId = taskId, durationMinutes = minutes, notes = "סשן פוקוס הושלם בהצלחה")
-        _timerFinishedDialog.value = "השלמת בהצלחה סשן למידה של $minutes דקות! 🎯"
+        repository.logStudySession(courseId = courseId, taskId = taskId, durationMinutes = minutes, notes = getApplication<Application>().getString(R.string.session_completed_note))
+        _timerFinishedDialog.value = getApplication<Application>().resources.getQuantityString(R.plurals.timer_done_dialog, minutes, minutes)
     }
 
     private fun save() = prefs.edit {

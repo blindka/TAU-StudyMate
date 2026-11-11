@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.components
 
+import com.tau.studymate.R
+import androidx.compose.ui.res.stringResource
 import android.graphics.Bitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -79,7 +81,7 @@ fun SemesterTransitionDialog(
 
                 // Title
                 Text(
-                    text = "מעבר ל-$newSemester! 🎓",
+                    text = stringResource(R.string.semester_transition_title, com.tau.studymate.ui.components.profileLabel(newSemester)),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
@@ -88,7 +90,7 @@ fun SemesterTransitionDialog(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "לפי לוח השנה של אוניברסיטת תל אביב, הגענו ל-$newSemester! פרטי התואר שלך נשמרים, וכעת ניתן לצלם או להעלות מערכת שעות חדשה.",
+                    text = stringResource(R.string.semester_transition_body, com.tau.studymate.ui.components.profileLabel(newSemester)),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -121,7 +123,7 @@ fun SemesterTransitionDialog(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = "${currentProfile.year} • ${if (currentProfile.isDoubleMajor) "דו-חוגי" else "חד-חוגי"}",
+                                text = "${com.tau.studymate.ui.components.profileLabel(currentProfile.year)} • ${stringResource(if (currentProfile.isDoubleMajor) R.string.double_major else R.string.single_major)}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.outline
                             )
@@ -162,7 +164,7 @@ fun SemesterTransitionDialog(
                         )
                         Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = "מאחלים לך המון בהצלחה בסמסטר החדש! שיהיה סמסטר פורה, מעניין ומוצלח בכל הקורסים והבחינות! 🌱",
+                            text = stringResource(R.string.semester_wish),
                             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.onTertiaryContainer,
                             lineHeight = 16.sp
@@ -178,7 +180,7 @@ fun SemesterTransitionDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("הזכר לי מאוחר יותר")
+                        Text(stringResource(R.string.remind_later))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -196,7 +198,7 @@ fun SemesterTransitionDialog(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "אישור ומעבר ל-$newSemester",
+                            text = stringResource(R.string.semester_confirm, com.tau.studymate.ui.components.profileLabel(newSemester)),
                             fontWeight = FontWeight.Bold
                         )
                     }

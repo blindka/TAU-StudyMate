@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.components
 
+import com.tau.studymate.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -121,7 +123,7 @@ fun CelebrationDialog(
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "רצף של ${reward.streakDays} ימי למידה ברצף!",
+                                text = androidx.compose.ui.res.pluralStringResource(R.plurals.celebration_streak, reward.streakDays, reward.streakDays),
                                 style = MaterialTheme.typography.labelLarge.copy(
                                     fontWeight = FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -147,7 +149,7 @@ fun CelebrationDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "מעולה, נמשיך!",
+                            text = stringResource(R.string.celebration_continue),
                             fontWeight = FontWeight.Bold,
                             fontSize = 16.sp
                         )

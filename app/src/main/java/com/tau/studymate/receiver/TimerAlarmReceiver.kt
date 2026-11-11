@@ -1,5 +1,6 @@
 package com.tau.studymate.receiver
 
+import com.tau.studymate.R
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
@@ -15,7 +16,7 @@ class TimerAlarmReceiver : BroadcastReceiver() {
         val minutes = intent.getIntExtra(EXTRA_MINUTES, 0)
         SoundManager.playTimerFinishedSound(context)
         NotificationHelper.showTimerNotification(
-            context, "זמן הלמידה הסתיים! ⏰", "כל הכבוד על פוקוס של $minutes דקות! הגיע הזמן להפסקה קלה."
+            context, context.getString(R.string.timer_done_title), context.resources.getQuantityString(R.plurals.timer_done_body, minutes, minutes)
         )
     }
 

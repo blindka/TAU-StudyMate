@@ -18,7 +18,7 @@ object Translator {
     }
 
     /** Translates page by page, paragraph by paragraph (the model works best on short inputs). */
-    suspend fun translatePages(pages: List<String>, onStatus: (String) -> Unit): List<String> {
+    suspend fun translatePages(context: android.content.Context, pages: List<String>, onStatus: (String) -> Unit): List<String> {
         val client = Translation.getClient(
             TranslatorOptions.Builder()
                 .setSourceLanguage(TranslateLanguage.ENGLISH)
@@ -26,10 +26,10 @@ object Translator {
                 .build()
         )
         try {
-            onStatus("מוריד את מודל התרגום (פעם אחת בלבד, כ-30MB)…")
+            onStatus(context.getString(com.tau.studymate.R.string.translate_downloading_model))
             client.downloadModelIfNeeded(DownloadConditions.Builder().build()).await()
             return pages.mapIndexed { i, page ->
-                onStatus("מתרגם עמוד ${i + 1} מתוך ${pages.size}…")
+                onStatus(context.getString(com.tau.studymate.R.string.translate_page_progress, i + 1, pages.size))
                 page.split(Regex("\\n\\s*\\n")).map { para ->
                     val line = para.replace(Regex("\\s*\\n\\s*"), " ").trim() // undo PDF line breaks inside a paragraph
                     if (line.isBlank()) "" else client.translate(line).await()

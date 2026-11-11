@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.components
 
+import com.tau.studymate.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -54,7 +56,7 @@ fun AddCourseDialog(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = if (initial == null) "הוספת קורס חדש" else "עריכת קורס",
+                    text = stringResource(if (initial == null) R.string.course_add_title else R.string.course_edit_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -64,13 +66,13 @@ fun AddCourseDialog(
                 OutlinedTextField(
                     value = courseNumber,
                     onValueChange = { courseNumber = it },
-                    label = { Text("מספר קורס ב-TAU *") },
-                    placeholder = { Text("לדוגמה: 1082.1100") },
+                    label = { Text(stringResource(R.string.course_number_label)) },
+                    placeholder = { Text(stringResource(R.string.course_number_hint)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true,
                     isError = duplicate,
-                    supportingText = if (duplicate) { { Text("כבר קיים קורס עם המספר הזה") } } else null
+                    supportingText = if (duplicate) { { Text(stringResource(R.string.course_duplicate)) } } else null
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -78,8 +80,8 @@ fun AddCourseDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("שם הקורס *") },
-                    placeholder = { Text("לדוגמה: יחסי עבודה בעידן הדיגיטלי") },
+                    label = { Text(stringResource(R.string.course_name_label)) },
+                    placeholder = { Text(stringResource(R.string.course_name_hint)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true
@@ -88,7 +90,7 @@ fun AddCourseDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "שיוך חוגי:",
+                    text = stringResource(R.string.department_label),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
@@ -102,7 +104,7 @@ fun AddCourseDialog(
                         FilterChip(
                             selected = department == dept,
                             onClick = { department = dept },
-                            label = { Text(dept.displayName, fontSize = 12.sp) }
+                            label = { Text(stringResource(dept.labelRes), fontSize = 12.sp) }
                         )
                     }
                 }
@@ -112,7 +114,7 @@ fun AddCourseDialog(
                 OutlinedTextField(
                     value = lecturer,
                     onValueChange = { lecturer = it },
-                    label = { Text("מרצה / מתרגל") },
+                    label = { Text(stringResource(R.string.lecturer_label)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true
@@ -127,7 +129,7 @@ fun AddCourseDialog(
                     OutlinedTextField(
                         value = semester,
                         onValueChange = { semester = it },
-                        label = { Text("סמסטר") },
+                        label = { Text(stringResource(R.string.semester_label)) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true
@@ -136,7 +138,7 @@ fun AddCourseDialog(
                     OutlinedTextField(
                         value = credits,
                         onValueChange = { credits = it },
-                        label = { Text("נק\"ז") },
+                        label = { Text(stringResource(R.string.credits_label)) },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
                         singleLine = true,
@@ -152,7 +154,7 @@ fun AddCourseDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("ביטול")
+                        Text(stringResource(R.string.cancel))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -173,7 +175,7 @@ fun AddCourseDialog(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(if (initial == null) "הוסף קורס" else "שמירה")
+                        Text(stringResource(if (initial == null) R.string.add_course_button else R.string.save))
                     }
                 }
             }

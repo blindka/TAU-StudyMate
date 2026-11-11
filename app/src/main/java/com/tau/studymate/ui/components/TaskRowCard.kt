@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.components
 
+import com.tau.studymate.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -33,21 +35,23 @@ private val ddMM = DateTimeFormatter.ofPattern("dd/MM")
 fun TaskRowCard(task: Task, course: Course?, onToggle: () -> Unit, showDescription: Boolean = false, onClick: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     val due = Instant.ofEpochMilli(task.dueDate).atZone(ZoneId.systemDefault()).toLocalDate()
     val days = ChronoUnit.DAYS.between(LocalDate.now(), due)
-    val dueLabel = when (days) { 0L -> "היום"; 1L -> "מחר"; else -> due.format(ddMM) }
+    val dueLabel = when (days) { 0L -> stringResource(R.string.due_today); 1L -> stringResource(R.string.due_tomorrow); else -> due.format(ddMM) }
     val urgent = !task.isCompleted && days <= 1
     val (chipBg, chipFg) = departmentColors(task.department)
+    val editLabel = stringResource(R.string.a11y_edit)
+    val checkLabel = stringResource(R.string.a11y_mark_task_done, task.title)
 
     Surface(
         shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, PastelLavenderBorder),
-        modifier = modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClickLabel = "עריכה", onClick = onClick) else Modifier)
+        modifier = modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClickLabel = editLabel, onClick = onClick) else Modifier)
     ) {
         Row(Modifier.padding(start = 4.dp, end = 14.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Checkbox(
                 checked = task.isCompleted, onCheckedChange = { onToggle() },
                 // TalkBack reads the task name, not just "checkbox"
-                modifier = Modifier.semantics { contentDescription = "סימון ${task.title} כהושלמה" },
+                modifier = Modifier.semantics { contentDescription = checkLabel },
                 colors = CheckboxDefaults.colors(checkedColor = PastelLavenderDark, uncheckedColor = PastelLavenderDark)
             )
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -61,7 +65,7 @@ fun TaskRowCard(task: Task, course: Course?, onToggle: () -> Unit, showDescripti
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        course?.name ?: task.department.displayName, color = chipFg, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                        course?.name ?: stringResource(task.department.labelRes), color = chipFg, fontSize = 12.sp, fontWeight = FontWeight.Medium,
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false).background(chipBg, RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 3.dp)
                     )

@@ -1,5 +1,6 @@
 package com.tau.studymate.util
 
+import com.tau.studymate.R
 import com.google.mlkit.genai.common.DownloadStatus
 import com.google.mlkit.genai.common.FeatureStatus
 import com.google.mlkit.genai.prompt.Generation
@@ -15,36 +16,29 @@ object Summarizer {
     // shortcut: Gemini Nano's input window is small (~4k tokens); we summarize only the start of long files.
     const val MAX_INPUT_CHARS = 6000
 
-    suspend fun summarize(documentText: String, onStatus: (String) -> Unit): Result {
+    suspend fun summarize(context: android.content.Context, documentText: String, onStatus: (String) -> Unit): Result {
+        fun s(id: Int, vararg a: Any) = context.getString(id, *a)
         val model = Generation.getClient()
         return try {
             when (model.checkStatus()) {
                 FeatureStatus.UNAVAILABLE ->
-                    return Result.Error("סיכום אוטומטי לא נתמך בטלפון הזה (דורש טלפון עם Gemini Nano, כמו Pixel 9 ומעלה או Galaxy S24 ומעלה).")
+                    return Result.Error(s(R.string.summary_unsupported))
                 FeatureStatus.DOWNLOADABLE, FeatureStatus.DOWNLOADING -> {
-                    onStatus("מוריד את מודל הסיכום (פעם אחת בלבד)…")
+                    onStatus(s(R.string.summary_downloading_model))
                     var failed: Throwable? = null
                     model.download().collect { if (it is DownloadStatus.DownloadFailed) failed = it.e }
-                    failed?.let { return Result.Error("הורדת המודל נכשלה: ${it.localizedMessage}") }
+                    failed?.let { return Result.Error(s(R.string.summary_download_failed, it.localizedMessage ?: "")) }
                 }
             }
-            onStatus("מסכם…")
-            val prompt = """
-                סכם בעברית את המסמך הבא עבור סטודנט שמתכונן למבחן.
-                מבנה התשובה:
-                רעיון מרכזי: משפט אחד או שניים.
-                נקודות חשובות: 3 עד 6 נקודות קצרות, כל אחת בשורה שמתחילה ב"•".
-                מושגים למבחן: רשימה קצרה מופרדת בנקודות.
-
-                המסמך:
-                ${documentText.take(MAX_INPUT_CHARS)}
-            """.trimIndent()
+            onStatus(s(R.string.summarizing))
+            // The prompt (and so the summary language) follows the app language
+            val prompt = s(R.string.summary_prompt, documentText.take(MAX_INPUT_CHARS))
             val text = model.generateContent(prompt).candidates.firstOrNull()?.text
-            if (text.isNullOrBlank()) Result.Error("לא התקבל סיכום. נסה שוב.") else Result.Ok(text.trim())
+            if (text.isNullOrBlank()) Result.Error(s(R.string.summary_empty)) else Result.Ok(text.trim())
         } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e // user pressed "עצור"
+            throw e // user pressed Stop
         } catch (e: Exception) {
-            Result.Error("שגיאה ביצירת הסיכום: ${e.localizedMessage ?: e.javaClass.simpleName}")
+            Result.Error(s(R.string.summary_error, e.localizedMessage ?: e.javaClass.simpleName))
         } finally {
             model.close()
         }

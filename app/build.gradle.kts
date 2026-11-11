@@ -1,4 +1,4 @@
-val appVersion = "0.2.0"
+val appVersion = "0.3.0"
 
 plugins {
     alias(libs.plugins.android.application)

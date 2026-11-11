@@ -1,5 +1,8 @@
 package com.tau.studymate.ui.screens.courses
 
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import com.tau.studymate.R
+import androidx.compose.ui.res.stringResource
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -31,10 +34,10 @@ import com.tau.studymate.ui.theme.TauBluePrimary
 import com.tau.studymate.ui.theme.UrgentRed
 import com.tau.studymate.ui.viewmodel.StudyViewModel
 
-enum class CourseSubTab(val title: String) {
-    MATERIALS("סיכומים וחומרים"),
-    RECORDINGS("הקלטות וקישורים"),
-    TASKS("מטלות הקורס")
+enum class CourseSubTab(@androidx.annotation.StringRes val title: Int) {
+    MATERIALS(com.tau.studymate.R.string.tab_materials),
+    RECORDINGS(com.tau.studymate.R.string.tab_recordings),
+    TASKS(com.tau.studymate.R.string.tab_course_tasks)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,6 +57,10 @@ fun CourseDetailScreen(
 
     val context = LocalContext.current
 
+    // Configuration-aware resources (follow a language change)
+
+    val res = androidx.compose.ui.platform.LocalResources.current
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -66,7 +73,7 @@ fun CourseDetailScreen(
                             maxLines = 1
                         )
                         Text(
-                            text = "${course.lecturer} • ${course.credits} נק\"ז",
+                            text = stringResource(R.string.course_lecturer_credits, course.lecturer, course.credits.toString()),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -74,7 +81,7 @@ fun CourseDetailScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowForward, contentDescription = "חזרה")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.a11y_back))
                     }
                 },
                 actions = {
@@ -89,7 +96,7 @@ fun CourseDetailScreen(
                 contentColor = Color.White,
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "הוסף חומר")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.a11y_add_material))
             }
         }
     ) { paddingValues ->
@@ -110,7 +117,7 @@ fun CourseDetailScreen(
                         onClick = { selectedTab = tab },
                         text = {
                             Text(
-                                text = tab.title,
+                                text = stringResource(tab.title),
                                 fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal,
                                 fontSize = 13.sp,
                                 maxLines = 1,
@@ -129,8 +136,8 @@ fun CourseDetailScreen(
                     if (summaryList.isEmpty()) {
                         EmptyStateView(
                             icon = Icons.Default.Description,
-                            title = "אין עדיין סיכומים לקורס זה",
-                            subtitle = "לחץ על + כדי להוסיף סיכום, מאמר או הערת חומר"
+                            title = stringResource(R.string.materials_empty),
+                            subtitle = stringResource(R.string.materials_empty_hint)
                         )
                     } else {
                         LazyColumn(
@@ -151,8 +158,8 @@ fun CourseDetailScreen(
                     if (recordingList.isEmpty()) {
                         EmptyStateView(
                             icon = Icons.Default.VideoLibrary,
-                            title = "אין עדיין קישורי הקלטות",
-                            subtitle = "ניתן להוסיף קישורי Panopto או Zoom לצפייה ישירה"
+                            title = stringResource(R.string.recordings_empty),
+                            subtitle = stringResource(R.string.recordings_empty_hint)
                         )
                     } else {
                         LazyColumn(
@@ -168,7 +175,7 @@ fun CourseDetailScreen(
                                         try {
                                             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                                         } catch (_: Exception) {
-                                            android.widget.Toast.makeText(context, "לא ניתן לפתוח את הקישור", android.widget.Toast.LENGTH_SHORT).show()
+                                            android.widget.Toast.makeText(context, res.getString(R.string.err_open_link), android.widget.Toast.LENGTH_SHORT).show()
                                         }
                                     },
                                     onDelete = { viewModel.deleteStudyMaterial(item) }
@@ -181,8 +188,8 @@ fun CourseDetailScreen(
                     if (courseTasks.isEmpty()) {
                         EmptyStateView(
                             icon = Icons.Default.Checklist,
-                            title = "אין מטלות המשויכות לקורס זה",
-                            subtitle = "כל מטלה שתשייך לקורס זה תופיע כאן אוטומטית"
+                            title = stringResource(R.string.course_tasks_empty),
+                            subtitle = stringResource(R.string.course_tasks_empty_hint)
                         )
                     } else {
                         LazyColumn(
@@ -294,7 +301,7 @@ private fun MaterialCardItem(
                 )
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
-                    text = material.type.displayName,
+                    text = stringResource(material.type.labelRes),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -311,7 +318,7 @@ private fun MaterialCardItem(
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Default.DeleteOutline,
-                    contentDescription = "מחק",
+                    contentDescription = stringResource(R.string.a11y_delete),
                     tint = MaterialTheme.colorScheme.outline
                 )
             }
@@ -359,7 +366,7 @@ private fun RecordingCardItem(
                 )
                 if (material.contentOrUri.isNotBlank()) {
                     Text(
-                        text = "לחץ לצפייה בהקלטה",
+                        text = stringResource(R.string.recording_open),
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.clickable { onOpenLink() }
@@ -370,7 +377,7 @@ private fun RecordingCardItem(
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Default.DeleteOutline,
-                    contentDescription = "מחק",
+                    contentDescription = stringResource(R.string.a11y_delete),
                     tint = MaterialTheme.colorScheme.outline
                 )
             }

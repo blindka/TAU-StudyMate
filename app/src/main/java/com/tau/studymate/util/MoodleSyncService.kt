@@ -1,5 +1,6 @@
 package com.tau.studymate.util
 
+import com.tau.studymate.R
 import com.tau.studymate.data.model.Course
 import com.tau.studymate.data.model.Department
 import com.tau.studymate.data.model.Priority
@@ -32,6 +33,7 @@ object MoodleSyncService {
      * Downloads and parses Moodle iCal feed from URL into Task entities
      */
     suspend fun fetchAndSyncMoodle(
+        context: android.content.Context,
         rawUrl: String,
         existingCourses: List<Course>
     ): MoodleSyncResult = withContext(Dispatchers.IO) {
@@ -55,18 +57,18 @@ object MoodleSyncService {
                 return@withContext MoodleSyncResult(
                     success = false,
                     syncedCount = 0,
-                    errorMessage = "שגיאת התחברות לשרת המודל (${connection.responseCode}). יש לוודא שהקישור תקין."
+                    errorMessage = context.getString(R.string.moodle_http_error, connection.responseCode)
                 )
             }
 
             val content = BufferedReader(InputStreamReader(connection.inputStream, Charsets.UTF_8)).use { it.readText() }
-            val parsedTasks = parseIcsContent(content, existingCourses)
+            val parsedTasks = parseIcsContent(content, existingCourses, context.getString(R.string.moodle_task_default_desc))
 
             if (parsedTasks.isEmpty()) {
                 return@withContext MoodleSyncResult(
                     success = true,
                     syncedCount = 0,
-                    errorMessage = "הקישור נקלט בהצלחה, אך לא אותרו מועדי הגשה עתידיים בלוח השנה."
+                    errorMessage = context.getString(R.string.moodle_no_future)
                 )
             }
 
@@ -79,7 +81,7 @@ object MoodleSyncService {
             MoodleSyncResult(
                 success = false,
                 syncedCount = 0,
-                errorMessage = "שגיאה במשיכת הנתונים: ${e.localizedMessage ?: "לא ניתן לגשת לכתובת המודל"}"
+                errorMessage = context.getString(R.string.moodle_fetch_error, e.localizedMessage ?: context.getString(R.string.moodle_unreachable))
             )
         }
     }
@@ -87,7 +89,7 @@ object MoodleSyncService {
     /**
      * Parses iCalendar (ICS) text into Task models
      */
-    fun parseIcsContent(content: String, existingCourses: List<Course>): List<Task> {
+    fun parseIcsContent(content: String, existingCourses: List<Course>, defaultDescription: String = ""): List<Task> {
         val tasks = mutableListOf<Task>()
         // RFC 5545: long lines are folded onto the next line starting with a space or tab
         val unfolded = content.replace(Regex("\r?\n[ \t]"), "")
@@ -166,7 +168,7 @@ object MoodleSyncService {
             tasks.add(
                 Task(
                     title = cleanedTitle,
-                    description = if (description.isNotBlank()) description else "מטלה שסונכרנה ישירות מ-Moodle אתו\"א",
+                    description = description.ifBlank { defaultDescription },
                     dueDate = dueDate,
                     courseId = courseId,
                     department = department,

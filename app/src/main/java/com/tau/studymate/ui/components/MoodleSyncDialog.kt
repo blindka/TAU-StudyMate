@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.components
 
+import com.tau.studymate.R
+import androidx.compose.ui.res.stringResource
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
@@ -35,6 +37,8 @@ fun MoodleSyncDialog(
     onSyncUrl: (url: String, onFinished: (success: Boolean, count: Int, message: String?) -> Unit) -> Unit
 ) {
     val context = LocalContext.current
+    // Configuration-aware resources (follow a language change)
+    val res = androidx.compose.ui.platform.LocalResources.current
     var feedUrl by remember { mutableStateOf(initialUrl) }
     var isLoading by remember { mutableStateOf(false) }
     var resultMessage by remember { mutableStateOf<String?>(null) }
@@ -80,7 +84,7 @@ fun MoodleSyncDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "סנכרון ישיר ממודל אתו\"א 🎓",
+                    text = stringResource(R.string.moodle_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center
@@ -89,7 +93,7 @@ fun MoodleSyncDialog(
                 Spacer(modifier = Modifier.height(6.dp))
 
                 Text(
-                    text = "משיכת כל המטלות, התרגילים ומועדי ההגשה ישירות מחשבון ה-Moodle שלך באוניברסיטת תל אביב.",
+                    text = stringResource(R.string.moodle_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
@@ -105,8 +109,8 @@ fun MoodleSyncDialog(
                         feedUrl = it
                         resultMessage = null
                     },
-                    label = { Text("קישור לוח שנה ממודל (iCal / WebCal)") },
-                    placeholder = { Text("הדבק כאן קישור מ-moodle.tau.ac.il...") },
+                    label = { Text(stringResource(R.string.moodle_link_label)) },
+                    placeholder = { Text(stringResource(R.string.moodle_link_hint)) },
                     singleLine = false,
                     maxLines = 3,
                     shape = RoundedCornerShape(16.dp),
@@ -122,7 +126,7 @@ fun MoodleSyncDialog(
                         }) {
                             Icon(
                                 imageVector = Icons.Default.ContentPaste,
-                                contentDescription = "הדבק מהלוח",
+                                contentDescription = stringResource(R.string.a11y_paste),
                                 tint = PastelLavenderDark
                             )
                         }
@@ -135,7 +139,7 @@ fun MoodleSyncDialog(
                 Button(
                     onClick = {
                         if (feedUrl.isBlank()) {
-                            resultMessage = "יש להזין או להדביק קישור לוח שנה מהמודל."
+                            resultMessage = res.getString(R.string.moodle_link_required)
                             isSuccess = false
                             return@Button
                         }
@@ -145,9 +149,9 @@ fun MoodleSyncDialog(
                             isLoading = false
                             isSuccess = success
                             resultMessage = if (success) {
-                                if (count > 0) "סונכרנו בהצלחה $count מטלות חדשות מהמודל! 🎉" else message ?: "הסנכרון הצליח!"
+                                if (count > 0) res.getQuantityString(R.plurals.moodle_synced, count, count) else message ?: res.getString(R.string.moodle_sync_ok)
                             } else {
-                                message ?: "שגיאה בחיבור למודל."
+                                message ?: res.getString(R.string.moodle_connect_error)
                             }
                         }
                     },
@@ -164,11 +168,11 @@ fun MoodleSyncDialog(
                             strokeWidth = 2.dp
                         )
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("מושך נתונים מהמודל...", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.moodle_fetching), fontWeight = FontWeight.Bold)
                     } else {
                         Icon(Icons.Default.CloudDownload, contentDescription = null, modifier = Modifier.size(20.dp))
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("סנכרן מטלות עכשיו 🔄", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(stringResource(R.string.moodle_sync_now), fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
 
@@ -228,7 +232,7 @@ fun MoodleSyncDialog(
                                 )
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
-                                    text = "איך משיגים את הקישור במודל של אתו\"א?",
+                                    text = stringResource(R.string.moodle_howto_title),
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = PastelLavenderDark
@@ -245,11 +249,7 @@ fun MoodleSyncDialog(
                         if (showInstructions) {
                             Spacer(modifier = Modifier.height(10.dp))
                             Text(
-                                text = "1. כנס לאתר המודל של אתו\"א (moodle.tau.ac.il)\n" +
-                                        "2. בתפריט הצד לחץ על 'לוח שנה'\n" +
-                                        "3. גלול למטה ולחץ על 'ייצוא לוח שנה'\n" +
-                                        "4. בחר 'כל האירועים' -> לחץ 'קבלת כתובת URL ללוח שנה'\n" +
-                                        "5. העתק את הקישור שנוצר והדבק אותו כאן 🚀",
+                                text = stringResource(R.string.moodle_howto_steps),
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 lineHeight = 18.sp
@@ -268,7 +268,7 @@ fun MoodleSyncDialog(
                             ) {
                                 Icon(Icons.Default.OpenInBrowser, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("פתח את לוח השנה במודל בדפדפן 🌐", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.moodle_open_calendar), fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -291,7 +291,7 @@ fun MoodleSyncDialog(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "פתיחת דף ייצוא לוח השנה ב-Moodle 🔗",
+                        text = stringResource(R.string.moodle_open_export),
                         color = PastelSkyDark,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
@@ -305,7 +305,7 @@ fun MoodleSyncDialog(
                     onClick = onDismiss,
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text("סגור")
+                    Text(stringResource(R.string.close))
                 }
             }
         }

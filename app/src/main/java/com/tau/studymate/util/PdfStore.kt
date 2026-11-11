@@ -25,13 +25,13 @@ object PdfStore {
     suspend fun import(context: Context, uri: Uri): Imported = withContext(Dispatchers.IO) {
         val dir = File(context.filesDir, "readings").apply { mkdirs() }
         val file = File(dir, "${UUID.randomUUID()}.pdf")
-        val input = context.contentResolver.openInputStream(uri) ?: error("לא ניתן לפתוח את הקובץ")
+        val input = context.contentResolver.openInputStream(uri) ?: error(context.getString(com.tau.studymate.R.string.err_open_file))
         input.use { inp -> file.outputStream().use { inp.copyTo(it) } }
         val pages = try {
             ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { PdfRenderer(it).use { r -> r.pageCount } }
         } catch (e: Exception) {
             file.delete() // not a valid PDF: don't leave junk behind
-            throw IllegalArgumentException("הקובץ אינו PDF תקין", e)
+            throw IllegalArgumentException(context.getString(com.tau.studymate.R.string.err_not_pdf), e)
         }
         Imported(displayName(context, uri), file.absolutePath, pages)
     }
@@ -39,7 +39,7 @@ object PdfStore {
     private fun displayName(context: Context, uri: Uri): String =
         context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
             if (c.moveToFirst()) c.getString(0) else null
-        }?.substringBeforeLast('.')?.replace('_', ' ')?.trim()?.ifBlank { null } ?: "מסמך"
+        }?.substringBeforeLast('.')?.replace('_', ' ')?.trim()?.ifBlank { null } ?: context.getString(com.tau.studymate.R.string.default_document_title)
 
     /**
      * Text of every page, or null when it can't be read (Android 8, or a scanned PDF with no text layer).

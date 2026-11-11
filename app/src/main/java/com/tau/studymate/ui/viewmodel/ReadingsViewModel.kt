@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.viewmodel
 
+import com.tau.studymate.R
 import android.app.Application
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
@@ -24,6 +25,8 @@ class ReadingsViewModel(
     private val dao: ReadingDao,
     coursesFlow: Flow<List<Course>>
 ) : AndroidViewModel(application) {
+
+    private fun str(id: Int, vararg a: Any) = getApplication<Application>().getString(id, *a)
 
     val courses: StateFlow<List<Course>> = coursesFlow.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -62,10 +65,10 @@ class ReadingsViewModel(
                     dao.insert(Reading(courseId = courseId, title = f.title, filePath = f.path, pageCount = f.pageCount, weekStartEpochDay = week.toEpochDay()))
                     ok++
                 } catch (e: Exception) {
-                    _message.value = e.message ?: "שגיאה בייבוא קובץ"
+                    _message.value = e.message ?: str(R.string.import_failed)
                 }
             }
-            if (ok > 0) _message.value = if (ok == 1) "המסמך נוסף" else "נוספו $ok מסמכים"
+            if (ok > 0) _message.value = getApplication<Application>().resources.getQuantityString(R.plurals.import_added, ok, ok)
             _week.value = week
         }
     }
@@ -98,12 +101,12 @@ class ReadingsViewModel(
     fun summarize(r: Reading) {
         if (_summaryStatus.value != null) return
         summaryJob = viewModelScope.launch {
-            _summaryStatus.value = "קורא את המסמך…"
+            _summaryStatus.value = str(R.string.reading_document)
             try {
                 val text = PdfStore.extractText(getApplication(), r.filePath, Summarizer.MAX_INPUT_CHARS)
                 when {
-                    text == null -> _message.value = "לא ניתן לחלץ טקסט מהקובץ (קובץ סרוק, או Android 8)."
-                    else -> when (val res = Summarizer.summarize(text) { _summaryStatus.value = it }) {
+                    text == null -> _message.value = str(R.string.no_text_in_pdf)
+                    else -> when (val res = Summarizer.summarize(getApplication(), text) { _summaryStatus.value = it }) {
                         is Summarizer.Result.Ok -> dao.update(r.copy(summary = res.text))
                         is Summarizer.Result.Error -> _message.value = res.message
                     }
@@ -132,20 +135,20 @@ class ReadingsViewModel(
     fun translate(r: Reading) {
         if (_translationStatus.value != null) return
         translationJob = viewModelScope.launch {
-            _translationStatus.value = "קורא את המסמך…"
+            _translationStatus.value = str(R.string.reading_document)
             try {
                 val pages = PdfStore.extractPages(getApplication(), r.filePath)
                 if (pages == null) {
-                    _message.value = "לא ניתן לחלץ טקסט מהקובץ (קובץ סרוק, או Android 8)."
+                    _message.value = str(R.string.no_text_in_pdf)
                     return@launch
                 }
-                val he = com.tau.studymate.util.Translator.translatePages(pages) { _translationStatus.value = it }
+                val he = com.tau.studymate.util.Translator.translatePages(getApplication(), pages) { _translationStatus.value = it }
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { translationFile(r).writeText(he.joinToString("\u000C")) }
                 _translation.value = r.id to he
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
-                _message.value = "התרגום נכשל: ${e.localizedMessage ?: "בדוק חיבור לאינטרנט להורדת המודל"}"
+                _message.value = str(R.string.translation_failed, e.localizedMessage ?: str(R.string.check_internet_for_model))
             } finally {
                 _translationStatus.value = null
             }

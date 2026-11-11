@@ -1,9 +1,9 @@
 package com.tau.studymate.data.model
 
-enum class MaterialType(val displayName: String) {
-    SUMMARY("סיכום שיעור"),
-    RECORDING_LINK("קישור להקלטה (Panopto/Zoom)"),
-    ARTICLE("מאמר קריאה"),
-    SLIDES("מצגת"),
-    NOTE("הערה / תזכורת חומר")
+enum class MaterialType(@androidx.annotation.StringRes val labelRes: Int) {
+    SUMMARY(com.tau.studymate.R.string.material_summary),
+    RECORDING_LINK(com.tau.studymate.R.string.material_recording),
+    ARTICLE(com.tau.studymate.R.string.material_article),
+    SLIDES(com.tau.studymate.R.string.material_slides),
+    NOTE(com.tau.studymate.R.string.material_note)
 }

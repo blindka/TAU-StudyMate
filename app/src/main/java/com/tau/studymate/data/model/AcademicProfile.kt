@@ -18,7 +18,7 @@ data class CourseTemplate(
 )
 
 data class UserAcademicProfile(
-    val degreeName: String = "תקשורת ולימודי עבודה",
+    val degreeName: String = "", // empty until onboarding; a Hebrew default looked wrong in English
     val isDoubleMajor: Boolean = true,
     val year: String = "שנה א'",
     val semester: String = "סמסטר א'",

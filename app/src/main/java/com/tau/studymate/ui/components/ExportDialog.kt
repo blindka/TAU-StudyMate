@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.components
 
+import com.tau.studymate.R
+import androidx.compose.ui.res.stringResource
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -28,6 +30,8 @@ fun ExportDialog(
     onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+    // Configuration-aware resources (follow a language change)
+    val res = androidx.compose.ui.platform.LocalResources.current
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -42,7 +46,7 @@ fun ExportDialog(
                     .padding(20.dp)
             ) {
                 Text(
-                    text = "ייצוא ושיתוף דוח מטלות",
+                    text = stringResource(R.string.export_dialog_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -50,7 +54,7 @@ fun ExportDialog(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "ניתן לשתף את הדוח בוואטסאפ, במייל או להעתיק ללוח:",
+                    text = stringResource(R.string.export_dialog_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -87,7 +91,7 @@ fun ExportDialog(
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                             val clip = ClipData.newPlainText("TAU Study Report", exportText)
                             clipboard.setPrimaryClip(clip)
-                            Toast.makeText(context, "הועתק ללוח בהצלחה!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, res.getString(R.string.copied), Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
@@ -98,7 +102,7 @@ fun ExportDialog(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("העתק")
+                        Text(stringResource(R.string.copy))
                     }
 
                     Button(
@@ -108,7 +112,7 @@ fun ExportDialog(
                                 putExtra(Intent.EXTRA_TEXT, exportText)
                                 type = "text/plain"
                             }
-                            val shareIntent = Intent.createChooser(sendIntent, "שתף דוח לימודים")
+                            val shareIntent = Intent.createChooser(sendIntent, res.getString(R.string.share_report))
                             context.startActivity(shareIntent)
                         },
                         modifier = Modifier.weight(1f),
@@ -120,7 +124,7 @@ fun ExportDialog(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("שתף")
+                        Text(stringResource(R.string.share))
                     }
                 }
 
@@ -130,7 +134,7 @@ fun ExportDialog(
                     onClick = onDismiss,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("סגור")
+                    Text(stringResource(R.string.close))
                 }
             }
         }

@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.components
 
+import com.tau.studymate.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -48,7 +50,7 @@ fun AddMaterialDialog(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "הוספת חומר לימוד / הקלטה",
+                    text = stringResource(R.string.material_add_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -58,8 +60,8 @@ fun AddMaterialDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("כותרת החומר *") },
-                    placeholder = { Text("לדוגמה: הקלטת שיעור 4 / סיכום מאמר") },
+                    label = { Text(stringResource(R.string.material_title_label)) },
+                    placeholder = { Text(stringResource(R.string.material_title_hint)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true
@@ -68,7 +70,7 @@ fun AddMaterialDialog(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "סוג החומר:",
+                    text = stringResource(R.string.material_type_label),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
@@ -77,7 +79,7 @@ fun AddMaterialDialog(
                         FilterChip(
                             selected = selectedType == type,
                             onClick = { selectedType = type },
-                            label = { Text(type.displayName, fontSize = 12.sp) }
+                            label = { Text(stringResource(type.labelRes), fontSize = 12.sp) }
                         )
                     }
                 }
@@ -89,21 +91,21 @@ fun AddMaterialDialog(
                     onValueChange = { contentOrUri = it },
                     label = {
                         Text(
-                            if (selectedType == MaterialType.RECORDING_LINK) "קישור וידאו (Panopto / Drive)"
-                            else "תוכן או הערה"
+                            if (selectedType == MaterialType.RECORDING_LINK) stringResource(R.string.material_link_label)
+                            else stringResource(R.string.material_content_label)
                         )
                     },
                     placeholder = {
                         Text(
                             if (selectedType == MaterialType.RECORDING_LINK) "https://panopto.tau.ac.il/..."
-                            else "נקודות עיקריות מתוך השיעור..."
+                            else stringResource(R.string.material_content_hint)
                         )
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     maxLines = 3,
                     isError = linkInvalid,
-                    supportingText = if (linkInvalid) { { Text("זה לא נראה כמו קישור") } } else null
+                    supportingText = if (linkInvalid) { { Text(stringResource(R.string.not_a_link)) } } else null
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -125,7 +127,7 @@ fun AddMaterialDialog(
                             onCheckedChange = { isMissing = it }
                         )
                         Text(
-                            text = "סמן כחומר שחסר לי (להשלמה בהמשך)",
+                            text = stringResource(R.string.material_missing_toggle),
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.error
                         )
@@ -139,7 +141,7 @@ fun AddMaterialDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("ביטול")
+                        Text(stringResource(R.string.cancel))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -158,7 +160,7 @@ fun AddMaterialDialog(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("הוסף")
+                        Text(stringResource(R.string.add))
                     }
                 }
             }

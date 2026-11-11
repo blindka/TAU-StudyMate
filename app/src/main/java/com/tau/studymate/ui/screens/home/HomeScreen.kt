@@ -1,5 +1,8 @@
 package com.tau.studymate.ui.screens.home
 
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.edit
 import com.tau.studymate.util.appPrefs
 import android.graphics.Bitmap
@@ -133,7 +136,7 @@ fun HomeScreen(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "תזכורת: מה חסר לי להשלים? (${missingMaterials.size})",
+                        text = stringResource(R.string.home_missing_title, missingMaterials.size),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -194,7 +197,7 @@ fun HomeScreen(
                         IconButton(onClick = { viewModel.markMaterialFound(material) }) {
                             Icon(
                                 imageVector = Icons.Default.Check,
-                                contentDescription = "הושלם",
+                                contentDescription = stringResource(R.string.a11y_done),
                                 tint = PastelMintDark
                             )
                         }
@@ -206,7 +209,7 @@ fun HomeScreen(
         // Section: "מטלות קרובות להגשה" with TAU Academic Calendar Banner in Pastel Sky
         item {
             Column(modifier = Modifier.fillMaxWidth()) {
-                val academicStatus = remember { TauAcademicCalendar.getCurrentStatus() }
+                val academicStatus = remember { TauAcademicCalendar.getCurrentStatus(context) }
                 val containerColor = if (academicStatus.isExamPeriod) PastelCoral.copy(alpha = 0.5f) else PastelSky.copy(alpha = 0.6f)
                 val borderColor = if (academicStatus.isExamPeriod) PastelCoralBorder else PastelSkyBorder
                 val iconVector = if (academicStatus.isExamPeriod) Icons.Default.School else Icons.Default.CalendarToday
@@ -242,7 +245,7 @@ fun HomeScreen(
                         )
                         Icon(
                             imageVector = Icons.Default.SwapHoriz,
-                            contentDescription = "מעבר סמסטר",
+                            contentDescription = stringResource(R.string.a11y_semester_switch),
                             tint = iconTint.copy(alpha = 0.8f),
                             modifier = Modifier.size(16.dp)
                         )
@@ -257,12 +260,12 @@ fun HomeScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "מטלות קרובות להגשה",
+                        text = stringResource(R.string.home_upcoming),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                     )
                     TextButton(onClick = onNavigateToTasks) {
                         Text(
-                            text = "לכל המטלות (${tasks.size})",
+                            text = stringResource(R.string.home_all_tasks, tasks.size),
                             color = PastelLavenderDark,
                             fontWeight = FontWeight.Bold
                         )
@@ -274,7 +277,7 @@ fun HomeScreen(
         if (overdueCount > 0) {
             item {
                 Text(
-                    "⚠️ ${if (overdueCount == 1) "מטלה אחת באיחור" else "$overdueCount מטלות באיחור"}  ←",
+                    pluralStringResource(R.plurals.home_overdue, overdueCount, overdueCount),
                     color = PastelCoralDark, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
                     modifier = Modifier.fillMaxWidth().background(PastelCoral, RoundedCornerShape(12.dp))
                         .clickable(onClick = onNavigateToTasks).padding(horizontal = 14.dp, vertical = 10.dp)
@@ -296,7 +299,7 @@ fun HomeScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
-                            text = "אין מטלות פתוחות כרגע! זמן מצוין לנוח ☕",
+                            text = stringResource(R.string.home_no_open),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -349,18 +352,18 @@ fun HomeScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
                             Text(
-                                text = "תיקיות קורסים וחומרים 📚",
+                                text = stringResource(R.string.home_courses_card),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                             Text(
-                                text = "${courses.size} קורסים פעילים (${academicProfile.degreeName})",
+                                text = pluralStringResource(R.plurals.home_courses_active, courses.size, courses.size, academicProfile.degreeName),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
                     Icon(
-                        imageVector = Icons.Default.ArrowBackIosNew,
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                         tint = PastelLavenderDark
@@ -456,7 +459,7 @@ private fun HeaderCard(
     onOpenProfile: () -> Unit
 ) {
     val hour = remember { java.time.LocalTime.now().hour }
-    val greeting = when (hour) { in 5..11 -> "בוקר טוב 👋"; in 12..17 -> "צהריים טובים 👋"; else -> "ערב טוב 👋" }
+    val greeting = stringResource(when (hour) { in 5..11 -> R.string.greeting_morning; in 12..17 -> R.string.greeting_afternoon; else -> R.string.greeting_evening })
     Column(
         Modifier
             .fillMaxWidth()
@@ -468,31 +471,30 @@ private fun HeaderCard(
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(greeting, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
             Text(
-                "🔥 $streakDays ימים", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                pluralStringResource(R.plurals.streak_days, streakDays, streakDays), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 6.dp)
             )
         }
         val openReadings = readingsTotal - readingsDone
-        val headline = listOfNotNull(
-            when (pendingCount) { 0 -> null; 1 -> "מטלה אחת"; else -> "$pendingCount מטלות" },
-            when (openReadings) { 0 -> null; 1 -> "מאמר אחד"; else -> "$openReadings מאמרים" }
-        ).let { parts ->
-            when {
-                parts.isEmpty() -> "אין משימות פתוחות 🎉"
-                parts.size == 2 -> "${parts[0]} ${if (parts[1].first().isDigit()) "ו-" else "ו"}${parts[1]} פתוחים"
-                pendingCount > 0 -> "${parts[0]} ${if (pendingCount == 1) "פתוחה" else "פתוחות"}"
-                else -> "${parts[0]} ${if (openReadings == 1) "פתוח" else "פתוחים"}"
-            }
+        val headline = when {
+            pendingCount == 0 && openReadings == 0 -> stringResource(R.string.headline_none)
+            openReadings == 0 -> pluralStringResource(R.plurals.headline_tasks, pendingCount, pendingCount)
+            pendingCount == 0 -> pluralStringResource(R.plurals.headline_readings, openReadings, openReadings)
+            else -> stringResource(
+                R.string.headline_both,
+                pluralStringResource(R.plurals.count_tasks, pendingCount, pendingCount),
+                pluralStringResource(R.plurals.count_readings, openReadings, openReadings)
+            )
         }
         Text(headline, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "${academicProfile.degreeName} · ${academicProfile.year} · ${academicProfile.semester}",
+                "${academicProfile.degreeName} · ${com.tau.studymate.ui.components.profileLabel(academicProfile.year)} · ${com.tau.studymate.ui.components.profileLabel(academicProfile.semester)}",
                 color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false)
             )
             Spacer(Modifier.width(4.dp))
-            Icon(Icons.Default.Edit, "עריכת פרופיל", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(12.dp))
+            Icon(Icons.Default.Edit, stringResource(R.string.a11y_edit_profile), tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(12.dp))
         }
         if (readingsTotal > 0) {
             LinearProgressIndicator(
@@ -500,7 +502,7 @@ private fun HeaderCard(
                 color = Color.White, trackColor = Color.White.copy(alpha = 0.25f), strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
                 modifier = Modifier.fillMaxWidth().height(8.dp)
             )
-            Text("נקראו $readingsDone מתוך $readingsTotal מאמרים השבוע", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.home_readings_progress, readingsDone, readingsTotal), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
@@ -509,9 +511,9 @@ private fun HeaderCard(
 private fun QuickActions(hasSchedule: Boolean, onFocus: () -> Unit, onMoodle: () -> Unit, onSchedule: () -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         listOf(
-            Triple("סשן פוקוס", Icons.Default.Timer, Triple(PastelPeach, PastelPeachDark, onFocus)),
-            Triple("סנכרון Moodle", Icons.Default.Sync, Triple(PastelSky, PastelSkyDark, onMoodle)),
-            Triple("מערכת שעות", if (hasSchedule) Icons.Default.CalendarMonth else Icons.Default.AddAPhoto, Triple(PastelMint, PastelMintDark, onSchedule))
+            Triple(stringResource(R.string.action_focus), Icons.Default.Timer, Triple(PastelPeach, PastelPeachDark, onFocus)),
+            Triple(stringResource(R.string.action_moodle), Icons.Default.Sync, Triple(PastelSky, PastelSkyDark, onMoodle)),
+            Triple(stringResource(R.string.action_schedule), if (hasSchedule) Icons.Default.CalendarMonth else Icons.Default.AddAPhoto, Triple(PastelMint, PastelMintDark, onSchedule))
         ).forEach { (label, icon, style) ->
             val (bg, fg, onClick) = style
             Column(

@@ -18,12 +18,8 @@ object NotificationHelper {
 
     private const val TIMER_NOTIFICATION_ID = Int.MAX_VALUE // task notifications use task ids
     const val CHANNEL_TASKS_ID = "tau_studymate_tasks_channel"
-    private const val CHANNEL_TASKS_NAME = "תזכורות למטלות"
-    private const val CHANNEL_TASKS_DESC = "התראות על מועדי הגשה ותזכורות למטלות אקדמיות"
 
     const val CHANNEL_TIMER_ID = "tau_studymate_timer_channel"
-    private const val CHANNEL_TIMER_NAME = "טיימר פוקוס למידה"
-    private const val CHANNEL_TIMER_DESC = "התראות על סיום זמני למידה ופומודורו"
 
     fun createNotificationChannels(context: Context) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -31,10 +27,10 @@ object NotificationHelper {
         // Tasks Reminder Channel
         val tasksChannel = NotificationChannel(
             CHANNEL_TASKS_ID,
-            CHANNEL_TASKS_NAME,
+            context.getString(R.string.channel_tasks_name),
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = CHANNEL_TASKS_DESC
+            description = context.getString(R.string.channel_tasks_desc)
             enableVibration(true)
             enableLights(true)
         }
@@ -42,10 +38,10 @@ object NotificationHelper {
         // Timer Channel
         val timerChannel = NotificationChannel(
             CHANNEL_TIMER_ID,
-            CHANNEL_TIMER_NAME,
+            context.getString(R.string.channel_timer_name),
             NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = CHANNEL_TIMER_DESC
+            description = context.getString(R.string.channel_timer_desc)
             enableVibration(true)
             enableLights(true)
         }
@@ -94,13 +90,13 @@ object NotificationHelper {
             if (description.isNotBlank()) {
                 append(description)
             } else {
-                append("מועד ההגשה מתקרב! זה הזמן לסיים את המטלה 📚")
+                append(context.getString(R.string.reminder_default_body))
             }
         }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_TASKS_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("תזכורת למטלה: $title")
+            .setContentTitle(context.getString(R.string.reminder_title_format, title))
             .setContentText(contentText)
             .setStyle(NotificationCompat.BigTextStyle().bigText(contentText))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -117,8 +113,8 @@ object NotificationHelper {
 
     fun showTimerNotification(
         context: Context,
-        title: String = "זמן הלמידה הסתיים! ⏰",
-        message: String = "כל הכבוד על הפוקוס! קח/י הפסקה קצרה וממשיכים 💪"
+        title: String = context.getString(R.string.timer_done_title),
+        message: String = context.getString(R.string.timer_done_default_body)
     ) {
         if (!hasNotificationPermission(context)) return
 
@@ -153,9 +149,9 @@ object NotificationHelper {
         showTaskNotification(
             context = context,
             taskId = -1, // never collides with a real task id
-            title = "בדיקת התראות - StudyMate",
-            description = "מעולה! מערכת ההתראות פעילה ותקפיץ לך תזכורות למטלות בזמן 🎯",
-            courseName = "מערכת תזכורות"
+            title = context.getString(R.string.test_notification_title),
+            description = context.getString(R.string.test_notification_body),
+            courseName = context.getString(R.string.test_notification_source)
         )
     }
 

@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.navigation
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -25,12 +26,12 @@ fun BottomNavigationBar(
                 icon = {
                     Icon(
                         imageVector = screen.icon,
-                        contentDescription = screen.title
+                        contentDescription = stringResource(screen.titleRes)
                     )
                 },
                 label = {
                     Text(
-                        text = screen.title,
+                        text = stringResource(screen.titleRes),
                         fontSize = 11.sp,
                         maxLines = 1,
                         softWrap = false,

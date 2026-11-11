@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.components
 
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,7 +32,7 @@ fun DepartmentBadge(
         modifier = modifier
     ) {
         Text(
-            text = department.displayName,
+            text = stringResource(department.labelRes),
             color = textColor,
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,

@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.screens.courses
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -57,10 +59,10 @@ fun CoursesScreen(
     courseToDelete?.let { course ->
         AlertDialog(
             onDismissRequest = { courseToDelete = null },
-            title = { Text("למחוק את הקורס?") },
-            text = { Text("\"${course.name}\" יימחק יחד עם כל החומרים וההקלטות שלו. המטלות יישארו, בלי שיוך לקורס.") },
-            confirmButton = { TextButton(onClick = { viewModel.deleteCourse(course); courseToDelete = null }) { Text("מחיקה", color = MaterialTheme.colorScheme.error) } },
-            dismissButton = { TextButton(onClick = { courseToDelete = null }) { Text("ביטול") } }
+            title = { Text(stringResource(R.string.course_delete_title)) },
+            text = { Text(stringResource(R.string.course_delete_body, course.name)) },
+            confirmButton = { TextButton(onClick = { viewModel.deleteCourse(course); courseToDelete = null }) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton(onClick = { courseToDelete = null }) { Text(stringResource(R.string.cancel)) } }
         )
     }
     var selectedDept by remember { mutableStateOf<Department?>(null) }
@@ -93,7 +95,7 @@ fun CoursesScreen(
                 contentColor = Color.White,
                 shape = RoundedCornerShape(18.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "הוסף קורס")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.a11y_add_course))
             }
         }
     ) { paddingValues ->
@@ -113,12 +115,12 @@ fun CoursesScreen(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("חיפוש קורס…", maxLines = 1) },
+                    placeholder = { Text(stringResource(R.string.courses_search), maxLines = 1) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TauPurplePrimary) },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "נקה")
+                                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.a11y_clear))
                             }
                         }
                     },
@@ -147,7 +149,7 @@ fun CoursesScreen(
                 ) {
                     Icon(
                         imageVector = if (scheduleBitmap != null || scheduleFileName != null) Icons.Default.CalendarMonth else Icons.Default.AddAPhoto,
-                        contentDescription = "מערכת שעות",
+                        contentDescription = stringResource(R.string.a11y_timetable),
                         tint = TauPurplePrimary,
                         modifier = Modifier.size(24.dp)
                     )
@@ -165,7 +167,7 @@ fun CoursesScreen(
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.ic_academic_cap),
-                        contentDescription = "החלפת תואר ומערכת שעות",
+                        contentDescription = stringResource(R.string.a11y_switch_degree),
                         modifier = Modifier.size(34.dp)
                     )
                 }
@@ -186,13 +188,13 @@ fun CoursesScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = "תואר: ${academicProfile.degreeName} • ${academicProfile.year} • ${academicProfile.semester}",
+                        text = stringResource(R.string.courses_degree_line, academicProfile.degreeName, com.tau.studymate.ui.components.profileLabel(academicProfile.year), com.tau.studymate.ui.components.profileLabel(academicProfile.semester)),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = TauPurpleDark
                     )
                     Text(
-                        text = "החלף תואר 🎓",
+                        text = stringResource(R.string.courses_switch_degree),
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = TauPurplePrimary
@@ -212,7 +214,7 @@ fun CoursesScreen(
                     FilterChip(
                         selected = selectedDept == null,
                         onClick = { selectedDept = null },
-                        label = { Text("כל הקורסים (${courses.size})") }
+                        label = { Text(stringResource(R.string.courses_all, courses.size)) }
                     )
                 }
                 items(Department.entries) { dept ->
@@ -220,7 +222,7 @@ fun CoursesScreen(
                     FilterChip(
                         selected = selectedDept == dept,
                         onClick = { selectedDept = dept },
-                        label = { Text("${dept.displayName} ($count)") }
+                        label = { Text("${stringResource(dept.labelRes)} ($count)") }
                     )
                 }
             }
@@ -243,12 +245,12 @@ fun CoursesScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "לא נמצאו קורסים",
+                            text = stringResource(R.string.courses_empty),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "ניתן להוסיף קורס חדש בעזרת כפתור + למטה",
+                            text = stringResource(R.string.courses_empty_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -351,31 +353,31 @@ private fun CourseCard(
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    course.department.displayName, color = chipFg, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                    stringResource(course.department.labelRes), color = chipFg, fontSize = 12.sp, fontWeight = FontWeight.Medium,
                     modifier = Modifier.background(chipBg, RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 3.dp)
                 )
                 Spacer(Modifier.weight(1f))
                 Text(course.courseNumber, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, "עריכת קורס", tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Edit, stringResource(R.string.a11y_edit_course), tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
                 }
                 IconButton(onClick = onDelete) { // default 48dp touch target
-                    Icon(Icons.Default.DeleteOutline, "מחק קורס", tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.DeleteOutline, stringResource(R.string.a11y_delete_course), tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
                 }
             }
             Text(course.name, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Text(
-                listOfNotNull(course.lecturer.takeIf { it.isNotBlank() }, course.semester, "${course.credits} נ״ז").joinToString(" · "),
+                listOfNotNull(course.lecturer.takeIf { it.isNotBlank() }, com.tau.studymate.ui.components.profileLabel(course.semester), stringResource(R.string.credits_short, course.credits.toString())).joinToString(" · "),
                 fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    when (openTasks) { 0 -> "✅ אין מטלות פתוחות"; 1 -> "✅ מטלה פתוחה אחת"; else -> "✅ $openTasks מטלות פתוחות" },
+                    if (openTasks == 0) stringResource(R.string.course_no_open_tasks) else pluralStringResource(R.plurals.course_open_tasks, openTasks, openTasks),
                     color = PastelLavenderDeep, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.background(PastelLavender, RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 5.dp)
                 )
                 Text(
-                    "📁 חומרים והקלטות", color = chipFg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                    stringResource(R.string.course_materials_pill), color = chipFg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.background(chipBg, RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 5.dp)
                 )
             }

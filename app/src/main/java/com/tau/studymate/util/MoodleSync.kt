@@ -1,5 +1,6 @@
 package com.tau.studymate.util
 
+import com.tau.studymate.R
 import android.content.Context
 import androidx.core.content.edit
 import androidx.work.*
@@ -16,7 +17,7 @@ object MoodleSync {
     suspend fun syncAndStore(app: StudyMateApp, url: String): Pair<MoodleSyncResult, Int> {
         val repo = app.repository
         val courses = repo.allCourses.first()
-        val result = MoodleSyncService.fetchAndSyncMoodle(url, courses)
+        val result = MoodleSyncService.fetchAndSyncMoodle(app, url, courses)
         if (!result.success) return result to 0
         val names = courses.associate { it.id to it.name }
         val (inserts, updates) = MoodleSyncService.merge(repo.allTasks.first(), result.tasks)
@@ -53,7 +54,7 @@ object MoodleSync {
             val (result, added) = syncAndStore(app, url)
             if (added > 0) {
                 NotificationHelper.showTimerNotification(
-                    app, "נוספו $added מטלות מ-Moodle 📚", "הסנכרון היומי מצא מועדי הגשה חדשים"
+                    app, app.resources.getQuantityString(R.plurals.moodle_new_tasks_title, added, added), app.getString(R.string.moodle_new_tasks_body)
                 )
             }
             return if (result.success) Result.success() else Result.retry()

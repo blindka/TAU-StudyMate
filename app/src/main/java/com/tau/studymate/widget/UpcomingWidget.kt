@@ -1,5 +1,6 @@
 package com.tau.studymate.widget
 
+import com.tau.studymate.R
 import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -53,7 +54,7 @@ class UpcomingWidget : GlanceAppWidget() {
                 Text("StudyMate", style = TextStyle(color = white, fontWeight = FontWeight.Bold, fontSize = 15.sp))
                 Spacer(GlanceModifier.height(6.dp))
                 if (tasks.isEmpty()) {
-                    Text("אין הגשות קרובות 🎉", style = TextStyle(color = white, fontSize = 13.sp))
+                    Text(context.getString(R.string.widget_no_deadlines), style = TextStyle(color = white, fontSize = 13.sp))
                 } else tasks.forEach { t ->
                     val day = Instant.ofEpochMilli(t.dueDate).atZone(zone).toLocalDate()
                     Text(
@@ -65,7 +66,7 @@ class UpcomingWidget : GlanceAppWidget() {
                 if (readings.isNotEmpty()) {
                     Spacer(GlanceModifier.height(6.dp))
                     Text(
-                        "📄 ${readings.count { it.isRead }} מתוך ${readings.size} מאמרים השבוע",
+                        context.getString(R.string.widget_readings, readings.count { it.isRead }, readings.size),
                         style = TextStyle(color = ColorProvider(Color(0xFFEDE9FE)), fontSize = 12.sp)
                     )
                 }

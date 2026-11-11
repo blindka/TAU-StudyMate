@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.components
 
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -58,6 +59,7 @@ fun AcademicProfileDialog(
     ) -> Boolean
 ) {
     var degreeName by remember { mutableStateOf(currentProfile.degreeName) }
+    val degreeRequired = stringResource(R.string.degree_required)
     var isDoubleMajor by remember { mutableStateOf(currentProfile.isDoubleMajor) }
     var selectedYear by remember { mutableStateOf(currentProfile.year) }
     var selectedSemester by remember { mutableStateOf(currentProfile.semester) }
@@ -109,12 +111,12 @@ fun AcademicProfileDialog(
 
                     Column {
                         Text(
-                            text = "הגדרת תואר ומערכת שעות",
+                            text = stringResource(R.string.profile_title),
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "התאמת הקורסים והמטלות ללימודים שלך",
+                            text = stringResource(R.string.profile_subtitle),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -125,7 +127,7 @@ fun AcademicProfileDialog(
 
                 // Degree Track Mode: Single vs Double Major
                 Text(
-                    text = "מסלול לימודים:",
+                    text = stringResource(R.string.track_label),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
@@ -136,13 +138,13 @@ fun AcademicProfileDialog(
                     FilterChip(
                         selected = isDoubleMajor,
                         onClick = { isDoubleMajor = true },
-                        label = { Text("תואר דו-חוגי", fontWeight = if (isDoubleMajor) FontWeight.Bold else FontWeight.Normal) },
+                        label = { Text(stringResource(R.string.double_major), fontWeight = if (isDoubleMajor) FontWeight.Bold else FontWeight.Normal) },
                         modifier = Modifier.weight(1f)
                     )
                     FilterChip(
                         selected = !isDoubleMajor,
                         onClick = { isDoubleMajor = false },
-                        label = { Text("תואר חד-חוגי", fontWeight = if (!isDoubleMajor) FontWeight.Bold else FontWeight.Normal) },
+                        label = { Text(stringResource(R.string.single_major), fontWeight = if (!isDoubleMajor) FontWeight.Bold else FontWeight.Normal) },
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -156,8 +158,8 @@ fun AcademicProfileDialog(
                         degreeName = it
                         errorMessage = null
                     },
-                    label = { Text("שם התואר / חוגים *") },
-                    placeholder = { Text("לדוגמה: תקשורת ולימודי עבודה, מדעי המחשב...") },
+                    label = { Text(stringResource(R.string.degree_label)) },
+                    placeholder = { Text(stringResource(R.string.degree_hint)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     isError = errorMessage != null,
@@ -165,7 +167,7 @@ fun AcademicProfileDialog(
                         if (errorMessage != null) {
                             Text(text = errorMessage!!, color = UrgentRed)
                         } else {
-                            Text("כל תואר מתאים. תואר שלא ברשימה מתחיל בלי קורסים, ומוסיפים אותם במסך הקורסים או דרך Moodle")
+                            Text(stringResource(R.string.degree_any_hint))
                         }
                     },
                     trailingIcon = {
@@ -178,7 +180,7 @@ fun AcademicProfileDialog(
 
                 // Quick Degree Suggestions from Catalog
                 Text(
-                    text = "תארים פופולריים מהירים:",
+                    text = stringResource(R.string.popular_degrees),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.outline
                 )
@@ -212,7 +214,7 @@ fun AcademicProfileDialog(
 
                 // Year Selection
                 Text(
-                    text = "שנת לימודים:",
+                    text = stringResource(R.string.year_label),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
@@ -228,7 +230,7 @@ fun AcademicProfileDialog(
                             onClick = { selectedYear = y },
                             label = {
                                 Text(
-                                    text = y,
+                                    text = com.tau.studymate.ui.components.profileLabel(y),
                                     fontSize = 12.sp,
                                     maxLines = 1,
                                     softWrap = false
@@ -242,7 +244,7 @@ fun AcademicProfileDialog(
 
                 // Semester Selection
                 Text(
-                    text = "סמסטר נוכחי:",
+                    text = stringResource(R.string.current_semester),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
@@ -258,7 +260,7 @@ fun AcademicProfileDialog(
                             onClick = { selectedSemester = s },
                             label = {
                                 Text(
-                                    text = s,
+                                    text = com.tau.studymate.ui.components.profileLabel(s),
                                     fontSize = 12.sp,
                                     maxLines = 1,
                                     softWrap = false
@@ -287,34 +289,36 @@ fun AcademicProfileDialog(
                 // Backup / restore: one .zip with data, PDFs and settings
                 val backupScope = rememberCoroutineScope()
                 val ctx = androidx.compose.ui.platform.LocalContext.current
+                // Configuration-aware resources (follow a language change)
+                val res = androidx.compose.ui.platform.LocalResources.current
                 var confirmRestore by remember { mutableStateOf<android.net.Uri?>(null) }
                 fun toast(msg: String) = android.widget.Toast.makeText(ctx, msg, android.widget.Toast.LENGTH_LONG).show()
                 val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
                     if (uri != null) backupScope.launch {
                         runCatching { com.tau.studymate.util.BackupManager.export(ctx, uri) }
-                            .onSuccess { toast("הגיבוי נשמר") }.onFailure { toast("הגיבוי נכשל: ${it.message}") }
+                            .onSuccess { toast(res.getString(R.string.backup_saved)) }.onFailure { toast(res.getString(R.string.backup_failed, it.message ?: "")) }
                     }
                 }
                 val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> confirmRestore = uri }
                 Row(Modifier.align(Alignment.CenterHorizontally)) {
-                    TextButton(onClick = { exportLauncher.launch("StudyMate-backup-${java.time.LocalDate.now()}.zip") }) { Text("גיבוי לקובץ") }
-                    TextButton(onClick = { importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) }) { Text("שחזור מגיבוי") }
+                    TextButton(onClick = { exportLauncher.launch("StudyMate-backup-${java.time.LocalDate.now()}.zip") }) { Text(stringResource(R.string.backup_button)) }
+                    TextButton(onClick = { importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) }) { Text(stringResource(R.string.restore_button)) }
                 }
                 confirmRestore?.let { uri ->
                     AlertDialog(
                         onDismissRequest = { confirmRestore = null },
-                        title = { Text("לשחזר מגיבוי?") },
-                        text = { Text("כל הנתונים הנוכחיים יוחלפו בנתונים מהגיבוי, והאפליקציה תיפתח מחדש.") },
+                        title = { Text(stringResource(R.string.restore_title)) },
+                        text = { Text(stringResource(R.string.restore_body)) },
                         confirmButton = {
                             TextButton(onClick = {
                                 confirmRestore = null
                                 backupScope.launch {
                                     runCatching { com.tau.studymate.util.BackupManager.restore(ctx, uri) }
-                                        .onFailure { toast(it.message ?: "השחזור נכשל") }
+                                        .onFailure { toast(it.message ?: res.getString(R.string.restore_failed)) }
                                 }
-                            }) { Text("שחזור") }
+                            }) { Text(stringResource(R.string.restore)) }
                         },
-                        dismissButton = { TextButton(onClick = { confirmRestore = null }) { Text("ביטול") } }
+                        dismissButton = { TextButton(onClick = { confirmRestore = null }) { Text(stringResource(R.string.cancel)) } }
                     )
                 }
 
@@ -324,7 +328,7 @@ fun AcademicProfileDialog(
                     onClick = { uriHandler.openUri("https://blindka.github.io/TAU-StudyMate/privacy.html") },
                     modifier = Modifier.align(Alignment.CenterHorizontally)
                 ) {
-                    Text("מדיניות פרטיות")
+                    Text(stringResource(R.string.privacy_policy))
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -335,13 +339,13 @@ fun AcademicProfileDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("ביטול")
+                        Text(stringResource(R.string.cancel))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
                             if (degreeName.isBlank()) {
-                                errorMessage = "נא להזין שם תואר או חוג"
+                                errorMessage = degreeRequired
                                 return@Button
                             }
                             val success = onSave(
@@ -354,7 +358,7 @@ fun AcademicProfileDialog(
                                 importedFileName
                             )
                             if (!success) {
-                                errorMessage = "נא להזין שם תואר או חוג"
+                                errorMessage = degreeRequired
                             } else {
                                 onDismiss()
                             }
@@ -364,7 +368,7 @@ fun AcademicProfileDialog(
                     ) {
                         Icon(Icons.Default.Done, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("החל והתאם קורסים", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.apply_courses), fontWeight = FontWeight.Bold)
                     }
                 }
             }

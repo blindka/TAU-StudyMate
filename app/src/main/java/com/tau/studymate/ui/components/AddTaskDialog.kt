@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.components
 
+import com.tau.studymate.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -77,7 +79,7 @@ fun AddTaskDialog(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = if (initial == null) "הוספת מטלה חדשה" else "עריכת מטלה",
+                    text = stringResource(if (initial == null) R.string.task_add_title else R.string.task_edit_title),
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -87,8 +89,8 @@ fun AddTaskDialog(
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("כותרת המטלה *") },
-                    placeholder = { Text("לדוגמה: הגשת תרגיל בית 2") },
+                    label = { Text(stringResource(R.string.task_title_label)) },
+                    placeholder = { Text(stringResource(R.string.task_title_hint)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     singleLine = true
@@ -103,10 +105,10 @@ fun AddTaskDialog(
                 ) {
                     val currentCourse = courses.find { it.id == selectedCourseId }
                     OutlinedTextField(
-                        value = currentCourse?.let { "${it.courseNumber} - ${it.name}" } ?: "ללא קורס",
+                        value = currentCourse?.let { "${it.courseNumber} - ${it.name}" } ?: stringResource(R.string.no_course),
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("שיוך לקורס") },
+                        label = { Text(stringResource(R.string.task_course_label)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCourseDropdown) },
                         modifier = Modifier
                             .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
@@ -135,8 +137,8 @@ fun AddTaskDialog(
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("הערות או קישור לחומרים") },
-                    placeholder = { Text("הנחיות, עמודים בספר או דגשים...") },
+                    label = { Text(stringResource(R.string.task_notes_label)) },
+                    placeholder = { Text(stringResource(R.string.task_notes_hint)) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
                     maxLines = 3
@@ -146,7 +148,7 @@ fun AddTaskDialog(
 
                 // Due date selector
                 Text(
-                    text = "מועד הגשה:",
+                    text = stringResource(R.string.due_label),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
@@ -156,7 +158,7 @@ fun AddTaskDialog(
                 ) {
                     OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.weight(1f)) {
                         Icon(Icons.Default.CalendarMonth, null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp))
-                        Text(dueAt.format(java.time.format.DateTimeFormatter.ofPattern("EEE d.M", java.util.Locale.forLanguageTag("he"))))
+                        Text(dueAt.format(java.time.format.DateTimeFormatter.ofPattern("EEE d.M")))
                     }
                     OutlinedButton(onClick = { showTimePicker = true }) {
                         Icon(Icons.Default.AccessTime, null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp))
@@ -168,7 +170,7 @@ fun AddTaskDialog(
 
                 // Priority
                 Text(
-                    text = "עדיפות:",
+                    text = stringResource(R.string.priority_label),
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
@@ -180,7 +182,7 @@ fun AddTaskDialog(
                         FilterChip(
                             selected = selectedPriority == priority,
                             onClick = { selectedPriority = priority },
-                            label = { Text(priority.displayName, fontSize = 12.sp) }
+                            label = { Text(stringResource(priority.labelRes), fontSize = 12.sp) }
                         )
                     }
                 }
@@ -190,7 +192,7 @@ fun AddTaskDialog(
                 OutlinedTextField(
                     value = estimatedMinutes,
                     onValueChange = { estimatedMinutes = it },
-                    label = { Text("הערכת זמן ביצוע בדקות (להרגלי למידה)") },
+                    label = { Text(stringResource(R.string.estimate_label)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
@@ -214,7 +216,7 @@ fun AddTaskDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "הפעל התראת תזכורת למטלה 🔔",
+                            text = stringResource(R.string.reminder_toggle),
                             style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
                         )
                     }
@@ -229,7 +231,7 @@ fun AddTaskDialog(
                 ) {
                     TextButton(onClick = {
                         context.startActivity(android.content.Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, android.net.Uri.parse("package:${context.packageName}")))
-                    }) { Text("להפעלת תזכורות בזמן המדויק ←", fontSize = 12.sp) }
+                    }) { Text(stringResource(R.string.exact_alarm_link), fontSize = 12.sp) }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -239,7 +241,7 @@ fun AddTaskDialog(
                     horizontalArrangement = Arrangement.End
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("ביטול")
+                        Text(stringResource(R.string.cancel))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
@@ -265,7 +267,7 @@ fun AddTaskDialog(
                     ) {
                         Icon(if (initial == null) Icons.Default.Add else Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text(if (initial == null) "הוסף מטלה" else "שמירה")
+                        Text(stringResource(if (initial == null) R.string.add_task_button else R.string.save))
                     }
                 }
             }
@@ -283,17 +285,17 @@ fun AddTaskDialog(
                         dueAt = d.atTime(dueAt.toLocalTime())
                     }
                     showDatePicker = false
-                }) { Text("אישור") }
+                }) { Text(stringResource(R.string.ok)) }
             },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("ביטול") } }
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.cancel)) } }
         ) { DatePicker(state) }
     }
     if (showTimePicker) {
         val state = rememberTimePickerState(initialHour = dueAt.hour, initialMinute = dueAt.minute, is24Hour = true)
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            confirmButton = { TextButton(onClick = { dueAt = dueAt.withHour(state.hour).withMinute(state.minute); showTimePicker = false }) { Text("אישור") } },
-            dismissButton = { TextButton(onClick = { showTimePicker = false }) { Text("ביטול") } },
+            confirmButton = { TextButton(onClick = { dueAt = dueAt.withHour(state.hour).withMinute(state.minute); showTimePicker = false }) { Text(stringResource(R.string.ok)) } },
+            dismissButton = { TextButton(onClick = { showTimePicker = false }) { Text(stringResource(R.string.cancel)) } },
             text = { TimePicker(state) }
         )
     }

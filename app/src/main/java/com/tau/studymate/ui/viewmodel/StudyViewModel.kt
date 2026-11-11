@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.viewmodel
 
+import com.tau.studymate.R
 import androidx.core.content.edit
 import com.tau.studymate.util.appPrefs
 import com.tau.studymate.util.decodeScaled
@@ -83,7 +84,7 @@ class StudyViewModel(
         }
     }
 
-    fun saveSchedulePhoto(bitmap: Bitmap, fileName: String = "צילום_מערכת_שעות.jpg") {
+    fun saveSchedulePhoto(bitmap: Bitmap, fileName: String = "schedule.jpg") {
         viewModelScope.launch {
             try {
                 val file = File(getApplication<Application>().filesDir, "saved_schedule_photo.jpg")
@@ -182,11 +183,8 @@ class StudyViewModel(
 
     // Motivational Hebrew messages for reward
     private val rewardQuotes = listOf(
-        "אלוף/ה! עוד צעד משמעותי לעבר התואר! 🎓",
-        "מטלה נוספת נמחקה! מגיע לך הפסקת קפה בבניין נפתלי ☕",
-        "התמדה מנצחת! ההרגלים שלך משתפרים מיום ליום ✨",
-        "וואו, איזה קצב! הראש פנוי לעוד הישג 🚀",
-        "מעולה! תקשורת ולימודי עבודה קטנים עליך! 💪"
+        R.string.celebration_quote_1, R.string.celebration_quote_2, R.string.celebration_quote_3,
+        R.string.celebration_quote_4, R.string.celebration_quote_5
     )
 
     fun setDepartmentFilter(dept: Department?) {
@@ -216,9 +214,9 @@ class StudyViewModel(
                 val prefs = getApplication<Application>().appPrefs()
                 if (prefs.getString("last_celebration_day", null) == today) return@launch
                 prefs.edit { putString("last_celebration_day", today) }
-                val randomQuote = rewardQuotes.random()
+                val randomQuote = getApplication<Application>().getString(rewardQuotes.random())
                 _celebrationReward.value = CelebrationReward(
-                    title = "מטלה הושלמה בהצלחה!",
+                    title = getApplication<Application>().getString(R.string.celebration_title),
                     message = randomQuote,
                     completedTaskTitle = task.title,
                     streakDays = calculateStreakDays()
@@ -439,6 +437,7 @@ class StudyViewModel(
 
     fun getExportText(): String {
         return repository.generateExportSummary(
+            getApplication(),
             tasks = filteredTasks.value,
             courses = courses.value
         )
