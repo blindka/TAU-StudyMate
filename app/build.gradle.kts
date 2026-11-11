@@ -1,4 +1,4 @@
-val appVersion = "0.1.7"
+val appVersion = "0.1.8"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -8,13 +8,12 @@ plugins {
 
 android {
     namespace = "com.tau.studymate"
-    //noinspection GradleDependency
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.tau.studymate"
         minSdk = 26
-        // 37 needs the new SDK installed and is not required by Play yet
+        // Play requires 36; 37 changes runtime behavior, so it gets its own tested release
         //noinspection OldTargetApi
         targetSdk = 36
         // Bump appVersion for every Play upload; versionCode follows it (0.0.1 -> 1, 0.1.0 -> 100, 1.2.3 -> 10203)
