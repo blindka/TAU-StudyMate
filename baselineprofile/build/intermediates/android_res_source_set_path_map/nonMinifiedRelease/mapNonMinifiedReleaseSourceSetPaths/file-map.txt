@@ -1,8 +1,0 @@
-com.tau.studymate.baselineprofile-pngs-0 /Users/eyalhaimov/Downloads/KaplanUni/baselineprofile/build/generated/res/pngs/nonMinifiedRelease
-com.tau.studymate.baselineprofile-updated_navigation_xml-1 /Users/eyalhaimov/Downloads/KaplanUni/baselineprofile/build/generated/updated_navigation_xml/nonMinifiedRelease
-com.tau.studymate.baselineprofile-packageNonMinifiedReleaseResources-2 /Users/eyalhaimov/Downloads/KaplanUni/baselineprofile/build/intermediates/incremental/nonMinifiedRelease/packageNonMinifiedReleaseResources/merged.dir
-com.tau.studymate.baselineprofile-packageNonMinifiedReleaseResources-3 /Users/eyalhaimov/Downloads/KaplanUni/baselineprofile/build/intermediates/incremental/nonMinifiedRelease/packageNonMinifiedReleaseResources/stripped.dir
-com.tau.studymate.baselineprofile-nonMinifiedRelease-4 /Users/eyalhaimov/Downloads/KaplanUni/baselineprofile/build/intermediates/merged_res/nonMinifiedRelease/mergeNonMinifiedReleaseResources
-com.tau.studymate.baselineprofile-main-5 /Users/eyalhaimov/Downloads/KaplanUni/baselineprofile/src/main/res
-com.tau.studymate.baselineprofile-nonMinifiedRelease-6 /Users/eyalhaimov/Downloads/KaplanUni/baselineprofile/src/nonMinifiedRelease/res
-gradleHome-0 /Users/eyalhaimov/.gradle

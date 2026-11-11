@@ -1,9 +1,0 @@
-<?xml version='1.0' encoding='UTF-8' ?>
-<testsuites tests="1" failures="0" errors="0" skipped="0" time="0.000" timestamp="2026-11-11T21:58:00" hostname="localhost">
-  <testsuite name="com.tau.studymate.baselineprofile.StartupProfileGenerator" tests="1" failures="0" errors="0" skipped="0" time="97.495" timestamp="2026-11-11T21:58:00" hostname="localhost">
-    <properties>
-      <property name="device" value="emulator-5554" />
-    </properties>
-    <testcase name="generate" classname="com.tau.studymate.baselineprofile.StartupProfileGenerator" time="97.495" />
-  </testsuite>
-</testsuites>
