@@ -1,0 +1,6 @@
+StartupProfileGenerator_generate
+Total run time Ns: 97418520671.
+Baseline profile [results](file://StartupProfileGenerator_generate-baseline-prof-2026-11-11-21-58-00.txt)
+
+To copy the profile use:
+adb -e pull "/sdcard/Android/media/com.tau.studymate.baselineprofile/additional_test_output/StartupProfileGenerator_generate-baseline-prof.txt" .

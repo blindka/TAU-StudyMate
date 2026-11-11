@@ -109,7 +109,7 @@ fun AddTaskDialog(
                         label = { Text("שיוך לקורס") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCourseDropdown) },
                         modifier = Modifier
-                            .menuAnchor()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                             .fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     )

@@ -24,3 +24,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "TAUStudyMate"
 include(":app")
+include(":baselineprofile")

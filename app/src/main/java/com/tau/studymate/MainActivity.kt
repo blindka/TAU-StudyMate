@@ -76,29 +76,8 @@ class MainActivity : ComponentActivity() {
             TAUStudyMateTheme {
                 // Ensure RTL layout for full Hebrew support
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                    NotificationPermissionHandler()
                     MainAppContent(viewModel = viewModel, readingsViewModel = readingsViewModel, timerViewModel = timerViewModel, openTaskId = openTaskId)
                 }
-            }
-        }
-    }
-}
-
-@Composable
-private fun NotificationPermissionHandler() {
-    val context = LocalContext.current
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        val launcher = rememberLauncherForActivityResult(
-            contract = ActivityResultContracts.RequestPermission()
-        ) { _ -> }
-
-        LaunchedEffect(Unit) {
-            val isGranted = ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-            if (!isGranted) {
-                launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
         }
     }

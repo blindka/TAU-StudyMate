@@ -65,6 +65,7 @@ fun HabitsAnalyticsScreen(
 
     // Insights computed from the user's own data (previously hardcoded text)
     val streak by viewModel.streakDays.collectAsState()
+    val requestNotifications = com.tau.studymate.ui.components.rememberNotificationPermissionRequest()
     val tracked = remember(tasks) { tasks.filter { it.actualMinutes > 0 && it.estimatedMinutes > 0 } }
     val velocityKnown = tracked.size >= 2
     val velocityText = remember(tracked) {
@@ -138,7 +139,7 @@ fun HabitsAnalyticsScreen(
                             label = { Text("למידה עבור קורס") },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCourseDropdown) },
                             modifier = Modifier
-                                .menuAnchor()
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
                                 .fillMaxWidth(),
                             shape = RoundedCornerShape(14.dp),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -219,7 +220,7 @@ fun HabitsAnalyticsScreen(
                     ) {
                         if (!isRunning) {
                             Button(
-                                onClick = { timerViewModel.startTimer(courseId = selectedCourseId) },
+                                onClick = { requestNotifications(); timerViewModel.startTimer(courseId = selectedCourseId) },
                                 shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = PastelLavenderDark,

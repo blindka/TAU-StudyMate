@@ -41,30 +41,38 @@ object PdfStore {
             if (c.moveToFirst()) c.getString(0) else null
         }?.substringBeforeLast('.')?.replace('_', ' ')?.trim()?.ifBlank { null } ?: "מסמך"
 
-    /** Page text needs Android 15+ (PdfRenderer text API). Returns null when the device can't extract text. */
-    suspend fun extractText(path: String, maxChars: Int): String? = withContext(Dispatchers.IO) {
-        if (Build.VERSION.SDK_INT < 35) return@withContext null
-        ParcelFileDescriptor.open(File(path), ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
-            PdfRenderer(fd).use { r ->
-                val sb = StringBuilder()
-                for (i in 0 until r.pageCount) {
-                    if (sb.length >= maxChars) break
-                    r.openPage(i).use { p -> p.textContents.forEach { sb.append(it.text).append('\n') } }
+    /**
+     * Text of every page, or null when it can't be read (Android 8, or a scanned PDF with no text layer).
+     * Android 15+ uses the built-in PdfRenderer text API; Android 9–14 use androidx.pdf.
+     */
+    suspend fun extractPages(context: Context, path: String): List<String>? = withContext(Dispatchers.IO) {
+        val pages = when {
+            Build.VERSION.SDK_INT >= 35 ->
+                ParcelFileDescriptor.open(File(path), ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
+                    PdfRenderer(fd).use { r ->
+                        (0 until r.pageCount).map { i -> r.openPage(i).use { p -> p.textContents.joinToString("\n") { it.text } } }
+                    }
                 }
-                sb.toString().take(maxChars).ifBlank { null }
-            }
+            Build.VERSION.SDK_INT >= 28 -> extractPagesAndroidxPdf(context, path)
+            else -> null
         }
+        pages?.takeIf { list -> list.any { it.isNotBlank() } }
     }
 
-    /** Text of every page (Android 15+). Null when the device can't extract text or the PDF is scanned images. */
-    suspend fun extractPages(path: String): List<String>? = withContext(Dispatchers.IO) {
-        if (Build.VERSION.SDK_INT < 35) return@withContext null
-        ParcelFileDescriptor.open(File(path), ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
-            PdfRenderer(fd).use { r ->
-                (0 until r.pageCount).map { i -> r.openPage(i).use { p -> p.textContents.joinToString("\n") { it.text } } }
-            }
-        }.takeIf { pages -> pages.any { it.isNotBlank() } }
-    }
+    /** androidx.pdf path (Android 9+). Separate so the device test can exercise it on any OS version. */
+    internal suspend fun extractPagesAndroidxPdf(context: Context, path: String): List<String>? = runCatching {
+        // The library runs in a separate sandboxed process; never let a stuck bind freeze the feature
+        kotlinx.coroutines.withTimeoutOrNull(30_000) {
+            androidx.pdf.SandboxedPdfLoader(context.applicationContext, Dispatchers.IO)
+                .openDocument(Uri.fromFile(File(path)), null).use { doc ->
+                    (0 until doc.pageCount).map { i -> doc.getPageContent(i)?.textContents?.joinToString("\n") { it.text }.orEmpty() }
+                }
+        }
+    }.getOrNull()
+
+    /** First [maxChars] characters of the document's text, for the summary prompt. */
+    suspend fun extractText(context: Context, path: String, maxChars: Int): String? =
+        extractPages(context, path)?.joinToString("\n")?.take(maxChars)?.ifBlank { null }
 
     /** Renders pages on demand. PdfRenderer allows one open page at a time, hence the mutex. */
     class Document(path: String) : Closeable {

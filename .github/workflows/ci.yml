@@ -1,0 +1,26 @@
+name: CI
+
+# Runs on every push and pull request; publishing to Play stays in deploy.yml (tags only).
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    name: Unit tests, lint and release build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - run: chmod +x gradlew
+
+      # The benchmark build is release-like (R8 on) but debug-signed, so it needs no secrets
+      - name: Tests, lint, R8
+        run: ./gradlew :app:testDebugUnitTest :app:lintVitalRelease :app:assembleBenchmark

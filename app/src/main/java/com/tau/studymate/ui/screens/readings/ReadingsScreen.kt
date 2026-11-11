@@ -58,6 +58,11 @@ fun ReadingsScreen(viewModel: ReadingsViewModel, onOpen: (Reading) -> Unit, modi
     val filter by viewModel.courseFilter.collectAsState()
     val message by viewModel.message.collectAsState()
     val courseMap = remember(courses) { courses.associateBy { it.id } }
+    var query by remember { mutableStateOf("") }
+    val shown = remember(readings, query) {
+        if (query.isBlank()) readings
+        else readings.filter { it.title.contains(query, true) || it.summary?.contains(query, true) == true }
+    }
     var showAdd by remember { mutableStateOf(false) }
     var toDelete by remember { mutableStateOf<Reading?>(null) }
     var toRename by remember { mutableStateOf<Reading?>(null) }
@@ -103,7 +108,14 @@ fun ReadingsScreen(viewModel: ReadingsViewModel, onOpen: (Reading) -> Unit, modi
                     items(weekCourses) { c -> FilterChip(selected = filter == c.id, onClick = { viewModel.setCourseFilter(c.id) }, label = { Text(c.name, maxLines = 1) }) }
                 }
             }
-            if (readings.isEmpty()) item {
+            if (all.size > 3) item {
+                OutlinedTextField(
+                    value = query, onValueChange = { query = it }, singleLine = true,
+                    placeholder = { Text("חיפוש מאמר…") }, leadingIcon = { Icon(Icons.Default.Search, null) },
+                    shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()
+                )
+            }
+            if (shown.isEmpty()) item {
                 Column(Modifier.fillMaxWidth().padding(vertical = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(Icons.Default.MenuBook, null, Modifier.size(48.dp), tint = PastelLavenderDark)
                     Spacer(Modifier.height(12.dp))
@@ -111,7 +123,7 @@ fun ReadingsScreen(viewModel: ReadingsViewModel, onOpen: (Reading) -> Unit, modi
                     Text("לחצו על \"הוספת PDF\" כדי להעלות מאמרים או מצגות", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-            items(readings, key = { it.id }) { r ->
+            items(shown, key = { it.id }) { r ->
                 ReadingRow(r, courseMap[r.courseId ?: -1], onToggle = { viewModel.toggleRead(r) }, onOpen = { onOpen(r) }, onDelete = { toDelete = r }, onRename = { toRename = r })
             }
         }
@@ -192,7 +204,7 @@ private fun AddReadingDialog(courses: List<Course>, week: LocalDate, onDismiss: 
                     OutlinedTextField(
                         value = courses.find { it.id == courseId }?.name ?: "ללא קורס", onValueChange = {}, readOnly = true,
                         label = { Text("קורס") }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                        modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth()
                     )
                     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                         (courses.map { it.id to it.name } + (null to "ללא קורס")).forEach { (id, name) ->

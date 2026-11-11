@@ -73,6 +73,7 @@ fun TasksScreen(
     }
 
     val snackbar = remember { SnackbarHostState() }
+    val requestNotifications = com.tau.studymate.ui.components.rememberNotificationPermissionRequest()
     var editing by remember { mutableStateOf<Task?>(null) }
     val allTasks by viewModel.allTasks.collectAsState()
     LaunchedEffect(openTaskId, allTasks) {
@@ -308,6 +309,7 @@ fun TasksScreen(
                     estimatedMinutes = estimatedMins,
                     enableReminder = enableReminder
                 )
+                if (enableReminder) requestNotifications()
                 showAddTaskDialog = false
             }
         )

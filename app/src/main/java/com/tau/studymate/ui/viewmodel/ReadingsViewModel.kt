@@ -100,9 +100,9 @@ class ReadingsViewModel(
         summaryJob = viewModelScope.launch {
             _summaryStatus.value = "קורא את המסמך…"
             try {
-                val text = PdfStore.extractText(r.filePath, Summarizer.MAX_INPUT_CHARS)
+                val text = PdfStore.extractText(getApplication(), r.filePath, Summarizer.MAX_INPUT_CHARS)
                 when {
-                    text == null -> _message.value = "לא ניתן לחלץ טקסט מהקובץ (נדרש Android 15 ומעלה, וקובץ שאינו סרוק)."
+                    text == null -> _message.value = "לא ניתן לחלץ טקסט מהקובץ (קובץ סרוק, או Android 8)."
                     else -> when (val res = Summarizer.summarize(text) { _summaryStatus.value = it }) {
                         is Summarizer.Result.Ok -> dao.update(r.copy(summary = res.text))
                         is Summarizer.Result.Error -> _message.value = res.message
@@ -134,9 +134,9 @@ class ReadingsViewModel(
         translationJob = viewModelScope.launch {
             _translationStatus.value = "קורא את המסמך…"
             try {
-                val pages = PdfStore.extractPages(r.filePath)
+                val pages = PdfStore.extractPages(getApplication(), r.filePath)
                 if (pages == null) {
-                    _message.value = "לא ניתן לחלץ טקסט מהקובץ (נדרש Android 15 ומעלה, וקובץ שאינו סרוק)."
+                    _message.value = "לא ניתן לחלץ טקסט מהקובץ (קובץ סרוק, או Android 8)."
                     return@launch
                 }
                 val he = com.tau.studymate.util.Translator.translatePages(pages) { _translationStatus.value = it }

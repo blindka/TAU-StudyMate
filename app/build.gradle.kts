@@ -1,9 +1,10 @@
-val appVersion = "0.1.8"
+val appVersion = "0.2.0"
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.baselineprofile)
 }
 
 android {
@@ -39,7 +40,11 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            signingConfig = signingConfigs.getByName("release")
+            // CI has the keystore. Locally (no keystore) fall back to the debug key so tooling such as the
+            // Baseline Profile generator can install the build; Play rejects such an upload (wrong key).
+            // Android Studio's "Generate Signed App Bundle" signs with the real key either way.
+            signingConfig = if (file(System.getenv("KEYSTORE_FILE") ?: "keystore.jks").exists())
+                signingConfigs.getByName("release") else signingConfigs.getByName("debug")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -74,6 +79,10 @@ android.sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
 // Output files: TAU-StudyMate-v0.0.1-release.aab / .apk
 base { archivesName.set("TAU-StudyMate-v$appVersion") }
 
+// Profile is merged into src/main so every release ships it: ./gradlew :app:generateBaselineProfile
+baselineProfile { mergeIntoMain = true }
+
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -98,6 +107,11 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     implementation(libs.mlkit.genai.prompt)
     implementation(libs.mlkit.translate)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(project(":baselineprofile"))
+    implementation(libs.androidx.pdf.document.service)
     implementation(libs.kotlinx.serialization.core)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.room.testing)

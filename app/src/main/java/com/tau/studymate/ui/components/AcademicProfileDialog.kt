@@ -1,5 +1,8 @@
 package com.tau.studymate.ui.components
 
+import kotlinx.coroutines.launch
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
 import android.graphics.Bitmap
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -280,6 +283,40 @@ fun AcademicProfileDialog(
                         errorMessage = null
                     }
                 )
+
+                // Backup / restore: one .zip with data, PDFs and settings
+                val backupScope = rememberCoroutineScope()
+                val ctx = androidx.compose.ui.platform.LocalContext.current
+                var confirmRestore by remember { mutableStateOf<android.net.Uri?>(null) }
+                fun toast(msg: String) = android.widget.Toast.makeText(ctx, msg, android.widget.Toast.LENGTH_LONG).show()
+                val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+                    if (uri != null) backupScope.launch {
+                        runCatching { com.tau.studymate.util.BackupManager.export(ctx, uri) }
+                            .onSuccess { toast("הגיבוי נשמר") }.onFailure { toast("הגיבוי נכשל: ${it.message}") }
+                    }
+                }
+                val importLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri -> confirmRestore = uri }
+                Row(Modifier.align(Alignment.CenterHorizontally)) {
+                    TextButton(onClick = { exportLauncher.launch("StudyMate-backup-${java.time.LocalDate.now()}.zip") }) { Text("גיבוי לקובץ") }
+                    TextButton(onClick = { importLauncher.launch(arrayOf("application/zip", "application/octet-stream")) }) { Text("שחזור מגיבוי") }
+                }
+                confirmRestore?.let { uri ->
+                    AlertDialog(
+                        onDismissRequest = { confirmRestore = null },
+                        title = { Text("לשחזר מגיבוי?") },
+                        text = { Text("כל הנתונים הנוכחיים יוחלפו בנתונים מהגיבוי, והאפליקציה תיפתח מחדש.") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                confirmRestore = null
+                                backupScope.launch {
+                                    runCatching { com.tau.studymate.util.BackupManager.restore(ctx, uri) }
+                                        .onFailure { toast(it.message ?: "השחזור נכשל") }
+                                }
+                            }) { Text("שחזור") }
+                        },
+                        dismissButton = { TextButton(onClick = { confirmRestore = null }) { Text("ביטול") } }
+                    )
+                }
 
                 // Required by Google Play: privacy policy reachable from inside the app
                 val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current

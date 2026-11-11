@@ -211,7 +211,11 @@ class StudyViewModel(
                 // בטל התראות עתידיות למטלה שהושלמה
                 TaskNotificationScheduler.cancelReminder(getApplication(), task.id)
 
-                // Trigger gamified celebration reward
+                // Celebrate only the first completion of the day; a popup on every ✓ gets tiresome
+                val today = java.time.LocalDate.now().toString()
+                val prefs = getApplication<Application>().appPrefs()
+                if (prefs.getString("last_celebration_day", null) == today) return@launch
+                prefs.edit { putString("last_celebration_day", today) }
                 val randomQuote = rewardQuotes.random()
                 _celebrationReward.value = CelebrationReward(
                     title = "מטלה הושלמה בהצלחה!",
@@ -442,30 +446,12 @@ class StudyViewModel(
 
     fun syncMoodleFeed(feedUrl: String, onComplete: (com.tau.studymate.util.MoodleSyncResult) -> Unit) {
         viewModelScope.launch {
-            val result = com.tau.studymate.util.MoodleSyncService.fetchAndSyncMoodle(feedUrl, courses.value)
-            if (result.success && result.tasks.isNotEmpty()) {
-                val (inserts, updates) = com.tau.studymate.util.MoodleSyncService.merge(repository.allTasks.first(), result.tasks)
-                updates.forEach { task ->
-                    repository.updateTask(task)
-                    if (!task.isCompleted) TaskNotificationScheduler.scheduleTask(getApplication(), task, courses.value.find { it.id == task.courseId }?.name)
-                }
-                inserts.forEach { task ->
-                        val id = repository.insertTask(task)
-                        val courseName = task.courseId?.let { cid -> courses.value.find { it.id == cid }?.name }
-                        TaskNotificationScheduler.scheduleTask(getApplication(), task.copy(id = id), courseName)
-                    }
-                getApplication<Application>().secretPrefs().edit { putString("moodle_feed_url", feedUrl) }
-                getApplication<Application>().appPrefs().edit { remove("moodle_feed_url") }
-            }
+            val (result, _) = com.tau.studymate.util.MoodleSync.syncAndStore(getApplication<Application>() as com.tau.studymate.StudyMateApp, feedUrl)
             onComplete(result)
         }
     }
 
-    fun getSavedMoodleUrl(): String {
-        val app = getApplication<Application>()
-        return app.secretPrefs().getString("moodle_feed_url", null)
-            ?: app.appPrefs().getString("moodle_feed_url", "") ?: ""
-    }
+    fun getSavedMoodleUrl(): String = com.tau.studymate.util.MoodleSync.savedUrl(getApplication())
 
     private suspend fun calculateStreakDays(): Int =
         computeStreak(repository.allTasks.first().mapNotNull { it.completedAt } + repository.allSessions.first().map { it.timestamp })
