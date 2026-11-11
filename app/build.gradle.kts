@@ -14,9 +14,8 @@ android {
     defaultConfig {
         applicationId = "com.tau.studymate"
         minSdk = 26
-        // Play requires 36; 37 changes runtime behavior, so it gets its own tested release
-        //noinspection OldTargetApi
-        targetSdk = 36
+        // Android 17 behavior changes apply only when running on Android 17; verify there before shipping
+        targetSdk = 37
         // Bump appVersion for every Play upload; versionCode follows it (0.0.1 -> 1, 0.1.0 -> 100, 1.2.3 -> 10203)
         versionName = appVersion
         versionCode = appVersion.split(".").map(String::toInt).let { (a, b, c) -> a * 10000 + b * 100 + c }
