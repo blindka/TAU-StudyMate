@@ -2,8 +2,6 @@ package com.tau.studymate.util
 
 import com.tau.studymate.data.model.CourseTemplate
 import com.tau.studymate.data.model.Department
-import com.tau.studymate.data.model.Priority
-import com.tau.studymate.data.model.TaskTemplate
 
 object ScheduleParser {
 
@@ -28,11 +26,7 @@ object ScheduleParser {
                         department = Department.GENERAL,
                         lecturer = "סגל הקורס",
                         semester = targetSemester,
-                        credits = 3.0f,
-                        sampleTasks = listOf(
-                            TaskTemplate("מטלה ראשונה: הגשה ממערכת השעות", "מטלה שחולצה מהקובץ", 6, Priority.MEDIUM, 120),
-                            TaskTemplate("הכנה לבחינה / עבודת גמר", "הכנה למבחן סוף סמסטר", 28, Priority.HIGH, 180)
-                        )
+                        credits = 3.0f
                     )
                 )
             }
@@ -46,11 +40,7 @@ object ScheduleParser {
                     department = Department.GENERAL,
                     lecturer = "סגל אקדמי",
                     semester = targetSemester,
-                    credits = 4.0f,
-                    sampleTasks = listOf(
-                        TaskTemplate("מטלת פתיחת סמסטר", "קריאת סילבוס וחומר ראשוני", 5, Priority.MEDIUM, 90),
-                        TaskTemplate("תרגיל אמצע סמסטר", "הגשת תרגיל בית ראשון", 18, Priority.MEDIUM, 120)
-                    )
+                    credits = 4.0f
                 )
             )
         }

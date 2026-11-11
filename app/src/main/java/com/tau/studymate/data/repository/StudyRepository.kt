@@ -20,30 +20,18 @@ class StudyRepository(
     // Courses
     val allCourses: Flow<List<Course>> = courseDao.getAllCourses()
 
-    fun getCoursesByDepartment(department: Department): Flow<List<Course>> =
-        courseDao.getCoursesByDepartment(department)
-
-    fun searchCourses(query: String): Flow<List<Course>> =
-        courseDao.searchCourses(query)
-
     suspend fun getCourseById(id: Long): Course? = courseDao.getCourseById(id)
 
     suspend fun insertCourse(course: Course): Long = courseDao.insertCourse(course)
 
     suspend fun insertCourses(courses: List<Course>) = courseDao.insertCourses(courses)
 
-    suspend fun updateCourse(course: Course) = courseDao.updateCourse(course)
-
     suspend fun deleteCourse(course: Course) = courseDao.deleteCourse(course)
 
-    /** Replaces all courses and tasks atomically. Returns the ids of the removed tasks so their alarms can be cancelled. */
-    suspend fun replaceDegreeCurriculum(courses: List<Course>, tasks: List<Task>): List<Long> = db.withTransaction {
-        val oldIds = taskDao.getAllTaskIds()
+    /** Swaps the course list in one transaction. Tasks and readings stay; their course link becomes empty (FK SET NULL). */
+    suspend fun replaceCourses(courses: List<Course>) = db.withTransaction {
         courseDao.deleteAllCourses()
-        taskDao.deleteAllTasks()
         courseDao.insertCourses(courses)
-        taskDao.insertTasks(tasks)
-        oldIds
     }
 
     // Tasks
@@ -53,19 +41,11 @@ class StudyRepository(
     fun getTasksForCourse(courseId: Long): Flow<List<Task>> =
         taskDao.getTasksForCourse(courseId)
 
-    fun getTasksByDepartment(department: Department): Flow<List<Task>> =
-        taskDao.getTasksByDepartment(department)
-
-    fun getUrgentTasks(timestamp: Long): Flow<List<Task>> =
-        taskDao.getUrgentTasks(timestamp)
-
     suspend fun insertTask(task: Task): Long = taskDao.insertTask(task)
 
     suspend fun updateTask(task: Task) = taskDao.updateTask(task)
 
     suspend fun deleteTask(task: Task) = taskDao.deleteTask(task)
-
-    suspend fun deleteTaskById(id: Long) = taskDao.deleteTaskById(id)
 
     suspend fun toggleTaskCompletion(task: Task): Boolean {
         val newStatus = !task.isCompleted
@@ -81,32 +61,17 @@ class StudyRepository(
     fun getMaterialsForCourse(courseId: Long): Flow<List<StudyMaterial>> =
         studyMaterialDao.getMaterialsForCourse(courseId)
 
-    fun getMaterialsByType(courseId: Long, type: MaterialType): Flow<List<StudyMaterial>> =
-        studyMaterialDao.getMaterialsByType(courseId, type)
-
     val allMissingMaterials: Flow<List<StudyMaterial>> =
         studyMaterialDao.getAllMissingMaterials()
 
-    val missingMaterialsCount: Flow<Int> =
-        studyMaterialDao.getMissingMaterialsCount()
-
     suspend fun insertMaterial(material: StudyMaterial): Long =
         studyMaterialDao.insertMaterial(material)
-
-    suspend fun updateMaterial(material: StudyMaterial) =
-        studyMaterialDao.updateMaterial(material)
 
     suspend fun deleteMaterial(material: StudyMaterial) =
         studyMaterialDao.deleteMaterial(material)
 
     // Study Sessions & Habits
     val allSessions: Flow<List<StudySession>> = studySessionDao.getAllSessions()
-
-    fun getSessionsSince(timestamp: Long): Flow<List<StudySession>> =
-        studySessionDao.getSessionsSince(timestamp)
-
-    fun getTotalMinutesSince(timestamp: Long): Flow<Int?> =
-        studySessionDao.getTotalMinutesSince(timestamp)
 
     suspend fun logStudySession(
         courseId: Long?,

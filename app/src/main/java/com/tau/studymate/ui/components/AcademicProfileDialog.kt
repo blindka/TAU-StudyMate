@@ -29,7 +29,6 @@ import com.tau.studymate.R
 import com.tau.studymate.data.model.AcademicCatalog
 import com.tau.studymate.data.model.CourseTemplate
 import com.tau.studymate.data.model.Department
-import com.tau.studymate.data.model.TaskTemplate
 import com.tau.studymate.data.model.Priority
 import com.tau.studymate.data.model.UserAcademicProfile
 import com.tau.studymate.ui.theme.LaborGreen

@@ -13,14 +13,8 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE courseId = :courseId ORDER BY isCompleted ASC, dueDate ASC")
     fun getTasksForCourse(courseId: Long): Flow<List<Task>>
 
-    @Query("SELECT * FROM tasks WHERE department = :dept ORDER BY isCompleted ASC, dueDate ASC")
-    fun getTasksByDepartment(dept: Department): Flow<List<Task>>
-
     @Query("SELECT * FROM tasks WHERE isCompleted = 0 ORDER BY dueDate ASC")
     fun getPendingTasks(): Flow<List<Task>>
-
-    @Query("SELECT * FROM tasks WHERE isCompleted = 0 AND dueDate <= :timestamp ORDER BY dueDate ASC")
-    fun getUrgentTasks(timestamp: Long): Flow<List<Task>>
 
     @Query("SELECT * FROM tasks WHERE id = :id LIMIT 1")
     suspend fun getTaskById(id: Long): Task?
@@ -37,12 +31,4 @@ interface TaskDao {
     @Delete
     suspend fun deleteTask(task: Task)
 
-    @Query("DELETE FROM tasks WHERE id = :id")
-    suspend fun deleteTaskById(id: Long)
-
-    @Query("SELECT id FROM tasks")
-    suspend fun getAllTaskIds(): List<Long>
-
-    @Query("DELETE FROM tasks")
-    suspend fun deleteAllTasks()
 }

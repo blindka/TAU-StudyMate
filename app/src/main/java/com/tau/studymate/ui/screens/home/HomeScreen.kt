@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.screens.home
 
+import com.tau.studymate.util.appPrefs
 import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -64,7 +65,7 @@ fun HomeScreen(
 
     // Automatic onboarding & semester transition checks
     LaunchedEffect(academicProfile.semester) {
-        val prefs = context.getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+        val prefs = context.appPrefs()
         val hasCompletedOnboarding = prefs.getBoolean("has_completed_onboarding", false)
         if (!hasCompletedOnboarding) {
             showProfileDialog = true
@@ -376,7 +377,7 @@ fun HomeScreen(
                     } else {
                         viewModel.clearSchedule()
                     }
-                    val prefs = context.getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+                    val prefs = context.appPrefs()
                     prefs.edit().putBoolean("has_completed_onboarding", true).apply()
                 }
                 ok
@@ -398,7 +399,7 @@ fun HomeScreen(
                 } else if (sFileName != null) {
                     viewModel.saveScheduleFile(sFileName)
                 }
-                val prefs = context.getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+                val prefs = context.appPrefs()
                 prefs.edit().putString("last_seen_semester", currentActualSemester).apply()
                 showSemesterTransitionDialog = false
             }
@@ -460,7 +461,12 @@ private fun HeaderCard(
             add(if (pendingCount == 1) "מטלה אחת" else "$pendingCount מטלות")
             (readingsTotal - readingsDone).let { if (it == 1) add("מאמר אחד") else if (it > 1) add("$it מאמרים") }
         }
-        Text("${parts.joinToString(" ו-")} פתוחים", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        val headline = when {
+            pendingCount == 0 && parts.size == 1 -> "אין מטלות פתוחות 🎉"
+            parts.size == 1 -> "${parts[0]} ${if (pendingCount == 1) "פתוחה" else "פתוחות"}"
+            else -> "${parts.joinToString(" ו-")} פתוחים"
+        }
+        Text(headline, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 "${academicProfile.degreeName} · ${academicProfile.year} · ${academicProfile.semester}",

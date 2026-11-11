@@ -34,6 +34,7 @@ import com.tau.studymate.ui.theme.PastelMint
 import com.tau.studymate.ui.theme.PastelMintDark
 import com.tau.studymate.ui.viewmodel.ReadingsViewModel
 import com.tau.studymate.util.PdfStore
+import kotlinx.coroutines.flow.debounce
 
 @Composable
 fun ReaderScreen(readingId: Long, viewModel: ReadingsViewModel, onBack: () -> Unit) {
@@ -77,6 +78,12 @@ private fun PdfPages(r: Reading) {
     val listState = rememberLazyListState()
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
+    // Re-render pages sharper once the pinch settles. Capped at 2x: each page is an ARGB bitmap (~22MB at 2x).
+    var renderScale by remember { mutableFloatStateOf(1f) }
+    LaunchedEffect(Unit) {
+        @OptIn(kotlinx.coroutines.FlowPreview::class)
+        snapshotFlow { scale }.debounce(250).collect { renderScale = it.coerceAtMost(2f) }
+    }
 
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
@@ -94,7 +101,9 @@ private fun PdfPages(r: Reading) {
         ) {
             items(doc.pageCount) { i ->
                 var bmp by remember(i) { mutableStateOf<Bitmap?>(null) }
-                LaunchedEffect(i, widthPx) { bmp = runCatching { doc.render(i, widthPx) }.getOrNull() }
+                LaunchedEffect(i, widthPx, renderScale) {
+                    runCatching { doc.render(i, (widthPx * renderScale).toInt()) }.getOrNull()?.let { bmp = it }
+                }
                 val b = bmp
                 if (b == null) Box(Modifier.fillMaxWidth().aspectRatio(0.707f).background(Color.White))
                 else Image(b.asImageBitmap(), "עמוד ${i + 1}", Modifier.fillMaxWidth().aspectRatio(b.width.toFloat() / b.height), contentScale = ContentScale.FillWidth)

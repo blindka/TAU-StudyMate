@@ -9,12 +9,6 @@ interface StudySessionDao {
     @Query("SELECT * FROM study_sessions ORDER BY timestamp DESC")
     fun getAllSessions(): Flow<List<StudySession>>
 
-    @Query("SELECT * FROM study_sessions WHERE timestamp >= :sinceTimestamp ORDER BY timestamp DESC")
-    fun getSessionsSince(sinceTimestamp: Long): Flow<List<StudySession>>
-
-    @Query("SELECT SUM(durationMinutes) FROM study_sessions WHERE timestamp >= :sinceTimestamp")
-    fun getTotalMinutesSince(sinceTimestamp: Long): Flow<Int?>
-
     @Query("SELECT SUM(durationMinutes) FROM study_sessions WHERE courseId = :courseId")
     fun getTotalMinutesForCourse(courseId: Long): Flow<Int?>
 

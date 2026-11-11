@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and older: the Moodle iCal link holds a personal token, keep it out of backups -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="tau_studymate_secret.xml" />
+</full-backup-content>

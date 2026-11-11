@@ -1,4 +1,4 @@
-val appVersion = "0.1.1"
+val appVersion = "0.1.2"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -61,6 +61,10 @@ kotlin {
     compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
 }
 
+// Room schema history; used by the migration test (app/src/androidTest)
+ksp { arg("room.schemaLocation", "$projectDir/schemas") }
+android.sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+
 // Output files: TAU-StudyMate-v0.0.1-release.aab / .apk
 base { archivesName.set("TAU-StudyMate-v$appVersion") }
 
@@ -87,5 +91,10 @@ dependencies {
 
     debugImplementation(libs.androidx.ui.tooling)
     implementation("com.google.mlkit:genai-prompt:1.0.0-beta5")
+    // room-testing needs serialization 1.8+; the app classpath (which androidTest is aligned to) pins 1.6.3 otherwise
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")
     testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.room:room-testing:${libs.versions.room.get()}")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
 }

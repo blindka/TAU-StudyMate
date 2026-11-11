@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.viewmodel
 
+import com.tau.studymate.util.appPrefs
+import com.tau.studymate.util.secretPrefs
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -49,7 +51,7 @@ class StudyViewModel(
     }
 
     private fun loadSavedProfile() {
-        val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+        val prefs = getApplication<Application>().appPrefs()
         val savedDegree = prefs.getString("profile_degree_name", null)
         if (savedDegree != null) {
             val isDouble = prefs.getBoolean("profile_is_double_major", true)
@@ -68,10 +70,8 @@ class StudyViewModel(
         val scheduleName = prefs.getString("saved_schedule_file_name", null)
         _scheduleFileName.value = scheduleName
         val scheduleFile = File(getApplication<Application>().filesDir, "saved_schedule_photo.jpg")
-        if (scheduleFile.exists()) {
-            try {
-                _scheduleBitmap.value = BitmapFactory.decodeFile(scheduleFile.absolutePath)
-            } catch (_: Exception) {}
+        if (scheduleFile.exists()) viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            _scheduleBitmap.value = decodeScaled(scheduleFile, maxSide = 2048)
         }
     }
 
@@ -84,7 +84,7 @@ class StudyViewModel(
                 }
                 _scheduleBitmap.value = bitmap
                 _scheduleFileName.value = fileName
-                val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+                val prefs = getApplication<Application>().appPrefs()
                 prefs.edit().putString("saved_schedule_file_name", fileName).apply()
             } catch (_: Exception) {}
         }
@@ -96,7 +96,7 @@ class StudyViewModel(
             if (bitmap != null) {
                 saveSchedulePhoto(bitmap, fileName)
             } else {
-                val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+                val prefs = getApplication<Application>().appPrefs()
                 prefs.edit().putString("saved_schedule_file_name", fileName).apply()
             }
         }
@@ -108,7 +108,7 @@ class StudyViewModel(
             _scheduleFileName.value = null
             val file = File(getApplication<Application>().filesDir, "saved_schedule_photo.jpg")
             if (file.exists()) file.delete()
-            val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
+            val prefs = getApplication<Application>().appPrefs()
             prefs.edit().remove("saved_schedule_file_name").apply()
         }
     }
@@ -307,6 +307,7 @@ class StudyViewModel(
 
         val trackCourses = importedCourses ?: foundTrack?.defaultCourses ?: emptyList()
 
+        val oldProfile = _academicProfile.value
         val newProfile = UserAcademicProfile(
             degreeName = foundTrack?.name ?: trimmed,
             isDoubleMajor = isDoubleMajor,
@@ -315,56 +316,15 @@ class StudyViewModel(
             faculty = foundTrack?.faculty ?: "הפקולטה למדעי החברה"
         )
         _academicProfile.value = newProfile
-
-        val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
-        prefs.edit()
-            .putString("profile_degree_name", newProfile.degreeName)
-            .putBoolean("profile_is_double_major", newProfile.isDoubleMajor)
-            .putString("profile_year", newProfile.year)
-            .putString("profile_semester", newProfile.semester)
-            .putString("profile_faculty", newProfile.faculty)
-            .putString("last_seen_semester", newProfile.semester)
-            .apply()
+        saveProfile(newProfile)
 
         viewModelScope.launch {
-            val now = System.currentTimeMillis()
-            val oneDay = 24 * 60 * 60 * 1000L
-
-            val newCourses = trackCourses.mapIndexed { index, ct ->
-                Course(
-                    id = (index + 1).toLong(),
-                    courseNumber = ct.courseNumber,
-                    name = ct.name,
-                    department = ct.department,
-                    lecturer = ct.lecturer,
-                    semester = semester,
-                    credits = ct.credits
-                )
+            // Only rebuild the course list when the degree really changed, a schedule was imported,
+            // or there are no courses yet. Editing year/semester must never wipe the user's tasks.
+            val degreeChanged = newProfile.degreeName != oldProfile.degreeName || newProfile.isDoubleMajor != oldProfile.isDoubleMajor
+            if (!importedCourses.isNullOrEmpty() || degreeChanged || repository.allCourses.first().isEmpty()) {
+                replaceCurriculum(trackCourses, semester)
             }
-
-            var taskIdCounter = 1L
-            val newTasks = mutableListOf<Task>()
-            trackCourses.forEachIndexed { index, ct ->
-                val courseId = (index + 1).toLong()
-                ct.sampleTasks.forEach { tt ->
-                    newTasks.add(
-                        Task(
-                            id = taskIdCounter++,
-                            courseId = courseId,
-                            title = tt.title,
-                            description = tt.description,
-                            dueDate = now + (tt.daysFromNow * oneDay),
-                            isCompleted = false,
-                            estimatedMinutes = tt.estimatedMinutes,
-                            department = ct.department,
-                            priority = tt.priority
-                        )
-                    )
-                }
-            }
-
-            repository.replaceDegreeCurriculum(newCourses, newTasks)
-                .forEach { TaskNotificationScheduler.cancelReminder(getApplication(), it) }
         }
 
         return true
@@ -372,64 +332,42 @@ class StudyViewModel(
 
     /**
      * Updates the academic profile for a semester transition without resetting the chosen degree.
-     * Optionally imports new courses and tasks from a schedule file.
+     * Optionally imports new courses from a schedule file.
      */
     fun transitionSemester(
         newSemester: String,
         importedCourses: List<CourseTemplate>? = null
     ) {
-        val current = _academicProfile.value
-        val updatedProfile = current.copy(semester = newSemester)
+        val updatedProfile = _academicProfile.value.copy(semester = newSemester)
         _academicProfile.value = updatedProfile
+        saveProfile(updatedProfile)
+        if (!importedCourses.isNullOrEmpty()) viewModelScope.launch { replaceCurriculum(importedCourses, newSemester) }
+    }
 
-        val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
-        prefs.edit()
-            .putString("profile_semester", newSemester)
-            .putString("last_seen_semester", newSemester)
+    private fun saveProfile(p: UserAcademicProfile) {
+        getApplication<Application>().appPrefs().edit()
+            .putString("profile_degree_name", p.degreeName)
+            .putBoolean("profile_is_double_major", p.isDoubleMajor)
+            .putString("profile_year", p.year)
+            .putString("profile_semester", p.semester)
+            .putString("profile_faculty", p.faculty)
+            .putString("last_seen_semester", p.semester)
             .apply()
+    }
 
-        if (!importedCourses.isNullOrEmpty()) {
-            viewModelScope.launch {
-                val now = System.currentTimeMillis()
-                val oneDay = 24 * 60 * 60 * 1000L
-
-                val newCourses = importedCourses.mapIndexed { index, ct ->
-                    Course(
-                        id = (index + 1).toLong(),
-                        courseNumber = ct.courseNumber,
-                        name = ct.name,
-                        department = ct.department,
-                        lecturer = ct.lecturer,
-                        semester = newSemester,
-                        credits = ct.credits
-                    )
-                }
-
-                var taskIdCounter = 1L
-                val newTasks = mutableListOf<Task>()
-                importedCourses.forEachIndexed { index, ct ->
-                    val courseId = (index + 1).toLong()
-                    ct.sampleTasks.forEach { tt ->
-                        newTasks.add(
-                            Task(
-                                id = taskIdCounter++,
-                                courseId = courseId,
-                                title = tt.title,
-                                description = tt.description,
-                                dueDate = now + (tt.daysFromNow * oneDay),
-                                isCompleted = false,
-                                estimatedMinutes = tt.estimatedMinutes,
-                                department = ct.department,
-                                priority = tt.priority
-                            )
-                        )
-                    }
-                }
-
-                repository.replaceDegreeCurriculum(newCourses, newTasks)
-                .forEach { TaskNotificationScheduler.cancelReminder(getApplication(), it) }
-            }
+    private suspend fun replaceCurriculum(templates: List<CourseTemplate>, semester: String) {
+        val newCourses = templates.mapIndexed { index, ct ->
+            Course(
+                id = (index + 1).toLong(),
+                courseNumber = ct.courseNumber,
+                name = ct.name,
+                department = ct.department,
+                lecturer = ct.lecturer,
+                semester = semester,
+                credits = ct.credits
+            )
         }
+        repository.replaceCourses(newCourses)
     }
 
     fun addCourse(
@@ -601,16 +539,17 @@ class StudyViewModel(
                         val courseName = task.courseId?.let { cid -> courses.value.find { it.id == cid }?.name }
                         TaskNotificationScheduler.scheduleTask(getApplication(), task.copy(id = id), courseName)
                     }
-                val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
-                prefs.edit().putString("moodle_feed_url", feedUrl).apply()
+                getApplication<Application>().secretPrefs().edit().putString("moodle_feed_url", feedUrl).apply()
+                getApplication<Application>().appPrefs().edit().remove("moodle_feed_url").apply()
             }
             onComplete(result)
         }
     }
 
     fun getSavedMoodleUrl(): String {
-        val prefs = getApplication<Application>().getSharedPreferences("tau_studymate_prefs", android.content.Context.MODE_PRIVATE)
-        return prefs.getString("moodle_feed_url", "") ?: ""
+        val app = getApplication<Application>()
+        return app.secretPrefs().getString("moodle_feed_url", null)
+            ?: app.appPrefs().getString("moodle_feed_url", "") ?: ""
     }
 
     private suspend fun calculateStreakDays(): Int =
@@ -627,3 +566,12 @@ internal fun computeStreak(timestamps: List<Long>, now: Long = System.currentTim
     while (day in days) { count++; day = day.minusDays(1) }
     return count
 }
+
+/** Decodes an image file at most [maxSide] pixels on its long edge, so a 12MP photo doesn't take ~50MB. */
+private fun decodeScaled(file: File, maxSide: Int): Bitmap? = runCatching {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeFile(file.absolutePath, bounds)
+    var sample = 1
+    while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxSide) sample *= 2
+    BitmapFactory.decodeFile(file.absolutePath, BitmapFactory.Options().apply { inSampleSize = sample })
+}.getOrNull()
