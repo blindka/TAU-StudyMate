@@ -308,7 +308,7 @@ class StudyViewModel(
         if (trimmed.isEmpty()) return false
         // Any degree is accepted. Catalog degrees come with their course list; others start with the
         // user's current courses, which they add by hand or through Moodle.
-        val foundTrack = AcademicCatalog.findProgram(trimmed)
+        val foundTrack = AcademicCatalog.findProgram(trimmed, getApplication())
         val trackCourses = importedCourses?.takeIf { it.isNotEmpty() } ?: foundTrack?.defaultCourses
 
         val oldProfile = _academicProfile.value

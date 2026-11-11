@@ -118,7 +118,7 @@ fun SemesterTransitionDialog(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = currentProfile.degreeName,
+                                text = com.tau.studymate.ui.components.degreeLabel(currentProfile.degreeName),
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.bodyMedium
                             )

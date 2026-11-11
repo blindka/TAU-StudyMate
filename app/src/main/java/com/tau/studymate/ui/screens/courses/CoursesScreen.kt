@@ -188,7 +188,7 @@ fun CoursesScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(
-                        text = stringResource(R.string.courses_degree_line, academicProfile.degreeName, com.tau.studymate.ui.components.profileLabel(academicProfile.year), com.tau.studymate.ui.components.profileLabel(academicProfile.semester)),
+                        text = stringResource(R.string.courses_degree_line, com.tau.studymate.ui.components.degreeLabel(academicProfile.degreeName), com.tau.studymate.ui.components.profileLabel(academicProfile.year), com.tau.studymate.ui.components.profileLabel(academicProfile.semester)),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = TauPurpleDark

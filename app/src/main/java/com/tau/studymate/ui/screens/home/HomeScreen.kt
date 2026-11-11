@@ -356,7 +356,7 @@ fun HomeScreen(
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                             )
                             Text(
-                                text = pluralStringResource(R.plurals.home_courses_active, courses.size, courses.size, academicProfile.degreeName),
+                                text = pluralStringResource(R.plurals.home_courses_active, courses.size, courses.size, com.tau.studymate.ui.components.degreeLabel(academicProfile.degreeName)),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -489,7 +489,7 @@ private fun HeaderCard(
         Text(headline, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                "${academicProfile.degreeName} · ${com.tau.studymate.ui.components.profileLabel(academicProfile.year)} · ${com.tau.studymate.ui.components.profileLabel(academicProfile.semester)}",
+                "${com.tau.studymate.ui.components.degreeLabel(academicProfile.degreeName)} · ${com.tau.studymate.ui.components.profileLabel(academicProfile.year)} · ${com.tau.studymate.ui.components.profileLabel(academicProfile.semester)}",
                 color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f, fill = false)
             )

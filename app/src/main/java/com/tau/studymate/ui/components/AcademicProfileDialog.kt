@@ -59,6 +59,9 @@ fun AcademicProfileDialog(
     ) -> Boolean
 ) {
     var degreeName by remember { mutableStateOf(currentProfile.degreeName) }
+    // Show a catalog degree in the UI language in the text field (findProgram accepts both languages)
+    val initialLabel = com.tau.studymate.ui.components.degreeLabel(currentProfile.degreeName)
+    LaunchedEffect(Unit) { if (degreeName == currentProfile.degreeName) degreeName = initialLabel }
     val degreeRequired = stringResource(R.string.degree_required)
     var isDoubleMajor by remember { mutableStateOf(currentProfile.isDoubleMajor) }
     var selectedYear by remember { mutableStateOf(currentProfile.year) }
@@ -190,18 +193,19 @@ fun AcademicProfileDialog(
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     AcademicCatalog.AVAILABLE_PROGRAMS.take(3).forEach { prog ->
+                        val progLabel = com.tau.studymate.ui.components.degreeLabel(prog.name)
                         Surface(
                             shape = RoundedCornerShape(8.dp),
                             color = MaterialTheme.colorScheme.surfaceVariant,
                             modifier = Modifier
                                 .clickable {
-                                    degreeName = prog.name
+                                    degreeName = progLabel
                                     isDoubleMajor = prog.isDoubleMajor
                                     errorMessage = null
                                 }
                         ) {
                             Text(
-                                text = prog.name,
+                                text = progLabel,
                                 fontSize = 11.sp,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant

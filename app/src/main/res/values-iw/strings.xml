@@ -104,8 +104,13 @@
     <string name="current_semester">סמסטר נוכחי:</string>
     <string name="default_document_title">מסמך</string>
     <string name="degree_any_hint">כל תואר מתאים. תואר שלא ברשימה מתחיל בלי קורסים, ומוסיפים אותם במסך הקורסים או דרך Moodle</string>
+    <string name="degree_comm_labor">תקשורת ולימודי עבודה</string>
+    <string name="degree_cs">מדעי המחשב</string>
+    <string name="degree_economics_management">כלכלה וניהול</string>
     <string name="degree_hint">לדוגמה: תקשורת ולימודי עבודה, מדעי המחשב...</string>
     <string name="degree_label">שם התואר / חוגים *</string>
+    <string name="degree_law">משפטים</string>
+    <string name="degree_psychology_comm">פסיכולוגיה ותקשורת</string>
     <string name="degree_required">נא להזין שם תואר או חוג</string>
     <string name="delete">מחיקה</string>
     <string name="department_label">שיוך חוגי:</string>

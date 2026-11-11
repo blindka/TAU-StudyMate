@@ -105,8 +105,13 @@
     <string name="current_semester">Current semester:</string>
     <string name="default_document_title">Document</string>
     <string name="degree_any_hint">Any degree works. Degrees not on the list start without courses; add them on the Courses screen or via Moodle.</string>
+    <string name="degree_comm_labor">Communication &amp; Labor Studies</string>
+    <string name="degree_cs">Computer Science</string>
+    <string name="degree_economics_management">Economics &amp; Management</string>
     <string name="degree_hint">e.g. Communication and Labor Studies, Computer Science…</string>
     <string name="degree_label">Degree / departments *</string>
+    <string name="degree_law">Law</string>
+    <string name="degree_psychology_comm">Psychology &amp; Communication</string>
     <string name="degree_required">Please enter a degree or department</string>
     <string name="delete">Delete</string>
     <string name="department_label">Department:</string>

@@ -16,3 +16,9 @@ private val labels = mapOf(
 
 @Composable
 fun profileLabel(value: String): String = labels[value]?.let { stringResource(it) } ?: value
+
+/** A catalog degree in the UI language; a degree the user typed is shown as typed. */
+@Composable
+fun degreeLabel(name: String): String =
+    com.tau.studymate.data.model.AcademicCatalog.AVAILABLE_PROGRAMS.find { it.name == name && it.labelRes != 0 }
+        ?.let { stringResource(it.labelRes) } ?: name
