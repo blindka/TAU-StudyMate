@@ -282,7 +282,16 @@ fun AcademicProfileDialog(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(22.dp))
+                // Required by Google Play: privacy policy reachable from inside the app
+                val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+                TextButton(
+                    onClick = { uriHandler.openUri("https://blindka.github.io/TAU-StudyMate/privacy.html") },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text("מדיניות פרטיות")
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Actions: Cancel & Save
                 Row(
