@@ -75,6 +75,8 @@ class StudyRepository(
     suspend fun insertMaterial(material: StudyMaterial): Long =
         studyMaterialDao.insertMaterial(material)
 
+    suspend fun updateMaterial(material: StudyMaterial) = studyMaterialDao.updateMaterial(material)
+
     suspend fun deleteMaterial(material: StudyMaterial) =
         studyMaterialDao.deleteMaterial(material)
 

@@ -80,7 +80,10 @@ fun HomeScreen(
         }
     }
 
-    val pendingTasks = remember(tasks) { tasks.filter { !it.isCompleted } }
+    // "Upcoming" means due today or later; old overdue tasks get their own line instead of filling the list
+    val startOfToday = remember { java.time.LocalDate.now().atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli() }
+    val pendingTasks = remember(tasks) { tasks.filter { !it.isCompleted && it.dueDate >= startOfToday }.sortedBy { it.dueDate } }
+    val overdueCount = remember(tasks) { tasks.count { !it.isCompleted && it.dueDate < startOfToday } }
     val courseMap = remember(courses) { courses.associateBy { it.id } }
 
     val dateFormat = remember { SimpleDateFormat("dd/MM", Locale.getDefault()) }
@@ -187,7 +190,7 @@ fun HomeScreen(
                             }
                         }
 
-                        IconButton(onClick = { viewModel.deleteStudyMaterial(material) }) {
+                        IconButton(onClick = { viewModel.markMaterialFound(material) }) {
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = "הושלם",
@@ -267,6 +270,17 @@ fun HomeScreen(
             }
         }
 
+        if (overdueCount > 0) {
+            item {
+                Text(
+                    "⚠️ ${if (overdueCount == 1) "מטלה אחת באיחור" else "$overdueCount מטלות באיחור"}  ←",
+                    color = PastelCoralDark, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
+                    modifier = Modifier.fillMaxWidth().background(PastelCoral, RoundedCornerShape(12.dp))
+                        .clickable(onClick = onNavigateToTasks).padding(horizontal = 14.dp, vertical = 10.dp)
+                )
+            }
+        }
+
         if (pendingTasks.isEmpty()) {
             item {
                 Card(
@@ -289,7 +303,7 @@ fun HomeScreen(
                 }
             }
         } else {
-            items(pendingTasks.take(4)) { task ->
+            items(pendingTasks.take(4), key = { it.id }) { task ->
                 val course = courseMap[task.courseId]
                 com.tau.studymate.ui.components.TaskRowCard(task = task, course = course, onToggle = { viewModel.toggleTaskCompletion(task) })
             }

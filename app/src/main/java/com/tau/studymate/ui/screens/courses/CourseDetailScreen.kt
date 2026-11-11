@@ -231,7 +231,6 @@ fun CourseDetailScreen(
 
     if (showAddMaterialDialog) {
         AddMaterialDialog(
-            courseId = course.id,
             onDismiss = { showAddMaterialDialog = false },
             onConfirm = { title, type, content, isMissing ->
                 viewModel.addStudyMaterial(

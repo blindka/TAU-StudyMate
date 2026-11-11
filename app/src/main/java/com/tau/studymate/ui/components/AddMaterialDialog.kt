@@ -18,7 +18,6 @@ import com.tau.studymate.data.model.MaterialType
 
 @Composable
 fun AddMaterialDialog(
-    courseId: Long,
     onDismiss: () -> Unit,
     onConfirm: (
         title: String,
@@ -31,6 +30,9 @@ fun AddMaterialDialog(
     var selectedType by remember { mutableStateOf(MaterialType.SUMMARY) }
     var contentOrUri by remember { mutableStateOf("") }
     var isMissing by remember { mutableStateOf(false) }
+    // A recording must be a link; "panopto" alone or text with spaces can't be opened later
+    val linkInvalid = selectedType == MaterialType.RECORDING_LINK && contentOrUri.isNotBlank() &&
+        (contentOrUri.trim().contains(' ') || !contentOrUri.contains('.'))
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -88,7 +90,7 @@ fun AddMaterialDialog(
                     label = {
                         Text(
                             if (selectedType == MaterialType.RECORDING_LINK) "קישור וידאו (Panopto / Drive)"
-                            else "תוכן, הערה או נתיב קובץ"
+                            else "תוכן או הערה"
                         )
                     },
                     placeholder = {
@@ -99,7 +101,9 @@ fun AddMaterialDialog(
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    maxLines = 3
+                    maxLines = 3,
+                    isError = linkInvalid,
+                    supportingText = if (linkInvalid) { { Text("זה לא נראה כמו קישור") } } else null
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -140,7 +144,7 @@ fun AddMaterialDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
-                            if (title.isNotBlank()) {
+                            if (title.isNotBlank() && !linkInvalid) {
                                 onConfirm(
                                     title.trim(),
                                     selectedType,
@@ -149,7 +153,7 @@ fun AddMaterialDialog(
                                 )
                             }
                         },
-                        enabled = title.isNotBlank(),
+                        enabled = title.isNotBlank() && !linkInvalid,
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))

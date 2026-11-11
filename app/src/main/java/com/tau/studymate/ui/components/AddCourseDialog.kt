@@ -17,6 +17,8 @@ import com.tau.studymate.data.model.Department
 
 @Composable
 fun AddCourseDialog(
+    existingNumbers: Set<String> = emptySet(),
+    defaultSemester: String = com.tau.studymate.util.TauAcademicCalendar.getCurrentSemesterName(),
     onDismiss: () -> Unit,
     onConfirm: (
         courseNumber: String,
@@ -31,8 +33,11 @@ fun AddCourseDialog(
     var name by remember { mutableStateOf("") }
     var department by remember { mutableStateOf(Department.COMMUNICATION) }
     var lecturer by remember { mutableStateOf("") }
-    var semester by remember { mutableStateOf("סמסטר א'") }
+    var semester by remember { mutableStateOf(defaultSemester) }
     var credits by remember { mutableStateOf("4.0") }
+    // Hebrew keyboards type "4,5"; accept it. Reject nonsense instead of silently saving 2.0
+    val creditsValue = credits.trim().replace(',', '.').toFloatOrNull()?.takeIf { it > 0f && it <= 30f }
+    val duplicate = courseNumber.trim() in existingNumbers
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -62,7 +67,9 @@ fun AddCourseDialog(
                     placeholder = { Text("לדוגמה: 1082.1100") },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp),
-                    singleLine = true
+                    singleLine = true,
+                    isError = duplicate,
+                    supportingText = if (duplicate) { { Text("כבר קיים קורס עם המספר הזה") } } else null
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -84,7 +91,9 @@ fun AddCourseDialog(
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold)
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                Row(
+                // Wraps to a second line instead of squeezing "כללי / בחירה" at large font sizes
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
@@ -129,7 +138,9 @@ fun AddCourseDialog(
                         label = { Text("נק\"ז") },
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp),
-                        singleLine = true
+                        singleLine = true,
+                        isError = creditsValue == null,
+                        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal)
                     )
                 }
 
@@ -145,18 +156,18 @@ fun AddCourseDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
-                            if (name.isNotBlank() && courseNumber.isNotBlank()) {
+                            if (name.isNotBlank() && courseNumber.isNotBlank() && !duplicate && creditsValue != null) {
                                 onConfirm(
                                     courseNumber.trim(),
                                     name.trim(),
                                     department,
                                     lecturer.trim(),
                                     semester.trim(),
-                                    credits.toFloatOrNull() ?: 2.0f
+                                    creditsValue
                                 )
                             }
                         },
-                        enabled = name.isNotBlank() && courseNumber.isNotBlank(),
+                        enabled = name.isNotBlank() && courseNumber.isNotBlank() && !duplicate && creditsValue != null,
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))

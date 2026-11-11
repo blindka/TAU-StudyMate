@@ -65,7 +65,8 @@ fun ExportDialog(
                         .height(200.dp)
                 ) {
                     Text(
-                        text = exportText,
+                        // Preview only: rendering a 600-task report as one Text froze the UI for ~3s. Copy/share send the full text.
+                        text = if (exportText.length > 2000) exportText.take(2000) + "\n…" else exportText,
                         modifier = Modifier
                             .padding(12.dp)
                             .verticalScroll(rememberScrollState()),

@@ -263,6 +263,7 @@ fun CoursesScreen(
 
     if (showAddCourseDialog) {
         AddCourseDialog(
+            existingNumbers = courses.map { it.courseNumber }.toSet(),
             onDismiss = { showAddCourseDialog = false },
             onConfirm = { courseNumber, name, dept, lecturer, semester, credits ->
                 viewModel.addCourse(

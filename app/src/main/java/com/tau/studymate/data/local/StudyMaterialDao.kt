@@ -16,6 +16,9 @@ interface StudyMaterialDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertMaterial(material: StudyMaterial): Long
 
+    @Update
+    suspend fun updateMaterial(material: StudyMaterial)
+
     @Delete
     suspend fun deleteMaterial(material: StudyMaterial)
 }

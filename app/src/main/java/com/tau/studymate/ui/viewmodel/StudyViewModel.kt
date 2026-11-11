@@ -36,6 +36,12 @@ class StudyViewModel(
     private val repository: StudyRepository
 ) : AndroidViewModel(application) {
 
+    // One Room query for the task table, shared by every list and statistic below
+    // (each separate collector used to re-read the whole table on every change).
+    private val tasksFlow: Flow<List<Task>> = repository.allTasks
+        .shareIn(viewModelScope, SharingStarted.WhileSubscribed(5000), replay = 1)
+
+
     // User Academic Profile (Degree, Track, Year, Semester)
     private val _academicProfile = MutableStateFlow(UserAcademicProfile())
     val academicProfile: StateFlow<UserAcademicProfile> = _academicProfile.asStateFlow()
@@ -132,7 +138,7 @@ class StudyViewModel(
 
     // Filtered Tasks Flow
     val filteredTasks: StateFlow<List<Task>> = combine(
-        repository.allTasks,
+        tasksFlow,
         _selectedDepartment,
         _taskFilter,
         _searchQuery
@@ -150,9 +156,9 @@ class StudyViewModel(
 
             matchesDept && matchesFilter && matchesQuery
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }.flowOn(kotlinx.coroutines.Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val openTaskCountByCourse: StateFlow<Map<Long, Int>> = repository.allTasks
+    val openTaskCountByCourse: StateFlow<Map<Long, Int>> = tasksFlow
         .map { tasks -> tasks.filter { !it.isCompleted && it.courseId != null }.groupingBy { it.courseId!! }.eachCount() }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
@@ -165,9 +171,9 @@ class StudyViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Consecutive days (ending today or yesterday) with a completed task or a study session
-    val streakDays: StateFlow<Int> = combine(repository.allTasks, repository.allSessions) { tasks, sessions ->
+    val streakDays: StateFlow<Int> = combine(tasksFlow, repository.allSessions) { tasks, sessions ->
         computeStreak(tasks.mapNotNull { it.completedAt } + sessions.map { it.timestamp })
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    }.flowOn(kotlinx.coroutines.Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
 
     // Reward / Celebration Event
     private val _celebrationReward = MutableStateFlow<CelebrationReward?>(null)
@@ -229,7 +235,7 @@ class StudyViewModel(
     }
 
     /** All tasks, ignoring the Tasks screen's search/filters (for Home and statistics). */
-    val allTasks: StateFlow<List<Task>> = repository.allTasks
+    val allTasks: StateFlow<List<Task>> = tasksFlow
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun dismissCelebration() {
@@ -411,6 +417,11 @@ class StudyViewModel(
             )
             repository.insertMaterial(material)
         }
+    }
+
+    /** "Got it": the material stays in the course, it just leaves the "what's missing" list. */
+    fun markMaterialFound(material: StudyMaterial) {
+        viewModelScope.launch { repository.updateMaterial(material.copy(isMissingOrNeeded = false)) }
     }
 
     fun deleteStudyMaterial(material: StudyMaterial) {

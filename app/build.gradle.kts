@@ -1,4 +1,4 @@
-val appVersion = "0.1.5"
+val appVersion = "0.1.6"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -46,6 +46,13 @@ android {
                 "proguard-rules.pro"
             )
         }
+    }
+    // Release-like build signed with the debug key, for measuring real performance (debug Compose is several times slower)
+    buildTypes.create("benchmark") {
+        initWith(buildTypes.getByName("release"))
+        signingConfig = signingConfigs.getByName("debug")
+        matchingFallbacks += "release"
+        isDebuggable = false
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

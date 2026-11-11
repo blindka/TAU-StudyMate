@@ -327,10 +327,16 @@ fun TasksScreen(
     }
 
     if (showExportDialog) {
-        ExportDialog(
-            exportText = viewModel.getExportText(),
-            onDismiss = { showExportDialog = false }
-        )
+        // Built once, off the main thread (it used to rebuild on every recomposition)
+        val exportText by produceState<String?>(null) {
+            value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { viewModel.getExportText() }
+        }
+        exportText?.let { text ->
+            ExportDialog(
+                exportText = text,
+                onDismiss = { showExportDialog = false }
+            )
+        }
     }
 
     if (showMoodleSyncDialog) {
