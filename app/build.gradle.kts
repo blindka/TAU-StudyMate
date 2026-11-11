@@ -74,7 +74,7 @@ kotlin {
 
 // Room schema history; used by the migration test (app/src/androidTest)
 ksp { arg("room.schemaLocation", "$projectDir/schemas") }
-android.sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+android.sourceSets.getByName("androidTest").assets.directories.add("$projectDir/schemas")
 
 // Output files: TAU-StudyMate-v0.0.1-release.aab / .apk
 base { archivesName.set("TAU-StudyMate-v$appVersion") }
