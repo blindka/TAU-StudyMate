@@ -44,6 +44,7 @@ fun HomeScreen(
     onNavigateToTasks: () -> Unit,
     onNavigateToCourses: () -> Unit,
     onNavigateToHabits: () -> Unit,
+    weekReadings: List<com.tau.studymate.data.model.Reading> = emptyList(),
     modifier: Modifier = Modifier
 ) {
     val tasks by viewModel.filteredTasks.collectAsState()
@@ -94,19 +95,21 @@ fun HomeScreen(
         item {
             HeaderCard(
                 academicProfile = academicProfile,
-                hasSchedule = scheduleBitmap != null || scheduleFileName != null,
                 streakDays = viewModel.streakDays.collectAsState().value,
                 pendingCount = pendingTasks.size,
-                onStartStudy = onNavigateToHabits,
-                onOpenProfile = { showProfileDialog = true },
-                onOpenSchedule = {
-                    if (scheduleBitmap != null || scheduleFileName != null) {
-                        showScheduleViewer = true
-                    } else {
-                        showProfileDialog = true
-                    }
-                },
-                onOpenMoodleSync = { showMoodleSyncDialog = true }
+                readingsDone = weekReadings.count { it.isRead },
+                readingsTotal = weekReadings.size,
+                onOpenProfile = { showProfileDialog = true }
+            )
+        }
+        item {
+            QuickActions(
+                hasSchedule = scheduleBitmap != null || scheduleFileName != null,
+                onFocus = onNavigateToHabits,
+                onMoodle = { showMoodleSyncDialog = true },
+                onSchedule = {
+                    if (scheduleBitmap != null || scheduleFileName != null) showScheduleViewer = true else showProfileDialog = true
+                }
             )
         }
 
@@ -287,12 +290,7 @@ fun HomeScreen(
         } else {
             items(pendingTasks.take(4)) { task ->
                 val course = courseMap[task.courseId]
-                HomeTaskItem(
-                    task = task,
-                    course = course,
-                    dueDateStr = dateFormat.format(Date(task.dueDate)),
-                    onToggle = { viewModel.toggleTaskCompletion(task) }
-                )
+                com.tau.studymate.ui.components.TaskRowCard(task = task, course = course, onToggle = { viewModel.toggleTaskCompletion(task) })
             }
         }
 
@@ -435,288 +433,69 @@ fun HomeScreen(
 @Composable
 private fun HeaderCard(
     academicProfile: UserAcademicProfile,
-    hasSchedule: Boolean,
     streakDays: Int,
     pendingCount: Int,
-    onStartStudy: () -> Unit,
-    onOpenProfile: () -> Unit,
-    onOpenSchedule: () -> Unit,
-    onOpenMoodleSync: () -> Unit
+    readingsDone: Int,
+    readingsTotal: Int,
+    onOpenProfile: () -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(26.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = Modifier
+    val hour = remember { java.time.LocalTime.now().hour }
+    val greeting = when (hour) { in 5..11 -> "בוקר טוב 👋"; in 12..17 -> "צהריים טובים 👋"; else -> "ערב טוב 👋" }
+    Column(
+        Modifier
             .fillMaxWidth()
-            .background(
-                brush = Brush.horizontalGradient(
-                    colors = listOf(
-                        PastelLavenderDark,
-                        Color(0xFF6366F1),
-                        Color(0xFF38BDF8)
-                    )
-                ),
-                shape = RoundedCornerShape(26.dp)
-            )
+            .background(Brush.linearGradient(listOf(Color(0xFF8B5CF6), Color(0xFF5B21B6))), RoundedCornerShape(24.dp))
+            .clickable(onClick = onOpenProfile)
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onOpenProfile() }
-                ) {
-                    // Modern academic cap icon with subtle ring
-                    Box(
-                        modifier = Modifier
-                            .size(52.dp)
-                            .background(Color.White.copy(alpha = 0.22f), CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.ic_academic_cap),
-                            contentDescription = "החלף תואר ומסלול",
-                            modifier = Modifier.size(38.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "אוניברסיטת תל אביב • ${academicProfile.year}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color.White.copy(alpha = 0.9f)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "ערוך תואר",
-                                tint = Color.White.copy(alpha = 0.8f),
-                                modifier = Modifier.size(12.dp)
-                            )
-                        }
-                        Text(
-                            text = academicProfile.degreeName,
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            ),
-                            maxLines = 2
-                        )
-                        Text(
-                            text = "${if (academicProfile.isDoubleMajor) "דו-חוגי" else "חד-חוגי"} • ${academicProfile.semester}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = PastelSky
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                // Streak in Pastel Butter
-                Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = PastelButter,
-                    border = BorderStroke(1.dp, PastelButterBorder)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.LocalFireDepartment,
-                            contentDescription = "Streak",
-                            tint = PastelButterDark,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "$streakDays ימים",
-                            color = PastelButterDark,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            // Quick Actions: Schedule, Moodle Sync & Focus Session
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Schedule Button (צפה במערכת שעות)
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.White.copy(alpha = 0.22f),
-                    modifier = Modifier.clickable { onOpenSchedule() }
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = if (hasSchedule) Icons.Default.CalendarMonth else Icons.Default.AddAPhoto,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = if (hasSchedule) "📅 מערכת" else "📸 מערכת",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-
-                // Direct Moodle Sync Button
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color.White.copy(alpha = 0.22f),
-                    modifier = Modifier.clickable { onOpenMoodleSync() }
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 9.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Sync,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(15.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "🎓 מודל",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.weight(1f))
-
-                Button(
-                    onClick = onStartStudy,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = PastelLavenderDark
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PlayArrow,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "סשן פוקוס",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(greeting, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
             Text(
-                text = "נותרו לך $pendingCount מטלות לביצוע",
-                color = Color.White.copy(alpha = 0.9f),
-                style = MaterialTheme.typography.bodyMedium
+                "🔥 $streakDays ימים", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 6.dp)
             )
+        }
+        val parts = buildList {
+            add(if (pendingCount == 1) "מטלה אחת" else "$pendingCount מטלות")
+            (readingsTotal - readingsDone).let { if (it == 1) add("מאמר אחד") else if (it > 1) add("$it מאמרים") }
+        }
+        Text("${parts.joinToString(" ו-")} פתוחים", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                "${academicProfile.degreeName} · ${academicProfile.year} · ${academicProfile.semester}",
+                color = Color.White.copy(alpha = 0.85f), fontSize = 12.sp, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false)
+            )
+            Spacer(Modifier.width(4.dp))
+            Icon(Icons.Default.Edit, "עריכת פרופיל", tint = Color.White.copy(alpha = 0.8f), modifier = Modifier.size(12.dp))
+        }
+        if (readingsTotal > 0) {
+            LinearProgressIndicator(
+                progress = { readingsDone.toFloat() / readingsTotal },
+                color = Color.White, trackColor = Color.White.copy(alpha = 0.25f), strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
+                modifier = Modifier.fillMaxWidth().height(8.dp)
+            )
+            Text("$readingsDone מתוך $readingsTotal מאמרים נקראו השבוע", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Medium)
         }
     }
 }
 
 @Composable
-private fun HomeTaskItem(
-    task: Task,
-    course: Course?,
-    dueDateStr: String,
-    onToggle: () -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Checkbox(
-                checked = task.isCompleted,
-                onCheckedChange = { onToggle() },
-                colors = CheckboxDefaults.colors(
-                    checkedColor = PastelMintDark,
-                    uncheckedColor = PastelLavenderDark.copy(alpha = 0.6f)
-                )
-            )
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = task.title,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
-                )
-
-                Spacer(modifier = Modifier.height(3.dp))
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    DepartmentBadge(department = task.department)
-
-                    if (course != null) {
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = course.courseNumber,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-
-            // Pastel Due Date Pill
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = PastelLavender,
-                border = BorderStroke(1.dp, PastelLavenderBorder)
+private fun QuickActions(hasSchedule: Boolean, onFocus: () -> Unit, onMoodle: () -> Unit, onSchedule: () -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        listOf(
+            Triple("סשן פוקוס", Icons.Default.Timer, Triple(PastelPeach, PastelPeachDark, onFocus)),
+            Triple("סנכרון Moodle", Icons.Default.Sync, Triple(PastelSky, PastelSkyDark, onMoodle)),
+            Triple("מערכת שעות", if (hasSchedule) Icons.Default.CalendarMonth else Icons.Default.AddAPhoto, Triple(PastelMint, PastelMintDark, onSchedule))
+        ).forEach { (label, icon, style) ->
+            val (bg, fg, onClick) = style
+            Column(
+                Modifier.weight(1f).background(bg, RoundedCornerShape(18.dp)).clickable(onClick = onClick).padding(vertical = 14.dp),
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                Text(
-                    text = dueDateStr,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = PastelLavenderDark,
-                    maxLines = 1,
-                    softWrap = false
-                )
+                Icon(icon, null, tint = fg, modifier = Modifier.size(22.dp))
+                Text(label, color = fg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1)
             }
         }
     }

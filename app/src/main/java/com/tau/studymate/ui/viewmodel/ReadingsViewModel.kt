@@ -33,6 +33,10 @@ class ReadingsViewModel(
     private val _courseFilter = MutableStateFlow<Long?>(null)
     val courseFilter: StateFlow<Long?> = _courseFilter.asStateFlow()
 
+    /** Always the current calendar week, for the Home progress bar. */
+    val currentWeek: StateFlow<List<Reading>> = dao.getForWeek(weekStartOf(LocalDate.now()).toEpochDay())
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     private val weekReadings = _week.flatMapLatest { dao.getForWeek(it.toEpochDay()) }
 
     /** All readings of the selected week; used for the progress line regardless of the filter. */

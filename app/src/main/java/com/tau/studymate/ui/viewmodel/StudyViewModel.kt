@@ -151,6 +151,10 @@ class StudyViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    val openTaskCountByCourse: StateFlow<Map<Long, Int>> = repository.allTasks
+        .map { tasks -> tasks.filter { !it.isCompleted && it.courseId != null }.groupingBy { it.courseId!! }.eachCount() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
+
     // All missing materials ("מה חסר לי")
     val missingMaterials: StateFlow<List<StudyMaterial>> = repository.allMissingMaterials
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())

@@ -127,6 +127,7 @@ fun MainAppContent(viewModel: StudyViewModel, readingsViewModel: com.tau.studyma
                         onNavigateToTasks = { currentRoute = NavScreen.Tasks.route },
                         onNavigateToCourses = { currentRoute = NavScreen.Courses.route },
                         onNavigateToHabits = { currentRoute = NavScreen.Habits.route },
+                        weekReadings = readingsViewModel.currentWeek.collectAsState().value,
                         modifier = Modifier.padding(paddingValues)
                     )
                     NavScreen.Tasks.route -> TasksScreen(

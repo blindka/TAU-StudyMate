@@ -56,8 +56,17 @@ fun HabitsAnalyticsScreen(
     val timerDisplay = "%02d:%02d".format(minutes, seconds)
 
     val totalMinutesStudied = remember(sessions) {
-        sessions.sumOf { it.durationMinutes } + 140
+        sessions.sumOf { it.durationMinutes }
     }
+
+    // Real split of studied minutes between the two tracks (was hardcoded 55/45)
+    val commShare = remember(sessions, courses) {
+        val dept = courses.associate { it.id to it.department }
+        val comm = sessions.filter { dept[it.courseId] == Department.COMMUNICATION }.sumOf { it.durationMinutes }
+        val labor = sessions.filter { dept[it.courseId] == Department.LABOR_STUDIES }.sumOf { it.durationMinutes }
+        if (comm + labor == 0) 0.5f else comm.toFloat() / (comm + labor)
+    }
+    val commPct = (commShare * 100).toInt()
 
     val presets = remember {
         listOf(
@@ -80,8 +89,7 @@ fun HabitsAnalyticsScreen(
             Card(
                 shape = RoundedCornerShape(26.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                border = BorderStroke(1.5.dp, PastelLavenderBorder),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                border = BorderStroke(1.dp, PastelLavenderBorder),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -91,7 +99,7 @@ fun HabitsAnalyticsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "טיימר פוקוס ללמידה מודעת 🧠",
+                        text = "סשן פוקוס",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = PastelLavenderDark
                     )
@@ -139,107 +147,47 @@ fun HabitsAnalyticsScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Pastel Preset Mode Selection (2x2 Grid - Never squished or clipped!)
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // Row 1: 25 mins & 45 mins
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            presets.take(2).forEach { preset ->
-                                val isSelected = (isCountdown == preset.isCount) && (!preset.isCount || targetMinutes == preset.mins)
-                                PresetCard(
-                                    preset = preset,
-                                    isSelected = isSelected,
-                                    enabled = !isRunning,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = {
-                                        if (!isRunning) {
-                                            viewModel.setTimerPreset(preset.isCount, preset.mins)
-                                        }
-                                    }
-                                )
-                            }
-                        }
-
-                        // Row 2: 60 mins & Stopwatch
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            presets.drop(2).forEach { preset ->
-                                val isSelected = (isCountdown == preset.isCount) && (!preset.isCount || targetMinutes == preset.mins)
-                                PresetCard(
-                                    preset = preset,
-                                    isSelected = isSelected,
-                                    enabled = !isRunning,
-                                    modifier = Modifier.weight(1f),
-                                    onClick = {
-                                        if (!isRunning) {
-                                            viewModel.setTimerPreset(preset.isCount, preset.mins)
-                                        }
-                                    }
+                    // Figma: compact preset row (25 / 45 / 60 / ∞)
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        presets.forEach { preset ->
+                            val isSelected = (isCountdown == preset.isCount) && (!preset.isCount || targetMinutes == preset.mins)
+                            Surface(
+                                onClick = { if (!isRunning) viewModel.setTimerPreset(preset.isCount, preset.mins) },
+                                enabled = !isRunning,
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (isSelected) PastelLavenderDark else MaterialTheme.colorScheme.surface,
+                                border = if (isSelected) null else BorderStroke(1.dp, PastelLavenderBorder),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(
+                                    if (preset.isCount) "${preset.mins}" else "∞",
+                                    fontSize = 16.sp, fontWeight = FontWeight.Bold, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                    color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(vertical = 10.dp)
                                 )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                    // Circular Timer Display with Pastel Rings
-                    Box(
-                        modifier = Modifier
-                            .size(174.dp)
-                            .background(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(
-                                        PastelLavender.copy(alpha = 0.7f),
-                                        PastelSky.copy(alpha = 0.4f),
-                                        Color.White
-                                    )
-                                ),
-                                shape = CircleShape
+                    // Figma: progress ring
+                    val total = targetMinutes * 60
+                    val progress = if (isCountdown && total > 0) timerSeconds.toFloat() / total else ((timerSeconds % 3600) / 3600f)
+                    Box(Modifier.size(220.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(
+                            progress = { 1f }, color = PastelLavender, strokeWidth = 14.dp, modifier = Modifier.fillMaxSize()
+                        )
+                        CircularProgressIndicator(
+                            progress = { progress }, color = PastelLavenderDark, strokeWidth = 14.dp,
+                            strokeCap = androidx.compose.ui.graphics.StrokeCap.Round, modifier = Modifier.fillMaxSize()
+                        )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(timerDisplay, fontSize = 48.sp, fontWeight = FontWeight.Bold, color = PastelLavenderDeep)
+                            Text(
+                                if (isCountdown) "מתוך $targetMinutes דק׳" else "סטופר חופשי",
+                                fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            .clip(CircleShape),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Surface(
-                            modifier = Modifier.size(158.dp),
-                            shape = CircleShape,
-                            color = Color.White,
-                            border = BorderStroke(3.dp, if (isRunning) PastelLavenderDark else PastelLavenderBorder),
-                            shadowElevation = 3.dp
-                        ) {
-                            Column(
-                                modifier = Modifier.fillMaxSize(),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Text(
-                                    text = timerDisplay,
-                                    fontSize = 40.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = PastelLavenderDark
-                                )
-
-                                Spacer(modifier = Modifier.height(2.dp))
-
-                                Surface(
-                                    shape = RoundedCornerShape(8.dp),
-                                    color = if (isCountdown) PastelButter.copy(alpha = 0.8f) else PastelSky.copy(alpha = 0.8f)
-                                ) {
-                                    Text(
-                                        text = if (isCountdown) "🔔 ספירה לאחור" else "♾️ סטופר פתוח",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (isCountdown) PastelButterDark else PastelSkyDark,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                }
-                            }
                         }
                     }
 
@@ -384,13 +332,13 @@ fun HabitsAnalyticsScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .weight(0.55f)
+                                .weight(commShare.coerceIn(0.01f, 0.99f))
                                 .fillMaxHeight()
                                 .background(PastelSkyDark)
                         )
                         Box(
                             modifier = Modifier
-                                .weight(0.45f)
+                                .weight((1 - commShare).coerceIn(0.01f, 0.99f))
                                 .fillMaxHeight()
                                 .background(PastelMintDark)
                         )
@@ -408,7 +356,7 @@ fun HabitsAnalyticsScreen(
                             border = BorderStroke(1.dp, PastelSkyBorder)
                         ) {
                             Text(
-                                text = "🔵 תקשורת: 55%",
+                                text = "🔵 תקשורת: $commPct%",
                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                                 color = PastelSkyDark,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -421,7 +369,7 @@ fun HabitsAnalyticsScreen(
                             border = BorderStroke(1.dp, PastelMintBorder)
                         ) {
                             Text(
-                                text = "🟢 לימודי עבודה: 45%",
+                                text = "🟢 לימודי עבודה: ${100 - commPct}%",
                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                                 color = PastelMintDark,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)

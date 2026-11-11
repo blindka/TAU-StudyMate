@@ -87,6 +87,10 @@ fun TasksScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            Text(
+                "מטלות", fontSize = 24.sp, fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp)
+            )
             // Search & Pastel Export / Alert Buttons
             Row(
                 modifier = Modifier
@@ -98,7 +102,7 @@ fun TasksScreen(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.setSearchQuery(it) },
-                    placeholder = { Text("חיפוש מטלה או נושא...") },
+                    placeholder = { Text("חיפוש מטלה…", maxLines = 1) },
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = null, tint = PastelLavenderDark)
                     },
@@ -354,130 +358,6 @@ private fun TaskItemCard(
             }
         }
     ) {
-        Card(
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = if (task.isCompleted)
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                else MaterialTheme.colorScheme.surface
-            ),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-            elevation = CardDefaults.cardElevation(defaultElevation = if (task.isCompleted) 0.dp else 1.5.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Checkbox(
-                        checked = task.isCompleted,
-                        onCheckedChange = { onToggle() },
-                        colors = CheckboxDefaults.colors(
-                            checkedColor = PastelMintDark,
-                            uncheckedColor = PastelLavenderDark.copy(alpha = 0.6f)
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = task.title,
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.SemiBold,
-                                textDecoration = if (task.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                            ),
-                            color = if (task.isCompleted) MaterialTheme.colorScheme.outline else MaterialTheme.colorScheme.onSurface
-                        )
-
-                        if (task.description.isNotBlank()) {
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = task.description,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    IconButton(onClick = onDelete) {
-                        Icon(
-                            imageVector = Icons.Default.DeleteOutline,
-                            contentDescription = "מחק",
-                            tint = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Footer with Badges
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 48.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        DepartmentBadge(department = task.department)
-
-                        if (course != null) {
-                            Text(
-                                text = "${course.courseNumber} - ${course.name}",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false)
-                            )
-                        }
-                    }
-
-                    // Pastel Due date badge
-                    val isUrgent = task.priority == Priority.HIGH
-                    val badgeBg = if (isUrgent) PastelCoral else PastelLavender
-                    val badgeBorder = if (isUrgent) PastelCoralBorder else PastelLavenderBorder
-                    val badgeText = if (isUrgent) PastelCoralDark else PastelLavenderDark
-
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = badgeBg,
-                        border = BorderStroke(1.dp, badgeBorder)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Event,
-                                contentDescription = null,
-                                modifier = Modifier.size(12.dp),
-                                tint = badgeText
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = dueDateFormatted,
-                                fontSize = 11.sp,
-                                maxLines = 1,
-                                softWrap = false,
-                                fontWeight = FontWeight.Bold,
-                                color = badgeText
-                            )
-                        }
-                    }
-                }
-            }
-        }
+        com.tau.studymate.ui.components.TaskRowCard(task = task, course = course, onToggle = onToggle, showDescription = true)
     }
 }

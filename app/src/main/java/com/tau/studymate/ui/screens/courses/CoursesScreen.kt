@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.screens.courses
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,6 +40,7 @@ fun CoursesScreen(
     modifier: Modifier = Modifier
 ) {
     val courses by viewModel.courses.collectAsState()
+    val openTaskCounts by viewModel.openTaskCountByCourse.collectAsState()
     var selectedDept by remember { mutableStateOf<Department?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var showAddCourseDialog by remember { mutableStateOf(false) }
@@ -89,7 +91,7 @@ fun CoursesScreen(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("חיפוש לפי מספר קורס או שם...") },
+                    placeholder = { Text("חיפוש קורס…", maxLines = 1) },
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = TauPurplePrimary) },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
@@ -239,6 +241,7 @@ fun CoursesScreen(
                     items(filteredCourses, key = { it.id }) { course ->
                         CourseCard(
                             course = course,
+                            openTasks = openTaskCounts[course.id] ?: 0,
                             onClick = { onCourseClick(course) },
                             onDelete = { viewModel.deleteCourse(course) }
                         )
@@ -309,134 +312,44 @@ fun CoursesScreen(
 @Composable
 private fun CourseCard(
     course: Course,
+    openTasks: Int,
     onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
-    Card(
+    val (chipBg, chipFg) = com.tau.studymate.ui.screens.readings.departmentColors(course.department)
+    Surface(
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, PastelLavenderBorder),
+        modifier = Modifier.fillMaxWidth().clickable { onClick() }
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Course Number Pill (TAU format)
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = TauPurpleLight.copy(alpha = 0.6f)
-                ) {
-                    Text(
-                        text = "קורס: ${course.courseNumber}",
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TauPurpleDark
-                    )
-                }
-
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    DepartmentBadge(department = course.department)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    IconButton(
-                        onClick = onDelete,
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.DeleteOutline,
-                            contentDescription = "מחק קורס",
-                            tint = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+        Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    course.department.displayName, color = chipFg, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                    modifier = Modifier.background(chipBg, RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 3.dp)
+                )
+                Spacer(Modifier.weight(1f))
+                Text(course.courseNumber, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(Icons.Default.DeleteOutline, "מחק קורס", tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
                 }
             }
-
-            Spacer(modifier = Modifier.height(10.dp))
-
+            Text(course.name, fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Text(
-                text = course.name,
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                listOfNotNull(course.lecturer.takeIf { it.isNotBlank() }, course.semester, "${course.credits} נ״ז").joinToString(" · "),
+                fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    text = "${course.lecturer} • ${course.semester}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    when (openTasks) { 0 -> "✅ אין מטלות פתוחות"; 1 -> "✅ מטלה פתוחה אחת"; else -> "✅ $openTasks מטלות פתוחות" },
+                    color = PastelLavenderDeep, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.background(PastelLavender, RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 5.dp)
                 )
-
                 Text(
-                    text = "${course.credits} נק\"ז",
-                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                    color = TauPurplePrimary
+                    "📁 חומרים והקלטות", color = chipFg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.background(chipBg, RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 5.dp)
                 )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            // Quick Folder Shortcut icons
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Folder,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = TauPurplePrimary
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("חומרים וסיכומים", fontSize = 11.sp)
-                        }
-
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.Videocam,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.secondary
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("הקלטות", fontSize = 11.sp)
-                        }
-                    }
-
-                    Icon(
-                        imageVector = Icons.Default.ArrowBackIosNew,
-                        contentDescription = null,
-                        modifier = Modifier.size(14.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
         }
     }
