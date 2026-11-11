@@ -1,6 +1,7 @@
 package com.tau.studymate.ui.viewmodel
 
 import com.tau.studymate.util.appPrefs
+import com.tau.studymate.util.decodeScaled
 import com.tau.studymate.util.secretPrefs
 import android.app.Application
 import android.graphics.Bitmap
@@ -211,9 +212,25 @@ class StudyViewModel(
                     completedTaskTitle = task.title,
                     streakDays = calculateStreakDays()
                 )
+            } else {
+                // Un-checking a task brings its reminders back
+                val courseName = task.courseId?.let { repository.getCourseById(it)?.name }
+                TaskNotificationScheduler.scheduleTask(getApplication(), task.copy(isCompleted = false), courseName)
             }
         }
     }
+
+    fun updateTask(task: Task) {
+        viewModelScope.launch {
+            repository.updateTask(task)
+            val courseName = task.courseId?.let { repository.getCourseById(it)?.name }
+            TaskNotificationScheduler.scheduleTask(getApplication(), task, courseName)
+        }
+    }
+
+    /** All tasks, ignoring the Tasks screen's search/filters (for Home and statistics). */
+    val allTasks: StateFlow<List<Task>> = repository.allTasks
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun dismissCelebration() {
         _celebrationReward.value = null
@@ -257,11 +274,8 @@ class StudyViewModel(
                 reminderEnabled = enableReminder
             )
             val insertedId = repository.insertTask(task)
-            if (enableReminder) {
-                val course = courseId?.let { repository.getCourseById(it) }
-                val fullTask = task.copy(id = insertedId)
-                TaskNotificationScheduler.scheduleTask(getApplication(), fullTask, course?.name)
-            }
+            val course = courseId?.let { repository.getCourseById(it) }
+            TaskNotificationScheduler.scheduleTask(getApplication(), task.copy(id = insertedId), course?.name)
         }
     }
 
@@ -340,9 +354,8 @@ class StudyViewModel(
     }
 
     private suspend fun replaceCurriculum(templates: List<CourseTemplate>, semester: String) {
-        val newCourses = templates.mapIndexed { index, ct ->
+        val newCourses = templates.map { ct ->
             Course(
-                id = (index + 1).toLong(),
                 courseNumber = ct.courseNumber,
                 name = ct.name,
                 department = ct.department,
@@ -425,9 +438,12 @@ class StudyViewModel(
         viewModelScope.launch {
             val result = com.tau.studymate.util.MoodleSyncService.fetchAndSyncMoodle(feedUrl, courses.value)
             if (result.success && result.tasks.isNotEmpty()) {
-                val existing = repository.allTasks.first().map { it.title to it.dueDate }.toSet()
-                result.tasks.filter { (it.title to it.dueDate) !in existing }
-                    .forEach { task ->
+                val (inserts, updates) = com.tau.studymate.util.MoodleSyncService.merge(repository.allTasks.first(), result.tasks)
+                updates.forEach { task ->
+                    repository.updateTask(task)
+                    if (!task.isCompleted) TaskNotificationScheduler.scheduleTask(getApplication(), task, courses.value.find { it.id == task.courseId }?.name)
+                }
+                inserts.forEach { task ->
                         val id = repository.insertTask(task)
                         val courseName = task.courseId?.let { cid -> courses.value.find { it.id == cid }?.name }
                         TaskNotificationScheduler.scheduleTask(getApplication(), task.copy(id = id), courseName)
@@ -459,12 +475,3 @@ internal fun computeStreak(timestamps: List<Long>, now: Long = System.currentTim
     while (day in days) { count++; day = day.minusDays(1) }
     return count
 }
-
-/** Decodes an image file at most [maxSide] pixels on its long edge, so a 12MP photo doesn't take ~50MB. */
-private fun decodeScaled(file: File, maxSide: Int): Bitmap? = runCatching {
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    BitmapFactory.decodeFile(file.absolutePath, bounds)
-    var sample = 1
-    while (maxOf(bounds.outWidth, bounds.outHeight) / (sample * 2) >= maxSide) sample *= 2
-    BitmapFactory.decodeFile(file.absolutePath, BitmapFactory.Options().apply { inSampleSize = sample })
-}.getOrNull()

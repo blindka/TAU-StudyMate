@@ -34,4 +34,34 @@ class CoreLogicTest {
         assertEquals(sunday, weekStartOf(LocalDate.of(2026, 11, 14))) // Saturday
         assertEquals(sunday.plusWeeks(1), weekStartOf(LocalDate.of(2026, 11, 15)))
     }
+
+    @Test fun timerUsesWallClock() {
+        val now = 1_000_000L
+        assertEquals(60, com.tau.studymate.ui.viewmodel.timerSecondsAt(true, now + 60_000, 0, now))
+        assertEquals(1, com.tau.studymate.ui.viewmodel.timerSecondsAt(true, now + 200, 0, now)) // rounds up, never shows 0 early
+        assertEquals(0, com.tau.studymate.ui.viewmodel.timerSecondsAt(true, now - 5_000, 0, now)) // app reopened after the end
+        assertEquals(130, com.tau.studymate.ui.viewmodel.timerSecondsAt(false, now - 100_000, 30, now)) // stopwatch keeps paused time
+    }
+
+    @Test fun moodleMergeUpdatesByUidAndSkipsDuplicates() {
+        val base = com.tau.studymate.data.model.Task(id = 5, title = "Essay", dueDate = 100, externalId = "uid-1", isCompleted = true)
+        val manual = com.tau.studymate.data.model.Task(id = 6, title = "Quiz", dueDate = 200)
+        val incoming = listOf(
+            base.copy(id = 0, dueDate = 150, isCompleted = false), // extension: same UID, new date
+            manual.copy(id = 0),                                  // already exists by title+date
+            com.tau.studymate.data.model.Task(title = "New", dueDate = 300, externalId = "uid-2")
+        )
+        val (inserts, updates) = MoodleSyncService.merge(listOf(base, manual), incoming)
+        assertEquals(listOf("New"), inserts.map { it.title })
+        assertEquals(1, updates.size)
+        assertEquals(150L, updates[0].dueDate)
+        assertEquals(true, updates[0].isCompleted) // user's completion is kept
+    }
+
+    @Test fun semesterNameFollowsCalendarTable() {
+        val cal = com.tau.studymate.util.TauAcademicCalendar
+        assertEquals("סמסטר א'", cal.getCurrentSemesterName(LocalDate.of(2026, 11, 11)))
+        assertEquals("סמסטר ב'", cal.getCurrentSemesterName(LocalDate.of(2027, 4, 1)))
+        assertEquals("סמסטר ב'", cal.getCurrentSemesterName(LocalDate.of(2027, 7, 20))) // B exams, not summer
+    }
 }

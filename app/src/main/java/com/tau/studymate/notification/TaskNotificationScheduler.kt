@@ -10,32 +10,27 @@ import com.tau.studymate.receiver.TaskAlarmReceiver
 
 object TaskNotificationScheduler {
 
+    private const val HOUR = 60 * 60 * 1000L
+    /** Reminder offsets before the deadline, with the text shown in the notification. */
+    private val LEADS = listOf(24 * HOUR to "ההגשה מחר", 3 * HOUR to "ההגשה בעוד 3 שעות")
+
+    /** Schedules "a day before" and "3 hours before" reminders. Past ones are skipped, never fired late. */
     fun scheduleTask(context: Context, task: Task, courseName: String? = null) {
+        cancelReminder(context, task.id)
         if (task.isCompleted || !task.reminderEnabled) return
-
         val now = System.currentTimeMillis()
-        // If due date is in the future, schedule for due date (or 9:00 AM on the due date)
-        // If due date is already passed or less than 1 hour away, we can remind in 10 seconds for testing/quick alert
-        val triggerTime = if (task.dueDate > now) {
-            task.dueDate
-        } else {
-            // If already overdue or set for today, notify shortly (e.g. in 5 seconds or now)
-            now + 5000L
+        LEADS.forEachIndexed { i, (lead, label) ->
+            val at = task.dueDate - lead
+            if (at > now) scheduleReminder(context, task.id, requestCode(task.id, i), task.title, label, courseName, at)
         }
-
-        scheduleReminder(
-            context = context,
-            taskId = task.id,
-            title = task.title,
-            description = task.description,
-            courseName = courseName,
-            triggerTimeMs = triggerTime
-        )
     }
 
-    fun scheduleReminder(
+    private fun requestCode(taskId: Long, slot: Int) = (taskId * 2 + slot).toInt() + 1_000_000
+
+    private fun scheduleReminder(
         context: Context,
         taskId: Long,
+        code: Int,
         title: String,
         description: String,
         courseName: String?,
@@ -52,7 +47,7 @@ object TaskNotificationScheduler {
 
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            taskId.toInt(),
+            code,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -90,16 +85,12 @@ object TaskNotificationScheduler {
 
     fun cancelReminder(context: Context, taskId: Long) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as? AlarmManager ?: return
-        val intent = Intent(context, TaskAlarmReceiver::class.java)
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            taskId.toInt(),
-            intent,
-            PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
-        )
-        if (pendingIntent != null) {
-            alarmManager.cancel(pendingIntent)
-            pendingIntent.cancel()
+        // slots 0/1, plus the single due-time alarm older versions used (request code = task id)
+        (listOf(taskId.toInt()) + LEADS.indices.map { requestCode(taskId, it) }).forEach { code ->
+            PendingIntent.getBroadcast(
+                context, code, Intent(context, TaskAlarmReceiver::class.java),
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+            )?.let { alarmManager.cancel(it); it.cancel() }
         }
     }
 }

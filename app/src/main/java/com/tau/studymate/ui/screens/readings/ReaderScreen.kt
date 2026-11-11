@@ -22,6 +22,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import com.tau.studymate.util.appPrefs
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
@@ -46,7 +48,7 @@ fun ReaderScreen(readingId: Long, viewModel: ReadingsViewModel, onBack: () -> Un
     BackHandler(onBack = onBack)
     val r = reading ?: return
 
-    Column(Modifier.fillMaxSize().background(Color(0xFFEDEDF2))) {
+    Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant)) {
         Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 2.dp) {
             Column(Modifier.statusBarsPadding()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -80,7 +82,14 @@ private fun PdfPages(r: Reading) {
     if (doc == null) { Text("לא ניתן לפתוח את הקובץ", Modifier.padding(24.dp)); return }
 
     val widthPx = with(LocalDensity.current) { (LocalConfiguration.current.screenWidthDp.dp - 16.dp).roundToPx() }
-    val listState = rememberLazyListState()
+    // Reopen at the page where the user stopped
+    val prefs = androidx.compose.ui.platform.LocalContext.current.appPrefs()
+    val pageKey = "reading_page_${r.id}"
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = prefs.getInt(pageKey, 0).coerceIn(0, (doc.pageCount - 1).coerceAtLeast(0)))
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.firstVisibleItemIndex }.collect { prefs.edit().putInt(pageKey, it).apply() }
+    }
+    var viewport by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     // Re-render pages sharper once the pinch settles. Capped at 2x: each page is an ARGB bitmap (~22MB at 2x).
@@ -96,10 +105,15 @@ private fun PdfPages(r: Reading) {
             contentPadding = PaddingValues(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxSize()
+                .onSizeChanged { viewport = it }
                 .pointerInput(Unit) {
                     detectTransformGestures { _, pan, zoom, _ ->
                         scale = (scale * zoom).coerceIn(1f, 4f)
-                        offset = if (scale == 1f) androidx.compose.ui.geometry.Offset.Zero else offset + pan
+                        // Keep the zoomed page on screen: max shift is half of the extra size on each axis
+                        val maxX = viewport.width * (scale - 1) / 2
+                        val maxY = viewport.height * (scale - 1) / 2
+                        val next = offset + pan
+                        offset = androidx.compose.ui.geometry.Offset(next.x.coerceIn(-maxX, maxX), next.y.coerceIn(-maxY, maxY))
                     }
                 }
                 .graphicsLayer(scaleX = scale, scaleY = scale, translationX = offset.x, translationY = offset.y)

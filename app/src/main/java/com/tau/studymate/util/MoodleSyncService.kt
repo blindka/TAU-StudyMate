@@ -104,6 +104,7 @@ object MoodleSyncService {
             var description = ""
             var dtEndMillis = 0L
             var category = ""
+            var uid: String? = null
 
             block.lines().forEach { rawLine ->
                 val line = rawLine.trim()
@@ -113,6 +114,9 @@ object MoodleSyncService {
                     }
                     line.startsWith("DESCRIPTION", ignoreCase = true) -> {
                         description = unescapeIcs(line.substringAfter(':'))
+                    }
+                    line.startsWith("UID", ignoreCase = true) -> {
+                        uid = line.substringAfter(':').trim().ifBlank { null }
                     }
                     line.startsWith("CATEGORIES", ignoreCase = true) -> {
                         category = unescapeIcs(line.substringAfter(':'))
@@ -167,7 +171,8 @@ object MoodleSyncService {
                     courseId = courseId,
                     department = department,
                     priority = priority,
-                    estimatedMinutes = 120
+                    estimatedMinutes = 120,
+                    externalId = uid
                 )
             )
         }
@@ -178,4 +183,22 @@ object MoodleSyncService {
     private fun unescapeIcs(value: String): String = value.trim()
         .replace("\\n", "\n").replace("\\N", "\n")
         .replace("\\,", ",").replace("\\;", ";").replace("\\\\", "\\")
+
+    /**
+     * Decides what a sync changes. Same Moodle UID → update title/date (keeps the user's completion);
+     * no UID match but same title+date → skip; otherwise insert.
+     */
+    fun merge(existing: List<Task>, incoming: List<Task>): Pair<List<Task>, List<Task>> {
+        val byUid = existing.filter { it.externalId != null }.associateBy { it.externalId }
+        val seen = existing.map { it.title to it.dueDate }.toSet()
+        val inserts = mutableListOf<Task>(); val updates = mutableListOf<Task>()
+        for (t in incoming) {
+            val old = t.externalId?.let { byUid[it] }
+            when {
+                old != null -> if (old.title != t.title || old.dueDate != t.dueDate) updates += old.copy(title = t.title, dueDate = t.dueDate)
+                (t.title to t.dueDate) !in seen -> inserts += t
+            }
+        }
+        return inserts to updates
+    }
 }

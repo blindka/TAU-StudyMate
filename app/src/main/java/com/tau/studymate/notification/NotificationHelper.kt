@@ -16,6 +16,7 @@ import com.tau.studymate.R
 
 object NotificationHelper {
 
+    private const val TIMER_NOTIFICATION_ID = Int.MAX_VALUE // task notifications use task ids
     const val CHANNEL_TASKS_ID = "tau_studymate_tasks_channel"
     private const val CHANNEL_TASKS_NAME = "תזכורות למטלות"
     private const val CHANNEL_TASKS_DESC = "התראות על מועדי הגשה ותזכורות למטלות אקדמיות"
@@ -77,6 +78,7 @@ object NotificationHelper {
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra(MainActivity.EXTRA_OPEN_TASK_ID, taskId)
         }
 
         val pendingIntent = PendingIntent.getActivity(
@@ -98,7 +100,7 @@ object NotificationHelper {
         }
 
         val notification = NotificationCompat.Builder(context, CHANNEL_TASKS_ID)
-            .setSmallIcon(R.drawable.ic_tau_logo)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("תזכורת למטלה: $title")
             .setContentText(contentText)
             .setStyle(NotificationCompat.BigTextStyle().bigText(contentText))
@@ -127,13 +129,13 @@ object NotificationHelper {
 
         val pendingIntent = PendingIntent.getActivity(
             context,
-            9999,
+            TIMER_NOTIFICATION_ID,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_TIMER_ID)
-            .setSmallIcon(R.drawable.ic_tau_logo)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(message)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -144,14 +146,14 @@ object NotificationHelper {
             .build()
 
         try {
-            NotificationManagerCompat.from(context).notify(9999, notification)
+            NotificationManagerCompat.from(context).notify(TIMER_NOTIFICATION_ID, notification)
         } catch (_: SecurityException) {}
     }
 
     fun showTestNotification(context: Context) {
         showTaskNotification(
             context = context,
-            taskId = System.currentTimeMillis() % 10000,
+            taskId = -1, // never collides with a real task id
             title = "בדיקת התראות - StudyMate",
             description = "מעולה! מערכת ההתראות פעילה ותקפיץ לך תזכורות למטלות בזמן 🎯",
             courseName = "מערכת תזכורות"

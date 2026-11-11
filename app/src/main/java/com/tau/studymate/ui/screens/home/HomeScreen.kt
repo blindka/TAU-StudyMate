@@ -48,7 +48,7 @@ fun HomeScreen(
     weekReadings: List<com.tau.studymate.data.model.Reading> = emptyList(),
     modifier: Modifier = Modifier
 ) {
-    val tasks by viewModel.filteredTasks.collectAsState()
+    val tasks by viewModel.allTasks.collectAsState()
     val courses by viewModel.courses.collectAsState()
     val missingMaterials by viewModel.missingMaterials.collectAsState()
     val academicProfile by viewModel.academicProfile.collectAsState()
@@ -457,14 +457,17 @@ private fun HeaderCard(
                 modifier = Modifier.background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 6.dp)
             )
         }
-        val parts = buildList {
-            add(if (pendingCount == 1) "מטלה אחת" else "$pendingCount מטלות")
-            (readingsTotal - readingsDone).let { if (it == 1) add("מאמר אחד") else if (it > 1) add("$it מאמרים") }
-        }
-        val headline = when {
-            pendingCount == 0 && parts.size == 1 -> "אין מטלות פתוחות 🎉"
-            parts.size == 1 -> "${parts[0]} ${if (pendingCount == 1) "פתוחה" else "פתוחות"}"
-            else -> "${parts.joinToString(" ו-")} פתוחים"
+        val openReadings = readingsTotal - readingsDone
+        val headline = listOfNotNull(
+            when (pendingCount) { 0 -> null; 1 -> "מטלה אחת"; else -> "$pendingCount מטלות" },
+            when (openReadings) { 0 -> null; 1 -> "מאמר אחד"; else -> "$openReadings מאמרים" }
+        ).let { parts ->
+            when {
+                parts.isEmpty() -> "אין משימות פתוחות 🎉"
+                parts.size == 2 -> "${parts[0]} ${if (parts[1].first().isDigit()) "ו-" else "ו"}${parts[1]} פתוחים"
+                pendingCount > 0 -> "${parts[0]} ${if (pendingCount == 1) "פתוחה" else "פתוחות"}"
+                else -> "${parts[0]} ${if (openReadings == 1) "פתוח" else "פתוחים"}"
+            }
         }
         Text(headline, color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -482,7 +485,7 @@ private fun HeaderCard(
                 color = Color.White, trackColor = Color.White.copy(alpha = 0.25f), strokeCap = androidx.compose.ui.graphics.StrokeCap.Round,
                 modifier = Modifier.fillMaxWidth().height(8.dp)
             )
-            Text("$readingsDone מתוך $readingsTotal מאמרים נקראו השבוע", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+            Text("נקראו $readingsDone מתוך $readingsTotal מאמרים השבוע", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Medium)
         }
     }
 }

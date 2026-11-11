@@ -1,4 +1,4 @@
-val appVersion = "0.1.4"
+val appVersion = "0.1.5"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -79,7 +79,6 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
-    implementation(libs.androidx.navigation.compose)
 
     // Room
     implementation(libs.androidx.room.runtime)

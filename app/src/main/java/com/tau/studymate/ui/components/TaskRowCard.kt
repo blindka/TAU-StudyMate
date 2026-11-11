@@ -2,6 +2,9 @@ package com.tau.studymate.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -27,7 +30,7 @@ private val ddMM = DateTimeFormatter.ofPattern("dd/MM")
 
 /** Figma "TaskRow": checkbox · title + course · due-date pill. Shared by Home and Tasks. */
 @Composable
-fun TaskRowCard(task: Task, course: Course?, onToggle: () -> Unit, showDescription: Boolean = false, modifier: Modifier = Modifier) {
+fun TaskRowCard(task: Task, course: Course?, onToggle: () -> Unit, showDescription: Boolean = false, onClick: (() -> Unit)? = null, modifier: Modifier = Modifier) {
     val due = Instant.ofEpochMilli(task.dueDate).atZone(ZoneId.systemDefault()).toLocalDate()
     val days = ChronoUnit.DAYS.between(LocalDate.now(), due)
     val dueLabel = when (days) { 0L -> "היום"; 1L -> "מחר"; else -> due.format(ddMM) }
@@ -38,11 +41,13 @@ fun TaskRowCard(task: Task, course: Course?, onToggle: () -> Unit, showDescripti
         shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, PastelLavenderBorder),
-        modifier = modifier.fillMaxWidth()
+        modifier = modifier.fillMaxWidth().then(if (onClick != null) Modifier.clickable(onClickLabel = "עריכה", onClick = onClick) else Modifier)
     ) {
         Row(Modifier.padding(start = 4.dp, end = 14.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             Checkbox(
                 checked = task.isCompleted, onCheckedChange = { onToggle() },
+                // TalkBack reads the task name, not just "checkbox"
+                modifier = Modifier.semantics { contentDescription = "סימון ${task.title} כהושלמה" },
                 colors = CheckboxDefaults.colors(checkedColor = PastelLavenderDark, uncheckedColor = PastelLavenderDark)
             )
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {

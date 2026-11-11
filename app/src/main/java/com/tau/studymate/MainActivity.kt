@@ -53,14 +53,31 @@ class MainActivity : ComponentActivity() {
         ViewModelFactory(application, (application as StudyMateApp).repository)
     }
 
+    /** Task to open in the editor, set when the user taps a reminder notification. */
+    private val openTaskId = mutableStateOf<Long?>(null)
+
+    private fun readIntent(intent: android.content.Intent?) {
+        intent?.getLongExtra(EXTRA_OPEN_TASK_ID, -1)?.takeIf { it > 0 }?.let { openTaskId.value = it }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        readIntent(intent)
+    }
+
+    companion object {
+        const val EXTRA_OPEN_TASK_ID = "open_task_id"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        readIntent(intent)
         setContent {
             TAUStudyMateTheme {
                 // Ensure RTL layout for full Hebrew support
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                     NotificationPermissionHandler()
-                    MainAppContent(viewModel = viewModel, readingsViewModel = readingsViewModel, timerViewModel = timerViewModel)
+                    MainAppContent(viewModel = viewModel, readingsViewModel = readingsViewModel, timerViewModel = timerViewModel, openTaskId = openTaskId)
                 }
             }
         }
@@ -91,10 +108,12 @@ private fun NotificationPermissionHandler() {
 fun MainAppContent(
     viewModel: StudyViewModel,
     readingsViewModel: com.tau.studymate.ui.viewmodel.ReadingsViewModel,
-    timerViewModel: com.tau.studymate.ui.viewmodel.TimerViewModel
+    timerViewModel: com.tau.studymate.ui.viewmodel.TimerViewModel,
+    openTaskId: MutableState<Long?> = mutableStateOf(null)
 ) {
     var currentRoute by remember { mutableStateOf(NavScreen.Home.route) }
     var openReadingId by remember { mutableStateOf<Long?>(null) }
+    LaunchedEffect(openTaskId.value) { if (openTaskId.value != null) currentRoute = NavScreen.Tasks.route }
     openReadingId?.let { id ->
         com.tau.studymate.ui.screens.readings.ReaderScreen(id, readingsViewModel, onBack = { openReadingId = null })
         return
@@ -140,6 +159,8 @@ fun MainAppContent(
                     )
                     NavScreen.Tasks.route -> TasksScreen(
                         viewModel = viewModel,
+                        openTaskId = openTaskId.value,
+                        onOpenTaskHandled = { openTaskId.value = null },
                         modifier = Modifier.padding(paddingValues)
                     )
                     NavScreen.Courses.route -> CoursesScreen(

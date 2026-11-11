@@ -38,7 +38,7 @@ object PdfStore {
     private fun displayName(context: Context, uri: Uri): String =
         context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
             if (c.moveToFirst()) c.getString(0) else null
-        }?.removeSuffix(".pdf")?.removeSuffix(".PDF") ?: "מסמך"
+        }?.substringBeforeLast('.')?.replace('_', ' ')?.trim()?.ifBlank { null } ?: "מסמך"
 
     /** Page text needs Android 15+ (PdfRenderer text API). Returns null when the device can't extract text. */
     suspend fun extractText(path: String, maxChars: Int): String? = withContext(Dispatchers.IO) {

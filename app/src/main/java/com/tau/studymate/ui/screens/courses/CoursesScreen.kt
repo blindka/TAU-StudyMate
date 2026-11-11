@@ -41,6 +41,16 @@ fun CoursesScreen(
 ) {
     val courses by viewModel.courses.collectAsState()
     val openTaskCounts by viewModel.openTaskCountByCourse.collectAsState()
+    var courseToDelete by remember { mutableStateOf<Course?>(null) }
+    courseToDelete?.let { course ->
+        AlertDialog(
+            onDismissRequest = { courseToDelete = null },
+            title = { Text("למחוק את הקורס?") },
+            text = { Text("\"${course.name}\" יימחק יחד עם כל החומרים וההקלטות שלו. המטלות יישארו, בלי שיוך לקורס.") },
+            confirmButton = { TextButton(onClick = { viewModel.deleteCourse(course); courseToDelete = null }) { Text("מחיקה", color = MaterialTheme.colorScheme.error) } },
+            dismissButton = { TextButton(onClick = { courseToDelete = null }) { Text("ביטול") } }
+        )
+    }
     var selectedDept by remember { mutableStateOf<Department?>(null) }
     var searchQuery by remember { mutableStateOf("") }
     var showAddCourseDialog by remember { mutableStateOf(false) }
@@ -243,7 +253,7 @@ fun CoursesScreen(
                             course = course,
                             openTasks = openTaskCounts[course.id] ?: 0,
                             onClick = { onCourseClick(course) },
-                            onDelete = { viewModel.deleteCourse(course) }
+                            onDelete = { courseToDelete = course }
                         )
                     }
                 }
@@ -331,7 +341,7 @@ private fun CourseCard(
                 )
                 Spacer(Modifier.weight(1f))
                 Text(course.courseNumber, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                IconButton(onClick = onDelete) { // default 48dp touch target
                     Icon(Icons.Default.DeleteOutline, "מחק קורס", tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
                 }
             }

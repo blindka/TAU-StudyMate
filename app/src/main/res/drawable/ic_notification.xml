@@ -1,0 +1,10 @@
+<!-- Status-bar icon: Android draws only the alpha channel, so this is the cap alone, no background -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,24L20,40l34,16 30,-14.12V62h4V40L54,24z M30,52.88V66c0,9.94 10.75,18 24,18s24,-8.06 24,-18V52.88L54,64 30,52.88z" />
+</vector>

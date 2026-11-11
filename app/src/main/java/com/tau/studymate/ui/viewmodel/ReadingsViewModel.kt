@@ -70,6 +70,8 @@ class ReadingsViewModel(
         }
     }
 
+    fun rename(r: Reading, title: String) = viewModelScope.launch { if (title.isNotBlank()) dao.update(r.copy(title = title.trim())) }
+
     fun toggleRead(r: Reading) = viewModelScope.launch { dao.update(r.copy(isRead = !r.isRead)) }
     fun markRead(r: Reading) = viewModelScope.launch { dao.update(r.copy(isRead = true)) }
 

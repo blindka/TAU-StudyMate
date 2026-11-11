@@ -31,5 +31,7 @@ data class Task(
     val department: Department = Department.GENERAL,
     val priority: Priority = Priority.MEDIUM,
     @androidx.room.ColumnInfo(defaultValue = "1")
-    val reminderEnabled: Boolean = true
+    val reminderEnabled: Boolean = true,
+    /** Moodle calendar event UID, so a changed deadline updates the task instead of duplicating it. */
+    val externalId: String? = null
 )

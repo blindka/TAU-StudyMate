@@ -5,6 +5,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -58,6 +60,7 @@ fun ReadingsScreen(viewModel: ReadingsViewModel, onOpen: (Reading) -> Unit, modi
     val courseMap = remember(courses) { courses.associateBy { it.id } }
     var showAdd by remember { mutableStateOf(false) }
     var toDelete by remember { mutableStateOf<Reading?>(null) }
+    var toRename by remember { mutableStateOf<Reading?>(null) }
     val snackbar = remember { SnackbarHostState() }
 
     LaunchedEffect(message) { message?.let { snackbar.showSnackbar(it); viewModel.clearMessage() } }
@@ -109,7 +112,7 @@ fun ReadingsScreen(viewModel: ReadingsViewModel, onOpen: (Reading) -> Unit, modi
                 }
             }
             items(readings, key = { it.id }) { r ->
-                ReadingRow(r, courseMap[r.courseId ?: -1], onToggle = { viewModel.toggleRead(r) }, onOpen = { onOpen(r) }, onDelete = { toDelete = r })
+                ReadingRow(r, courseMap[r.courseId ?: -1], onToggle = { viewModel.toggleRead(r) }, onOpen = { onOpen(r) }, onDelete = { toDelete = r }, onRename = { toRename = r })
             }
         }
         SnackbarHost(snackbar, Modifier.align(Alignment.BottomCenter))
@@ -117,6 +120,16 @@ fun ReadingsScreen(viewModel: ReadingsViewModel, onOpen: (Reading) -> Unit, modi
 
     if (showAdd) AddReadingDialog(courses, week, onDismiss = { showAdd = false }) { uris, courseId, w ->
         showAdd = false; viewModel.import(uris, courseId, w)
+    }
+    toRename?.let { r ->
+        var name by remember(r.id) { mutableStateOf(r.title) }
+        AlertDialog(
+            onDismissRequest = { toRename = null },
+            title = { Text("שינוי שם") },
+            text = { OutlinedTextField(value = name, onValueChange = { name = it }, singleLine = true) },
+            confirmButton = { TextButton(onClick = { viewModel.rename(r, name); toRename = null }, enabled = name.isNotBlank()) { Text("שמירה") } },
+            dismissButton = { TextButton(onClick = { toRename = null }) { Text("ביטול") } }
+        )
     }
     toDelete?.let { r ->
         AlertDialog(
@@ -130,14 +143,14 @@ fun ReadingsScreen(viewModel: ReadingsViewModel, onOpen: (Reading) -> Unit, modi
 }
 
 @Composable
-private fun ReadingRow(r: Reading, course: Course?, onToggle: () -> Unit, onOpen: () -> Unit, onDelete: () -> Unit) {
+private fun ReadingRow(r: Reading, course: Course?, onToggle: () -> Unit, onOpen: () -> Unit, onDelete: () -> Unit, onRename: () -> Unit) {
     val (bg, fg) = departmentColors(course?.department)
     Surface(
         shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surface, border = BorderStroke(1.dp, PastelLavenderBorder),
         modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen)
     ) {
         Row(Modifier.padding(horizontal = 12.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = r.isRead, onCheckedChange = { onToggle() })
+            Checkbox(checked = r.isRead, onCheckedChange = { onToggle() }, modifier = Modifier.semantics { contentDescription = "סימון ${r.title} כנקרא" })
             Box(Modifier.size(width = 40.dp, height = 48.dp).background(bg, RoundedCornerShape(8.dp)), contentAlignment = Alignment.Center) {
                 Text("PDF", color = fg, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
@@ -154,6 +167,7 @@ private fun ReadingRow(r: Reading, course: Course?, onToggle: () -> Unit, onOpen
                     if (r.summary != null) Text("✨", fontSize = 12.sp)
                 }
             }
+            IconButton(onClick = onRename) { Icon(Icons.Default.Edit, "שינוי שם", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
             IconButton(onClick = onDelete) { Icon(Icons.Default.DeleteOutline, "מחיקה", tint = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
     }

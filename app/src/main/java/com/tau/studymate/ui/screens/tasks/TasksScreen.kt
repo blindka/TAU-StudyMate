@@ -47,6 +47,8 @@ private data class TaskFilterTab(
 @Composable
 fun TasksScreen(
     viewModel: StudyViewModel,
+    openTaskId: Long? = null,
+    onOpenTaskHandled: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val tasks by viewModel.filteredTasks.collectAsState()
@@ -71,6 +73,11 @@ fun TasksScreen(
     }
 
     val snackbar = remember { SnackbarHostState() }
+    var editing by remember { mutableStateOf<Task?>(null) }
+    val allTasks by viewModel.allTasks.collectAsState()
+    LaunchedEffect(openTaskId, allTasks) {
+        if (openTaskId != null) allTasks.find { it.id == openTaskId }?.let { editing = it; onOpenTaskHandled() }
+    }
     val scope = rememberCoroutineScope()
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -270,6 +277,7 @@ fun TasksScreen(
                             course = course,
                             dueDateFormatted = dateFormat.format(Date(task.dueDate)),
                             onToggle = { viewModel.toggleTaskCompletion(task) },
+                            onClick = { editing = task },
                             onDelete = {
                                 viewModel.deleteTask(task)
                                 scope.launch {
@@ -305,6 +313,19 @@ fun TasksScreen(
         )
     }
 
+    editing?.let { task ->
+        AddTaskDialog(
+            courses = courses,
+            initial = task,
+            onDismiss = { editing = null },
+            onConfirm = { title, desc, dueDate, courseId, dept, priority, estimatedMins, enableReminder ->
+                viewModel.updateTask(task.copy(title = title, description = desc, dueDate = dueDate, courseId = courseId,
+                    department = dept, priority = priority, estimatedMinutes = estimatedMins, reminderEnabled = enableReminder))
+                editing = null
+            }
+        )
+    }
+
     if (showExportDialog) {
         ExportDialog(
             exportText = viewModel.getExportText(),
@@ -332,6 +353,7 @@ private fun TaskItemCard(
     course: Course?,
     dueDateFormatted: String,
     onToggle: () -> Unit,
+    onClick: () -> Unit,
     onDelete: () -> Unit
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
@@ -369,6 +391,6 @@ private fun TaskItemCard(
             }
         }
     ) {
-        com.tau.studymate.ui.components.TaskRowCard(task = task, course = course, onToggle = onToggle, showDescription = true)
+        com.tau.studymate.ui.components.TaskRowCard(task = task, course = course, onToggle = onToggle, showDescription = true, onClick = onClick)
     }
 }

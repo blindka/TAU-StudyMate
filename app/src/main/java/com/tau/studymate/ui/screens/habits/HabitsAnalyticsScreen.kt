@@ -45,7 +45,7 @@ fun HabitsAnalyticsScreen(
     val isCountdown by timerViewModel.isCountdownMode.collectAsState()
     val targetMinutes by timerViewModel.targetMinutes.collectAsState()
     val courses by viewModel.courses.collectAsState()
-    val tasks by viewModel.filteredTasks.collectAsState()
+    val tasks by viewModel.allTasks.collectAsState()
     val sessions by viewModel.studySessions.collectAsState()
 
     var selectedCourseId by remember { mutableStateOf<Long?>(null) }
@@ -309,7 +309,7 @@ fun HabitsAnalyticsScreen(
                 PastelStatCard(
                     modifier = Modifier.weight(1f),
                     title = "זמן למידה כולל",
-                    value = "${totalMinutesStudied / 60} שעות",
+                    value = if (totalMinutesStudied < 60) "$totalMinutesStudied דק׳" else "%.1f שעות".format(totalMinutesStudied / 60.0),
                     icon = Icons.Default.AccessTime,
                     containerColor = PastelSky,
                     borderColor = PastelSkyBorder,

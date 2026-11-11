@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.components
 
+import kotlinx.coroutines.launch
+import com.tau.studymate.util.decodeScaled
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
@@ -49,57 +51,59 @@ fun SchedulePickerAndPreview(
     var scheduleFileName by remember { mutableStateOf(initialFileName) }
     var parsedCourses by remember { mutableStateOf<List<CourseTemplate>?>(null) }
 
-    // 1. Camera Launcher (צלם במצלמה)
-    val cameraLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.TakePicturePreview()
-    ) { bitmap: Bitmap? ->
-        if (bitmap != null) {
-            scheduleBitmap = bitmap
-            val name = "צילום_מערכת_שעות_${System.currentTimeMillis() % 10000}.jpg"
-            scheduleFileName = name
-            val courses = ScheduleParser.parseScheduleContent("", currentSemester, fallbackDegree)
-            parsedCourses = courses
-            onScheduleChanged(bitmap, name, courses)
+    val scope = rememberCoroutineScope()
+    fun publish(bitmap: Bitmap?, name: String?, courses: List<CourseTemplate>?) {
+        scheduleBitmap = bitmap; scheduleFileName = name
+        // Only a readable text/calendar file can define courses; a photo or PDF is just kept as the schedule picture
+        parsedCourses = courses?.takeIf { it.isNotEmpty() }
+        onScheduleChanged(bitmap, name, parsedCourses)
+    }
+
+    // 1. Camera: full-resolution photo via FileProvider (TakePicturePreview only returns a ~200px thumbnail)
+    val photoFile = remember { java.io.File(context.cacheDir, "schedule_capture.jpg") }
+    val photoUri = remember {
+        androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.files", photoFile)
+    }
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
+        if (ok) scope.launch {
+            val bmp = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { decodeScaled(photoFile, 2048) }
+            if (bmp != null) publish(bmp, "צילום_מערכת_שעות.jpg", null)
         }
     }
 
-    // 2. File / Document Picker (*/*, PDF, ICS, CSV, TXT, images)
-    val filePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            val contentResolver = context.contentResolver
-            val mimeType = contentResolver.getType(uri) ?: ""
-            val name = uri.lastPathSegment?.substringAfterLast('/') ?: "מערכת_שעות.txt"
-            scheduleFileName = name
-
-            // Check if image
-            val isImage = mimeType.startsWith("image/") ||
-                    name.endsWith(".jpg", true) ||
-                    name.endsWith(".png", true) ||
-                    name.endsWith(".jpeg", true) ||
-                    name.endsWith(".webp", true)
-
-            var loadedBitmap: Bitmap? = null
-            if (isImage) {
-                try {
-                    contentResolver.openInputStream(uri)?.use { stream ->
-                        loadedBitmap = BitmapFactory.decodeStream(stream)
+    // 2. File picker: images and PDFs become the schedule picture; ICS/CSV/TXT are parsed for courses
+    val filePickerLauncher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+        if (uri != null) scope.launch {
+            val cr = context.contentResolver
+            val mime = cr.getType(uri) ?: ""
+            val name = cr.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { c ->
+                if (c.moveToFirst()) c.getString(0) else null
+            } ?: "מערכת_שעות"
+            val result = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                runCatching {
+                    when {
+                        mime.startsWith("image/") -> {
+                            val tmp = java.io.File(context.cacheDir, "schedule_pick")
+                            cr.openInputStream(uri)?.use { i -> tmp.outputStream().use { i.copyTo(it) } }
+                            decodeScaled(tmp, 2048) to null
+                        }
+                        mime == "application/pdf" -> {
+                            val tmp = java.io.File(context.cacheDir, "schedule_pick.pdf")
+                            cr.openInputStream(uri)?.use { i -> tmp.outputStream().use { o -> i.copyTo(o) } }
+                            com.tau.studymate.util.PdfStore.Document(tmp.absolutePath).use { kotlinx.coroutines.runBlocking { it.render(0, 1600) } } to null
+                        }
+                        else -> {
+                            val text = cr.openInputStream(uri)?.bufferedReader()?.use { it.readText() } ?: ""
+                            null to ScheduleParser.parseScheduleContent(text, currentSemester, fallbackDegree)
+                        }
                     }
-                } catch (_: Exception) {}
+                }.getOrNull()
             }
-            scheduleBitmap = loadedBitmap
-
-            // Parse text / calendar content
-            val courses = try {
-                val inputStream = contentResolver.openInputStream(uri)
-                val content = inputStream?.bufferedReader()?.use { it.readText() } ?: ""
-                ScheduleParser.parseScheduleContent(content, currentSemester, fallbackDegree)
-            } catch (_: Exception) {
-                ScheduleParser.parseScheduleContent("", currentSemester, fallbackDegree)
+            if (result == null) {
+                android.widget.Toast.makeText(context, "לא ניתן לקרוא את הקובץ", android.widget.Toast.LENGTH_SHORT).show()
+            } else {
+                publish(result.first, name, result.second)
             }
-            parsedCourses = courses
-            onScheduleChanged(loadedBitmap, name, courses)
         }
     }
 
@@ -165,7 +169,7 @@ fun SchedulePickerAndPreview(
             ) {
                 // Button 1: Camera Photo (צלם במצלמה)
                 Button(
-                    onClick = { cameraLauncher.launch(null) },
+                    onClick = { cameraLauncher.launch(photoUri) },
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = TauPurplePrimary),
                     modifier = Modifier.weight(1f),

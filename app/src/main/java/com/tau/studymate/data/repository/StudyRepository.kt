@@ -24,14 +24,22 @@ class StudyRepository(
 
     suspend fun insertCourse(course: Course): Long = courseDao.insertCourse(course)
 
-    suspend fun insertCourses(courses: List<Course>) = courseDao.insertCourses(courses)
 
     suspend fun deleteCourse(course: Course) = courseDao.deleteCourse(course)
 
-    /** Swaps the course list in one transaction. Tasks and readings stay; their course link becomes empty (FK SET NULL). */
+    /**
+     * Syncs the course list to [courses] in one transaction, matching by course number:
+     * courses that stay keep their id, so their materials, tasks and readings stay attached.
+     * Only courses that are no longer in the list are removed.
+     */
     suspend fun replaceCourses(courses: List<Course>) = db.withTransaction {
-        courseDao.deleteAllCourses()
-        courseDao.insertCourses(courses)
+        val existing = courseDao.getAllOnce().associateBy { it.courseNumber }
+        val keep = courses.map { it.courseNumber }.toSet()
+        courseDao.deleteByIds(existing.values.filter { it.courseNumber !in keep }.map { it.id })
+        courses.forEach { c ->
+            val old = existing[c.courseNumber]
+            if (old != null) courseDao.updateCourse(c.copy(id = old.id)) else courseDao.insertCourse(c.copy(id = 0))
+        }
     }
 
     // Tasks

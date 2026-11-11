@@ -16,12 +16,16 @@ interface CourseDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertCourse(course: Course): Long
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCourses(courses: List<Course>)
 
     @Delete
     suspend fun deleteCourse(course: Course)
 
-    @Query("DELETE FROM courses")
-    suspend fun deleteAllCourses()
+    @Query("SELECT * FROM courses")
+    suspend fun getAllOnce(): List<Course>
+
+    @Update
+    suspend fun updateCourse(course: Course)
+
+    @Query("DELETE FROM courses WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 }

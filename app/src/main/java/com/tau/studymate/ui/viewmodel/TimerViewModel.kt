@@ -48,9 +48,7 @@ class TimerViewModel(application: Application, private val repository: StudyRepo
 
     private fun now() = System.currentTimeMillis()
 
-    private fun currentSeconds(): Int =
-        if (_isCountdownMode.value) ((anchor - now() + 999) / 1000).toInt().coerceAtLeast(0)
-        else frozen + ((now() - anchor) / 1000).toInt()
+    private fun currentSeconds(): Int = timerSecondsAt(_isCountdownMode.value, anchor, frozen, now())
 
     private fun tick() {
         ticker?.cancel()
@@ -143,3 +141,8 @@ class TimerViewModel(application: Application, private val repository: StudyRepo
         const val K_FROZEN = "timer_frozen"; const val K_COURSE = "timer_course"; const val K_TASK = "timer_task"
     }
 }
+
+/** Seconds to show: countdown = time left until [anchor] (rounded up), stopwatch = [frozen] + time since [anchor]. */
+internal fun timerSecondsAt(countdown: Boolean, anchor: Long, frozen: Int, now: Long): Int =
+    if (countdown) ((anchor - now + 999) / 1000).toInt().coerceAtLeast(0)
+    else frozen + ((now - anchor) / 1000).toInt()

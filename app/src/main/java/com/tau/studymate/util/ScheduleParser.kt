@@ -8,7 +8,7 @@ object ScheduleParser {
     /**
      * Parses schedule content (ICS, CSV, TXT) into CourseTemplate list
      */
-    fun parseScheduleContent(content: String, targetSemester: String, fallbackDegree: String): List<CourseTemplate> {
+    fun parseScheduleContent(content: String, targetSemester: String, @Suppress("UNUSED_PARAMETER") fallbackDegree: String): List<CourseTemplate> {
         val lines = content.lines().filter { it.isNotBlank() }
         val courses = mutableListOf<CourseTemplate>()
 
@@ -30,19 +30,6 @@ object ScheduleParser {
                     )
                 )
             }
-        }
-
-        if (courses.isEmpty()) {
-            return listOf(
-                CourseTemplate(
-                    courseNumber = "1001.1001",
-                    name = "קורס נבחר: $fallbackDegree ($targetSemester)",
-                    department = Department.GENERAL,
-                    lecturer = "סגל אקדמי",
-                    semester = targetSemester,
-                    credits = 4.0f
-                )
-            )
         }
 
         return courses

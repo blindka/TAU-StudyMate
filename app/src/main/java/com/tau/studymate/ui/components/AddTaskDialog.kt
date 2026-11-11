@@ -7,6 +7,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -25,6 +28,7 @@ import com.tau.studymate.data.model.Priority
 @Composable
 fun AddTaskDialog(
     courses: List<Course>,
+    initial: com.tau.studymate.data.model.Task? = null, // non-null = edit mode
     onDismiss: () -> Unit,
     onConfirm: (
         title: String,
@@ -37,16 +41,25 @@ fun AddTaskDialog(
         enableReminder: Boolean
     ) -> Unit
 ) {
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var selectedCourseId by remember { mutableStateOf<Long?>(courses.firstOrNull()?.id) }
+    var title by remember { mutableStateOf(initial?.title ?: "") }
+    var description by remember { mutableStateOf(initial?.description ?: "") }
+    var selectedCourseId by remember { mutableStateOf(if (initial != null) initial.courseId else courses.firstOrNull()?.id) }
     var selectedDepartment by remember {
-        mutableStateOf(courses.firstOrNull()?.department ?: Department.COMMUNICATION)
+        mutableStateOf(initial?.department ?: courses.firstOrNull()?.department ?: Department.COMMUNICATION)
     }
-    var selectedPriority by remember { mutableStateOf(Priority.MEDIUM) }
-    var daysAhead by remember { mutableIntStateOf(3) }
-    var estimatedMinutes by remember { mutableStateOf("60") }
-    var enableReminder by remember { mutableStateOf(true) }
+    var selectedPriority by remember { mutableStateOf(initial?.priority ?: Priority.MEDIUM) }
+    // Default deadline: 3 days from today at 23:59 (TAU submissions usually close at midnight)
+    var dueAt by remember {
+        mutableStateOf(
+            initial?.let { java.time.Instant.ofEpochMilli(it.dueDate).atZone(java.time.ZoneId.systemDefault()).toLocalDateTime() }
+                ?: java.time.LocalDate.now().plusDays(3).atTime(23, 59)
+        )
+    }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    var estimatedMinutes by remember { mutableStateOf((initial?.estimatedMinutes ?: 60).toString()) }
+    var enableReminder by remember { mutableStateOf(initial?.reminderEnabled ?: true) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     var expandedCourseDropdown by remember { mutableStateOf(false) }
 
@@ -64,7 +77,7 @@ fun AddTaskDialog(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "הוספת מטלה חדשה",
+                    text = if (initial == null) "הוספת מטלה חדשה" else "עריכת מטלה",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -141,12 +154,13 @@ fun AddTaskDialog(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    listOf(1 to "מחר", 3 to "בעוד 3 ימים", 7 to "שבוע", 14 to "שבועיים").forEach { (days, label) ->
-                        FilterChip(
-                            selected = daysAhead == days,
-                            onClick = { daysAhead = days },
-                            label = { Text(label, fontSize = 12.sp) }
-                        )
+                    OutlinedButton(onClick = { showDatePicker = true }, modifier = Modifier.weight(1f)) {
+                        Icon(Icons.Default.CalendarMonth, null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp))
+                        Text(dueAt.format(java.time.format.DateTimeFormatter.ofPattern("EEE d.M", java.util.Locale.forLanguageTag("he"))))
+                    }
+                    OutlinedButton(onClick = { showTimePicker = true }) {
+                        Icon(Icons.Default.AccessTime, null, Modifier.size(16.dp)); Spacer(Modifier.width(6.dp))
+                        Text(dueAt.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")))
                     }
                 }
 
@@ -209,6 +223,14 @@ fun AddTaskDialog(
                         onCheckedChange = { enableReminder = it }
                     )
                 }
+                // Android 14+ turns exact alarms off by default; without it reminders can arrive minutes late
+                if (enableReminder && android.os.Build.VERSION.SDK_INT >= 31 &&
+                    context.getSystemService(android.app.AlarmManager::class.java)?.canScheduleExactAlarms() == false
+                ) {
+                    TextButton(onClick = {
+                        context.startActivity(android.content.Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, android.net.Uri.parse("package:${context.packageName}")))
+                    }) { Text("להפעלת תזכורות בזמן המדויק ←", fontSize = 12.sp) }
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -223,8 +245,7 @@ fun AddTaskDialog(
                     Button(
                         onClick = {
                             if (title.isNotBlank()) {
-                                val oneDayMs = 24 * 60 * 60 * 1000L
-                                val dueDate = System.currentTimeMillis() + (daysAhead * oneDayMs)
+                                val dueDate = dueAt.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
                                 val minutes = estimatedMinutes.toIntOrNull() ?: 60
 
                                 onConfirm(
@@ -242,12 +263,38 @@ fun AddTaskDialog(
                         enabled = title.isNotBlank(),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(if (initial == null) Icons.Default.Add else Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("הוסף מטלה")
+                        Text(if (initial == null) "הוסף מטלה" else "שמירה")
                     }
                 }
             }
         }
+    }
+
+    if (showDatePicker) {
+        val state = rememberDatePickerState(initialSelectedDateMillis = dueAt.toLocalDate().atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli())
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let {
+                        val d = java.time.Instant.ofEpochMilli(it).atZone(java.time.ZoneOffset.UTC).toLocalDate() // picker returns UTC midnight
+                        dueAt = d.atTime(dueAt.toLocalTime())
+                    }
+                    showDatePicker = false
+                }) { Text("אישור") }
+            },
+            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("ביטול") } }
+        ) { DatePicker(state) }
+    }
+    if (showTimePicker) {
+        val state = rememberTimePickerState(initialHour = dueAt.hour, initialMinute = dueAt.minute, is24Hour = true)
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = { TextButton(onClick = { dueAt = dueAt.withHour(state.hour).withMinute(state.minute); showTimePicker = false }) { Text("אישור") } },
+            dismissButton = { TextButton(onClick = { showTimePicker = false }) { Text("ביטול") } },
+            text = { TimePicker(state) }
+        )
     }
 }
