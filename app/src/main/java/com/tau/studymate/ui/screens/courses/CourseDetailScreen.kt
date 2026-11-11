@@ -48,8 +48,9 @@ fun CourseDetailScreen(
     var selectedTab by remember { mutableStateOf(CourseSubTab.MATERIALS) }
     var showAddMaterialDialog by remember { mutableStateOf(false) }
 
-    val materials by viewModel.getMaterialsForCourse(course.id).collectAsState(initial = emptyList())
-    val courseTasks by viewModel.getTasksForCourse(course.id).collectAsState(initial = emptyList())
+    // remember: a new Flow on every recomposition re-opened both Room queries each frame
+    val materials by remember(course.id) { viewModel.getMaterialsForCourse(course.id) }.collectAsState(initial = emptyList())
+    val courseTasks by remember(course.id) { viewModel.getTasksForCourse(course.id) }.collectAsState(initial = emptyList())
 
     val context = LocalContext.current
 
@@ -136,7 +137,7 @@ fun CourseDetailScreen(
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            items(summaryList) { item ->
+                            items(summaryList, key = { it.id }) { item ->
                                 MaterialCardItem(
                                     material = item,
                                     onDelete = { viewModel.deleteStudyMaterial(item) }
@@ -158,7 +159,7 @@ fun CourseDetailScreen(
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            items(recordingList) { item ->
+                            items(recordingList, key = { it.id }) { item ->
                                 RecordingCardItem(
                                     material = item,
                                     onOpenLink = {
@@ -188,7 +189,7 @@ fun CourseDetailScreen(
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            items(courseTasks) { task ->
+                            items(courseTasks, key = { it.id }) { task ->
                                 Card(
                                     shape = RoundedCornerShape(14.dp),
                                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),

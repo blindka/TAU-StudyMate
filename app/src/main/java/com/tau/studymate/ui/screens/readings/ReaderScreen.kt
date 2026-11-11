@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.screens.readings
 
+import androidx.core.content.edit
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -69,7 +70,7 @@ fun ReaderScreen(readingId: Long, viewModel: ReadingsViewModel, onBack: () -> Un
         }
         when (tab) {
             0 -> PdfPages(r)
-            1 -> SummaryPane(r, status, message, onSummarize = { viewModel.summarize(r) }, onClearMessage = viewModel::clearMessage)
+            1 -> SummaryPane(r, status, message, onSummarize = { viewModel.summarize(r) }, onClearMessage = viewModel::clearMessage, onCancel = viewModel::cancelWork)
             else -> TranslationPane(r, viewModel)
         }
     }
@@ -87,7 +88,7 @@ private fun PdfPages(r: Reading) {
     val pageKey = "reading_page_${r.id}"
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = prefs.getInt(pageKey, 0).coerceIn(0, (doc.pageCount - 1).coerceAtLeast(0)))
     LaunchedEffect(listState) {
-        snapshotFlow { listState.firstVisibleItemIndex }.collect { prefs.edit().putInt(pageKey, it).apply() }
+        snapshotFlow { listState.firstVisibleItemIndex }.collect { prefs.edit { putInt(pageKey, it) } }
     }
     var viewport by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
     var scale by remember { mutableFloatStateOf(1f) }
@@ -138,7 +139,7 @@ private fun PdfPages(r: Reading) {
 }
 
 @Composable
-private fun SummaryPane(r: Reading, status: String?, message: String?, onSummarize: () -> Unit, onClearMessage: () -> Unit) {
+private fun SummaryPane(r: Reading, status: String?, message: String?, onSummarize: () -> Unit, onClearMessage: () -> Unit, onCancel: () -> Unit) {
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth().background(PastelMint, RoundedCornerShape(12.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("🔒 ", fontSize = 14.sp)
@@ -146,7 +147,8 @@ private fun SummaryPane(r: Reading, status: String?, message: String?, onSummari
         }
         when {
             status != null -> Row(verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp); Spacer(Modifier.width(12.dp)); Text(status)
+                CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp); Spacer(Modifier.width(12.dp)); Text(status, Modifier.weight(1f))
+                TextButton(onClick = onCancel) { Text("עצור") }
             }
             r.summary != null -> {
                 Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
@@ -185,7 +187,8 @@ private fun TranslationPane(r: Reading, viewModel: ReadingsViewModel) {
         when {
             status != null -> item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp); Spacer(Modifier.width(12.dp)); Text(status!!)
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp); Spacer(Modifier.width(12.dp)); Text(status!!, Modifier.weight(1f))
+                    TextButton(onClick = viewModel::cancelWork) { Text("עצור") }
                 }
             }
             pages == null -> item {

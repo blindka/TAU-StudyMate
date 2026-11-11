@@ -87,9 +87,17 @@ class ReadingsViewModel(
     private val _summaryStatus = MutableStateFlow<String?>(null)
     val summaryStatus: StateFlow<String?> = _summaryStatus.asStateFlow()
 
+    private var summaryJob: kotlinx.coroutines.Job? = null
+    private var translationJob: kotlinx.coroutines.Job? = null
+
+    /** Stops a running summary or translation; partial results are dropped. */
+    fun cancelWork() {
+        summaryJob?.cancel(); translationJob?.cancel()
+    }
+
     fun summarize(r: Reading) {
         if (_summaryStatus.value != null) return
-        viewModelScope.launch {
+        summaryJob = viewModelScope.launch {
             _summaryStatus.value = "קורא את המסמך…"
             try {
                 val text = PdfStore.extractText(r.filePath, Summarizer.MAX_INPUT_CHARS)
@@ -123,7 +131,7 @@ class ReadingsViewModel(
 
     fun translate(r: Reading) {
         if (_translationStatus.value != null) return
-        viewModelScope.launch {
+        translationJob = viewModelScope.launch {
             _translationStatus.value = "קורא את המסמך…"
             try {
                 val pages = PdfStore.extractPages(r.filePath)
@@ -134,6 +142,8 @@ class ReadingsViewModel(
                 val he = com.tau.studymate.util.Translator.translatePages(pages) { _translationStatus.value = it }
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { translationFile(r).writeText(he.joinToString("\u000C")) }
                 _translation.value = r.id to he
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
             } catch (e: Exception) {
                 _message.value = "התרגום נכשל: ${e.localizedMessage ?: "בדוק חיבור לאינטרנט להורדת המודל"}"
             } finally {

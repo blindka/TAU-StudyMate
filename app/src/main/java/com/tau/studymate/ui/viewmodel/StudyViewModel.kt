@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.viewmodel
 
+import androidx.core.content.edit
 import com.tau.studymate.util.appPrefs
 import com.tau.studymate.util.decodeScaled
 import com.tau.studymate.util.secretPrefs
@@ -92,7 +93,7 @@ class StudyViewModel(
                 _scheduleBitmap.value = bitmap
                 _scheduleFileName.value = fileName
                 val prefs = getApplication<Application>().appPrefs()
-                prefs.edit().putString("saved_schedule_file_name", fileName).apply()
+                prefs.edit { putString("saved_schedule_file_name", fileName) }
             } catch (_: Exception) {}
         }
     }
@@ -104,7 +105,7 @@ class StudyViewModel(
                 saveSchedulePhoto(bitmap, fileName)
             } else {
                 val prefs = getApplication<Application>().appPrefs()
-                prefs.edit().putString("saved_schedule_file_name", fileName).apply()
+                prefs.edit { putString("saved_schedule_file_name", fileName) }
             }
         }
     }
@@ -116,7 +117,7 @@ class StudyViewModel(
             val file = File(getApplication<Application>().filesDir, "saved_schedule_photo.jpg")
             if (file.exists()) file.delete()
             val prefs = getApplication<Application>().appPrefs()
-            prefs.edit().remove("saved_schedule_file_name").apply()
+            prefs.edit { remove("saved_schedule_file_name") }
         }
     }
 
@@ -302,14 +303,11 @@ class StudyViewModel(
         importedCourses: List<CourseTemplate>? = null
     ): Boolean {
         val trimmed = degreeName.trim()
+        if (trimmed.isEmpty()) return false
+        // Any degree is accepted. Catalog degrees come with their course list; others start with the
+        // user's current courses, which they add by hand or through Moodle.
         val foundTrack = AcademicCatalog.findProgram(trimmed)
-
-        // If not found and no imported courses provided, return false to trigger error message
-        if (foundTrack == null && (importedCourses == null || importedCourses.isEmpty())) {
-            return false
-        }
-
-        val trackCourses = importedCourses ?: foundTrack?.defaultCourses ?: emptyList()
+        val trackCourses = importedCourses?.takeIf { it.isNotEmpty() } ?: foundTrack?.defaultCourses
 
         val oldProfile = _academicProfile.value
         val newProfile = UserAcademicProfile(
@@ -326,7 +324,7 @@ class StudyViewModel(
             // Only rebuild the course list when the degree really changed, a schedule was imported,
             // or there are no courses yet. Editing year/semester must never wipe the user's tasks.
             val degreeChanged = newProfile.degreeName != oldProfile.degreeName || newProfile.isDoubleMajor != oldProfile.isDoubleMajor
-            if (!importedCourses.isNullOrEmpty() || degreeChanged || repository.allCourses.first().isEmpty()) {
+            if (trackCourses != null && (!importedCourses.isNullOrEmpty() || degreeChanged || repository.allCourses.first().isEmpty())) {
                 replaceCurriculum(trackCourses, semester)
             }
         }
@@ -349,14 +347,7 @@ class StudyViewModel(
     }
 
     private fun saveProfile(p: UserAcademicProfile) {
-        getApplication<Application>().appPrefs().edit()
-            .putString("profile_degree_name", p.degreeName)
-            .putBoolean("profile_is_double_major", p.isDoubleMajor)
-            .putString("profile_year", p.year)
-            .putString("profile_semester", p.semester)
-            .putString("profile_faculty", p.faculty)
-            .putString("last_seen_semester", p.semester)
-            .apply()
+        getApplication<Application>().appPrefs().edit { putString("profile_degree_name", p.degreeName); putBoolean("profile_is_double_major", p.isDoubleMajor); putString("profile_year", p.year); putString("profile_semester", p.semester); putString("profile_faculty", p.faculty); putString("last_seen_semester", p.semester) }
     }
 
     private suspend fun replaceCurriculum(templates: List<CourseTemplate>, semester: String) {
@@ -392,6 +383,10 @@ class StudyViewModel(
             )
             repository.insertCourse(course)
         }
+    }
+
+    fun updateCourse(course: Course) {
+        viewModelScope.launch { repository.updateCourse(course) }
     }
 
     fun deleteCourse(course: Course) {
@@ -459,8 +454,8 @@ class StudyViewModel(
                         val courseName = task.courseId?.let { cid -> courses.value.find { it.id == cid }?.name }
                         TaskNotificationScheduler.scheduleTask(getApplication(), task.copy(id = id), courseName)
                     }
-                getApplication<Application>().secretPrefs().edit().putString("moodle_feed_url", feedUrl).apply()
-                getApplication<Application>().appPrefs().edit().remove("moodle_feed_url").apply()
+                getApplication<Application>().secretPrefs().edit { putString("moodle_feed_url", feedUrl) }
+                getApplication<Application>().appPrefs().edit { remove("moodle_feed_url") }
             }
             onComplete(result)
         }

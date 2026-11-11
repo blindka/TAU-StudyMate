@@ -1,4 +1,4 @@
-val appVersion = "0.1.6"
+val appVersion = "0.1.7"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -79,6 +79,7 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
@@ -96,12 +97,11 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
 
     debugImplementation(libs.androidx.ui.tooling)
-    implementation("com.google.mlkit:genai-prompt:1.0.0-beta5")
-    implementation("com.google.mlkit:translate:17.0.3")
-    // room-testing needs serialization 1.8+; the app classpath (which androidTest is aligned to) pins 1.6.3 otherwise
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")
-    testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.room:room-testing:${libs.versions.room.get()}")
-    androidTestImplementation("androidx.test.ext:junit:1.2.1")
-    androidTestImplementation("androidx.test:runner:1.6.2")
+    implementation(libs.mlkit.genai.prompt)
+    implementation(libs.mlkit.translate)
+    implementation(libs.kotlinx.serialization.core)
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
 }

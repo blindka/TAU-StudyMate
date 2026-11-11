@@ -27,7 +27,13 @@ object SoundManager {
                 vibrate(context, longArrayOf(0, 40, 50, 70), intArrayOf(0, 150, 0, 255))
 
                 // נגינת קובץ הסאונד המותאם מ-res/raw/task_success.mp3
-                val mediaPlayer = MediaPlayer.create(context.applicationContext, R.raw.task_success)
+                // Notification usage: muted by silent/vibrate mode (the default media stream ignores it)
+                val attrs = android.media.AudioAttributes.Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION_EVENT)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+                val audio = context.getSystemService(android.media.AudioManager::class.java)
+                val mediaPlayer = MediaPlayer.create(context.applicationContext, R.raw.task_success, attrs, audio.generateAudioSessionId())
                 mediaPlayer?.setOnCompletionListener { mp ->
                     mp.reset()
                     mp.release()
@@ -92,12 +98,7 @@ object SoundManager {
             } else {
                 @Suppress("DEPRECATION")
                 val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator?.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
-                } else {
-                    @Suppress("DEPRECATION")
-                    vibrator?.vibrate(timings, -1)
-                }
+                vibrator?.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1))
             }
         } catch (_: Exception) {}
     }

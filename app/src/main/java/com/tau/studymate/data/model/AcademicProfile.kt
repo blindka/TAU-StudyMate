@@ -138,12 +138,11 @@ object AcademicCatalog {
         )
     )
 
+    /** Exact name match only (ignoring spaces/case). Partial matching mapped "מדעי המדינה" to "מדעי המחשב". */
     fun findProgram(query: String): AcademicTrack? {
-        val trimmed = query.trim().lowercase()
-        return AVAILABLE_PROGRAMS.find { track ->
-            track.name.lowercase().contains(trimmed) ||
-                    trimmed.contains(track.name.lowercase()) ||
-                    track.name.split(" ").any { word -> word.length > 2 && trimmed.contains(word.lowercase()) }
-        }
+        val key = query.normalized()
+        return AVAILABLE_PROGRAMS.find { it.name.normalized() == key }
     }
+
+    private fun String.normalized() = trim().replace(Regex("\\s+"), " ").lowercase()
 }

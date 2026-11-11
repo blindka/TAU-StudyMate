@@ -18,6 +18,7 @@ import com.tau.studymate.data.model.Department
 @Composable
 fun AddCourseDialog(
     existingNumbers: Set<String> = emptySet(),
+    initial: com.tau.studymate.data.model.Course? = null, // non-null = edit mode
     defaultSemester: String = com.tau.studymate.util.TauAcademicCalendar.getCurrentSemesterName(),
     onDismiss: () -> Unit,
     onConfirm: (
@@ -29,15 +30,15 @@ fun AddCourseDialog(
         credits: Float
     ) -> Unit
 ) {
-    var courseNumber by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
-    var department by remember { mutableStateOf(Department.COMMUNICATION) }
-    var lecturer by remember { mutableStateOf("") }
-    var semester by remember { mutableStateOf(defaultSemester) }
-    var credits by remember { mutableStateOf("4.0") }
+    var courseNumber by remember { mutableStateOf(initial?.courseNumber ?: "") }
+    var name by remember { mutableStateOf(initial?.name ?: "") }
+    var department by remember { mutableStateOf(initial?.department ?: Department.COMMUNICATION) }
+    var lecturer by remember { mutableStateOf(initial?.lecturer ?: "") }
+    var semester by remember { mutableStateOf(initial?.semester ?: defaultSemester) }
+    var credits by remember { mutableStateOf((initial?.credits ?: 4.0f).toString()) }
     // Hebrew keyboards type "4,5"; accept it. Reject nonsense instead of silently saving 2.0
     val creditsValue = credits.trim().replace(',', '.').toFloatOrNull()?.takeIf { it > 0f && it <= 30f }
-    val duplicate = courseNumber.trim() in existingNumbers
+    val duplicate = courseNumber.trim() in existingNumbers && courseNumber.trim() != initial?.courseNumber
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -53,7 +54,7 @@ fun AddCourseDialog(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "הוספת קורס חדש",
+                    text = if (initial == null) "הוספת קורס חדש" else "עריכת קורס",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -172,7 +173,7 @@ fun AddCourseDialog(
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("הוסף קורס")
+                        Text(if (initial == null) "הוסף קורס" else "שמירה")
                     }
                 }
             }

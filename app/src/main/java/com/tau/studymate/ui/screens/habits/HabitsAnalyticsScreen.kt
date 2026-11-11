@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.screens.habits
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,15 +24,7 @@ import com.tau.studymate.data.model.Department
 import com.tau.studymate.ui.theme.*
 import com.tau.studymate.ui.viewmodel.StudyViewModel
 
-private data class PresetItem(
-    val isCount: Boolean,
-    val mins: Int,
-    val label: String,
-    val emoji: String,
-    val pastelBg: Color,
-    val pastelBorder: Color,
-    val pastelDark: Color
-)
+private data class PresetItem(val isCount: Boolean, val mins: Int)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,7 +34,8 @@ fun HabitsAnalyticsScreen(
     modifier: Modifier = Modifier
 ) {
     val isRunning by timerViewModel.isTimerRunning.collectAsState()
-    val timerSeconds by timerViewModel.timerSeconds.collectAsState()
+    // Lifecycle-aware: stops collecting (and the 250ms refresh) when the app goes to the background
+    val timerSeconds by timerViewModel.timerSeconds.collectAsStateWithLifecycle()
     val isCountdown by timerViewModel.isCountdownMode.collectAsState()
     val targetMinutes by timerViewModel.targetMinutes.collectAsState()
     val courses by viewModel.courses.collectAsState()
@@ -95,10 +89,10 @@ fun HabitsAnalyticsScreen(
 
     val presets = remember {
         listOf(
-            PresetItem(true, 25, "פומודורו 25 ד'", "🍅", PastelRose, PastelRoseBorder, PastelRoseDark),
-            PresetItem(true, 45, "45 דקות", "⏱️", PastelSky, PastelSkyBorder, PastelSkyDark),
-            PresetItem(true, 60, "60 דקות", "⏳", PastelMint, PastelMintBorder, PastelMintDark),
-            PresetItem(false, 0, "סטופר חופשי", "♾️", PastelLavender, PastelLavenderBorder, PastelLavenderDark)
+            PresetItem(true, 25),
+            PresetItem(true, 45),
+            PresetItem(true, 60),
+            PresetItem(false, 0)
         )
     }
 
@@ -444,43 +438,6 @@ fun HabitsAnalyticsScreen(
                 borderColor = PastelButterBorder,
                 badgeBg = PastelButter,
                 badgeTextCol = PastelButterDark
-            )
-        }
-    }
-}
-
-@Composable
-private fun PresetCard(
-    preset: PresetItem,
-    isSelected: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        onClick = onClick,
-        enabled = enabled,
-        shape = RoundedCornerShape(14.dp),
-        color = if (isSelected) preset.pastelBg else Color.White,
-        border = BorderStroke(
-            width = if (isSelected) 2.dp else 1.dp,
-            color = if (isSelected) preset.pastelDark else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f)
-        ),
-        shadowElevation = if (isSelected) 2.dp else 0.dp,
-        modifier = modifier
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Text(text = preset.emoji, fontSize = 16.sp)
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = preset.label,
-                fontSize = 12.sp,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) preset.pastelDark else MaterialTheme.colorScheme.onSurface
             )
         }
     }

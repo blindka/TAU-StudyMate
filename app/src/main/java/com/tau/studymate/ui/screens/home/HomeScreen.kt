@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.screens.home
 
+import androidx.core.content.edit
 import com.tau.studymate.util.appPrefs
 import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
@@ -75,7 +76,7 @@ fun HomeScreen(
                 // A new semester has started based on TAU academic calendar
                 showSemesterTransitionDialog = true
             } else if (lastSeenSemester == null) {
-                prefs.edit().putString("last_seen_semester", currentActualSemester).apply()
+                prefs.edit { putString("last_seen_semester", currentActualSemester) }
             }
         }
     }
@@ -392,7 +393,7 @@ fun HomeScreen(
                         viewModel.clearSchedule()
                     }
                     val prefs = context.appPrefs()
-                    prefs.edit().putBoolean("has_completed_onboarding", true).apply()
+                    prefs.edit { putBoolean("has_completed_onboarding", true) }
                 }
                 ok
             }
@@ -414,7 +415,7 @@ fun HomeScreen(
                     viewModel.saveScheduleFile(sFileName)
                 }
                 val prefs = context.appPrefs()
-                prefs.edit().putString("last_seen_semester", currentActualSemester).apply()
+                prefs.edit { putString("last_seen_semester", currentActualSemester) }
                 showSemesterTransitionDialog = false
             }
         )

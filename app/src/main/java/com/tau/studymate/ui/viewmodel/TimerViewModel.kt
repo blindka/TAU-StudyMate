@@ -39,25 +39,33 @@ class TimerViewModel(application: Application, private val repository: StudyRepo
     private var frozen = prefs.getInt(K_FROZEN, if (_isCountdownMode.value) _targetMinutes.value * 60 else 0)
     private var courseId: Long? = prefs.getLong(K_COURSE, -1).takeIf { it >= 0 }
     private var taskId: Long? = prefs.getLong(K_TASK, -1).takeIf { it >= 0 }
-    private var ticker: Job? = null
+    private var completion: Job? = null
 
     init {
         _timerSeconds.value = frozen
-        if (anchor > 0) { _isTimerRunning.value = true; tick() } // resume after process death
+        if (anchor > 0) { _isTimerRunning.value = true; scheduleCompletion() } // resume after process death
+        // Refresh the display only while someone shows it (Focus screen, foreground); no wake-ups in the background
+        viewModelScope.launch {
+            _timerSeconds.subscriptionCount.map { it > 0 }.distinctUntilChanged().collectLatest { visible ->
+                while (visible) {
+                    if (_isTimerRunning.value) _timerSeconds.value = currentSeconds()
+                    delay(250)
+                }
+            }
+        }
     }
 
     private fun now() = System.currentTimeMillis()
 
     private fun currentSeconds(): Int = timerSecondsAt(_isCountdownMode.value, anchor, frozen, now())
 
-    private fun tick() {
-        ticker?.cancel()
-        ticker = viewModelScope.launch {
-            while (_isTimerRunning.value) {
-                _timerSeconds.value = currentSeconds()
-                if (_isCountdownMode.value && _timerSeconds.value == 0) { complete(); break }
-                delay(250)
-            }
+    /** One suspended wait until the countdown's end (no polling), then log the session. */
+    private fun scheduleCompletion() {
+        completion?.cancel()
+        if (!_isCountdownMode.value) return
+        completion = viewModelScope.launch {
+            delay((anchor - now()).coerceAtLeast(0))
+            if (_isTimerRunning.value) complete()
         }
     }
 
@@ -65,6 +73,7 @@ class TimerViewModel(application: Application, private val repository: StudyRepo
         val minutes = _targetMinutes.value
         _isTimerRunning.value = false
         anchor = 0; frozen = minutes * 60
+        _timerSeconds.value = 0
         save()
         repository.logStudySession(courseId = courseId, taskId = taskId, durationMinutes = minutes, notes = "סשן פוקוס הושלם בהצלחה")
         _timerFinishedDialog.value = "השלמת בהצלחה סשן למידה של $minutes דקות! 🎯"
@@ -98,7 +107,7 @@ class TimerViewModel(application: Application, private val repository: StudyRepo
         }
         _isTimerRunning.value = true
         save()
-        tick()
+        scheduleCompletion()
     }
 
     fun pauseTimer() {
@@ -106,7 +115,7 @@ class TimerViewModel(application: Application, private val repository: StudyRepo
         frozen = currentSeconds()
         anchor = 0
         _isTimerRunning.value = false
-        ticker?.cancel()
+        completion?.cancel()
         TimerAlarmReceiver.cancel(getApplication())
         _timerSeconds.value = frozen
         save()

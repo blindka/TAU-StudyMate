@@ -41,6 +41,8 @@ object Summarizer {
             """.trimIndent()
             val text = model.generateContent(prompt).candidates.firstOrNull()?.text
             if (text.isNullOrBlank()) Result.Error("לא התקבל סיכום. נסה שוב.") else Result.Ok(text.trim())
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e // user pressed "עצור"
         } catch (e: Exception) {
             Result.Error("שגיאה ביצירת הסיכום: ${e.localizedMessage ?: e.javaClass.simpleName}")
         } finally {

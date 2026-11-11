@@ -24,7 +24,6 @@ val PastelSkyDeep = Color(0xFF0369A1)           // Deep ocean blue
 
 // 4. Pastel Peach & Coral (Urgent Deadlines, Middle alerts)
 val PastelPeach = Color(0xFFFFEDD5)             // Soft warm peach
-val PastelPeachBorder = Color(0xFFFED7AA)       // Peach border
 val PastelPeachDark = Color(0xFFEA580C)         // Deep orange text
 val PastelCoral = Color(0xFFFFE4E6)             // Soft rose/coral tint
 val PastelCoralBorder = Color(0xFFFECDD3)       // Coral border
@@ -52,10 +51,8 @@ val CardBackgroundLight = Color(0xFFFFFFFF)     // Clean white cards
 val CardBackgroundDark = Color(0xFF1E293B)
 
 val TextPrimaryLight = Color(0xFF1E1B4B)        // Deep accessible slate/indigo
-val TextSecondaryLight = Color(0xFF475569)
 
 val TextPrimaryDark = Color(0xFFF8FAFC)
-val TextSecondaryDark = Color(0xFF94A3B8)
 
 // Compatibility References
 val TauPurplePrimary = PastelLavenderDark
@@ -64,12 +61,7 @@ val TauPurpleLight = PastelLavender
 val TauPurpleDark = PastelLavenderDeep
 val TauMagentaAccent = PastelRoseDark
 val TauCyanAccent = PastelSkyDark
-val TauTealLight = PastelTeal
 val LaborGreen = PastelMintDark
-val LaborGreenLight = PastelMint
 val SuccessGold = PastelButterDark
 val UrgentRed = PastelCoralDark
-val UrgentRedLight = PastelCoral
-val CoralPink = Color(0xFFF43F5E)
 val TauBluePrimary = PastelLavenderDeep
-val TauBlueLight = Color(0xFF38BDF8)

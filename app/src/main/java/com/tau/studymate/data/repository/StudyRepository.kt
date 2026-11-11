@@ -25,6 +25,8 @@ class StudyRepository(
     suspend fun insertCourse(course: Course): Long = courseDao.insertCourse(course)
 
 
+    suspend fun updateCourse(course: Course) = courseDao.updateCourse(course)
+
     suspend fun deleteCourse(course: Course) = courseDao.deleteCourse(course)
 
     /**

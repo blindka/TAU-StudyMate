@@ -42,6 +42,18 @@ fun CoursesScreen(
     val courses by viewModel.courses.collectAsState()
     val openTaskCounts by viewModel.openTaskCountByCourse.collectAsState()
     var courseToDelete by remember { mutableStateOf<Course?>(null) }
+    var courseToEdit by remember { mutableStateOf<Course?>(null) }
+    courseToEdit?.let { course ->
+        AddCourseDialog(
+            existingNumbers = courses.map { it.courseNumber }.toSet(),
+            initial = course,
+            onDismiss = { courseToEdit = null },
+            onConfirm = { number, name, dept, lecturer, semester, credits ->
+                viewModel.updateCourse(course.copy(courseNumber = number, name = name, department = dept, lecturer = lecturer, semester = semester, credits = credits))
+                courseToEdit = null
+            }
+        )
+    }
     courseToDelete?.let { course ->
         AlertDialog(
             onDismissRequest = { courseToDelete = null },
@@ -253,7 +265,8 @@ fun CoursesScreen(
                             course = course,
                             openTasks = openTaskCounts[course.id] ?: 0,
                             onClick = { onCourseClick(course) },
-                            onDelete = { courseToDelete = course }
+                            onDelete = { courseToDelete = course },
+                            onEdit = { courseToEdit = course }
                         )
                     }
                 }
@@ -325,7 +338,8 @@ private fun CourseCard(
     course: Course,
     openTasks: Int,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit
 ) {
     val (chipBg, chipFg) = com.tau.studymate.ui.screens.readings.departmentColors(course.department)
     Surface(
@@ -342,6 +356,9 @@ private fun CourseCard(
                 )
                 Spacer(Modifier.weight(1f))
                 Text(course.courseNumber, fontSize = 12.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                IconButton(onClick = onEdit) {
+                    Icon(Icons.Default.Edit, "עריכת קורס", tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
+                }
                 IconButton(onClick = onDelete) { // default 48dp touch target
                     Icon(Icons.Default.DeleteOutline, "מחק קורס", tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
                 }

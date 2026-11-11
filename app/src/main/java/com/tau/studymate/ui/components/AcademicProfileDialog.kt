@@ -162,7 +162,7 @@ fun AcademicProfileDialog(
                         if (errorMessage != null) {
                             Text(text = errorMessage!!, color = UrgentRed)
                         } else {
-                            Text("ניתן להזין כל תואר באוניברסיטת תל אביב")
+                            Text("כל תואר מתאים. תואר שלא ברשימה מתחיל בלי קורסים, ומוסיפים אותם במסך הקורסים או דרך Moodle")
                         }
                     },
                     trailingIcon = {
@@ -317,7 +317,7 @@ fun AcademicProfileDialog(
                                 importedFileName
                             )
                             if (!success) {
-                                errorMessage = "התואר '$degreeName' אינו קיים במאגר. נא לבחור תואר מוכר או להעלות קובץ מערכת שעות."
+                                errorMessage = "נא להזין שם תואר או חוג"
                             } else {
                                 onDismiss()
                             }

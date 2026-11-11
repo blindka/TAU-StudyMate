@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -84,7 +85,10 @@ object PdfStore {
             }
         }
 
-        // Wait for an in-flight render so the renderer isn't closed under it
-        override fun close() = kotlinx.coroutines.runBlocking { lock.withLock { renderer.close(); fd.close() } }
+        // Close in the background after any in-flight render, so leaving the reader never blocks the UI
+        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+        override fun close() {
+            kotlinx.coroutines.GlobalScope.launch(Dispatchers.IO) { lock.withLock { renderer.close(); fd.close() } }
+        }
     }
 }

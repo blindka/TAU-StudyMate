@@ -26,34 +26,33 @@ object NotificationHelper {
     private const val CHANNEL_TIMER_DESC = "התראות על סיום זמני למידה ופומודורו"
 
     fun createNotificationChannels(context: Context) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-            // Tasks Reminder Channel
-            val tasksChannel = NotificationChannel(
-                CHANNEL_TASKS_ID,
-                CHANNEL_TASKS_NAME,
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = CHANNEL_TASKS_DESC
-                enableVibration(true)
-                enableLights(true)
-            }
-
-            // Timer Channel
-            val timerChannel = NotificationChannel(
-                CHANNEL_TIMER_ID,
-                CHANNEL_TIMER_NAME,
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = CHANNEL_TIMER_DESC
-                enableVibration(true)
-                enableLights(true)
-            }
-
-            notificationManager.createNotificationChannel(tasksChannel)
-            notificationManager.createNotificationChannel(timerChannel)
+        // Tasks Reminder Channel
+        val tasksChannel = NotificationChannel(
+            CHANNEL_TASKS_ID,
+            CHANNEL_TASKS_NAME,
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = CHANNEL_TASKS_DESC
+            enableVibration(true)
+            enableLights(true)
         }
+
+        // Timer Channel
+        val timerChannel = NotificationChannel(
+            CHANNEL_TIMER_ID,
+            CHANNEL_TIMER_NAME,
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = CHANNEL_TIMER_DESC
+            enableVibration(true)
+            enableLights(true)
+        }
+
+        notificationManager.createNotificationChannel(tasksChannel)
+        notificationManager.createNotificationChannel(timerChannel)
+    
     }
 
     fun hasNotificationPermission(context: Context): Boolean {
