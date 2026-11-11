@@ -61,10 +61,15 @@ fun ReaderScreen(readingId: Long, viewModel: ReadingsViewModel, onBack: () -> Un
                 TabRow(selectedTabIndex = tab) {
                     Tab(tab == 0, { tab = 0 }, text = { Text("מסמך") })
                     Tab(tab == 1, { tab = 1 }, text = { Text("סיכום ✨") })
+                    Tab(tab == 2, { tab = 2 }, text = { Text("תרגום 🌐") })
                 }
             }
         }
-        if (tab == 0) PdfPages(r) else SummaryPane(r, status, message, onSummarize = { viewModel.summarize(r) }, onClearMessage = viewModel::clearMessage)
+        when (tab) {
+            0 -> PdfPages(r)
+            1 -> SummaryPane(r, status, message, onSummarize = { viewModel.summarize(r) }, onClearMessage = viewModel::clearMessage)
+            else -> TranslationPane(r, viewModel)
+        }
     }
 }
 
@@ -142,5 +147,48 @@ private fun SummaryPane(r: Reading, status: String?, message: String?, onSummari
             Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
             LaunchedEffect(it) { kotlinx.coroutines.delay(6000); onClearMessage() }
         }
+    }
+}
+
+@Composable
+private fun TranslationPane(r: Reading, viewModel: ReadingsViewModel) {
+    val status by viewModel.translationStatus.collectAsState()
+    val translation by viewModel.translation.collectAsState()
+    val message by viewModel.message.collectAsState()
+    LaunchedEffect(r.id) { viewModel.loadTranslation(r) }
+    val pages = translation?.takeIf { it.first == r.id }?.second
+
+    LazyColumn(
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            Row(Modifier.fillMaxWidth().background(PastelMint, RoundedCornerShape(12.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("🔒 ", fontSize = 14.sp)
+                Text("תרגום מאנגלית לעברית בתוך הטלפון. הטקסט לא נשלח החוצה.", color = PastelMintDark, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            }
+        }
+        when {
+            status != null -> item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp); Spacer(Modifier.width(12.dp)); Text(status!!)
+                }
+            }
+            pages == null -> item {
+                Button(onClick = { viewModel.translate(r) }, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) { Text("🌐 תרגם לעברית") }
+            }
+            else -> {
+                items(pages.size) { i ->
+                    if (pages[i].isNotBlank()) Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
+                        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("עמוד ${i + 1}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(pages[i], fontSize = 15.sp, lineHeight = 23.sp)
+                        }
+                    }
+                }
+                item { Text("תרגום אוטומטי עלול לטעות במונחים מקצועיים. כדאי לבדוק מול המקור.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            }
+        }
+        message?.let { item { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp) } }
     }
 }

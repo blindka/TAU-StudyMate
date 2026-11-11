@@ -55,6 +55,16 @@ object PdfStore {
         }
     }
 
+    /** Text of every page (Android 15+). Null when the device can't extract text or the PDF is scanned images. */
+    suspend fun extractPages(path: String): List<String>? = withContext(Dispatchers.IO) {
+        if (Build.VERSION.SDK_INT < 35) return@withContext null
+        ParcelFileDescriptor.open(File(path), ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
+            PdfRenderer(fd).use { r ->
+                (0 until r.pageCount).map { i -> r.openPage(i).use { p -> p.textContents.joinToString("\n") { it.text } } }
+            }
+        }.takeIf { pages -> pages.any { it.isNotBlank() } }
+    }
+
     /** Renders pages on demand. PdfRenderer allows one open page at a time, hence the mutex. */
     class Document(path: String) : Closeable {
         private val fd = ParcelFileDescriptor.open(File(path), ParcelFileDescriptor.MODE_READ_ONLY)

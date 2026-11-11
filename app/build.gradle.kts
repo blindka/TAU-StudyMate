@@ -1,4 +1,4 @@
-val appVersion = "0.1.2"
+val appVersion = "0.1.3"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -91,6 +91,7 @@ dependencies {
 
     debugImplementation(libs.androidx.ui.tooling)
     implementation("com.google.mlkit:genai-prompt:1.0.0-beta5")
+    implementation("com.google.mlkit:translate:17.0.3")
     // room-testing needs serialization 1.8+; the app classpath (which androidTest is aligned to) pins 1.6.3 otherwise
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-core:1.8.1")
     testImplementation("junit:junit:4.13.2")

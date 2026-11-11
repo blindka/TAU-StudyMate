@@ -76,6 +76,7 @@ class ReadingsViewModel(
     fun delete(r: Reading) = viewModelScope.launch {
         dao.delete(r)
         File(r.filePath).delete()
+        translationFile(r).delete()
     }
 
     fun observe(id: Long): Flow<Reading?> = dao.observe(id)
@@ -99,6 +100,42 @@ class ReadingsViewModel(
                 }
             } finally {
                 _summaryStatus.value = null
+            }
+        }
+    }
+
+    // --- Translation EN → HE (ML Kit, on device). Cached next to the PDF, one page per form feed. ---
+    private fun translationFile(r: Reading) = File(r.filePath + ".he.txt")
+
+    private val _translationStatus = MutableStateFlow<String?>(null)
+    val translationStatus: StateFlow<String?> = _translationStatus.asStateFlow()
+
+    private val _translation = MutableStateFlow<Pair<Long, List<String>>?>(null)
+    val translation: StateFlow<Pair<Long, List<String>>?> = _translation.asStateFlow()
+
+    /** Loads a cached translation, if this reading was translated before. */
+    fun loadTranslation(r: Reading) = viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+        val f = translationFile(r)
+        _translation.value = if (f.exists()) r.id to f.readText().split('\u000C') else null
+    }
+
+    fun translate(r: Reading) {
+        if (_translationStatus.value != null) return
+        viewModelScope.launch {
+            _translationStatus.value = "קורא את המסמך…"
+            try {
+                val pages = PdfStore.extractPages(r.filePath)
+                if (pages == null) {
+                    _message.value = "לא ניתן לחלץ טקסט מהקובץ (נדרש Android 15 ומעלה, וקובץ שאינו סרוק)."
+                    return@launch
+                }
+                val he = com.tau.studymate.util.Translator.translatePages(pages) { _translationStatus.value = it }
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { translationFile(r).writeText(he.joinToString("\u000C")) }
+                _translation.value = r.id to he
+            } catch (e: Exception) {
+                _message.value = "התרגום נכשל: ${e.localizedMessage ?: "בדוק חיבור לאינטרנט להורדת המודל"}"
+            } finally {
+                _translationStatus.value = null
             }
         }
     }
