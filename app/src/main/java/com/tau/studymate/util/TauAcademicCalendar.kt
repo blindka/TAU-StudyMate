@@ -20,6 +20,7 @@ object TauAcademicCalendar {
     )
 
     private val periods = listOf(
+        // shortcut: dates are hardcoded through Sept 2027 (תשפ"ז); add תשפ"ח before Aug 2027 or the banner falls back to a generic status.
         // תשפ"ז (2026-2027) - אוניברסיטת תל אביב
         Period(
             startDate = LocalDate.of(2026, 10, 18),

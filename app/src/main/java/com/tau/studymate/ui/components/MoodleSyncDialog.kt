@@ -4,9 +4,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.webkit.CookieManager
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,7 +24,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.tau.studymate.ui.theme.*
@@ -44,65 +40,8 @@ fun MoodleSyncDialog(
     var resultMessage by remember { mutableStateOf<String?>(null) }
     var isSuccess by remember { mutableStateOf(false) }
     var showInstructions by remember { mutableStateOf(initialUrl.isBlank()) }
-    var showWebViewLogin by remember { mutableStateOf(false) }
-
-    if (showWebViewLogin) {
-        Dialog(
-            onDismissRequest = { showWebViewLogin = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false)
-        ) {
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier
-                    .fillMaxWidth(0.95f)
-                    .fillMaxHeight(0.85f)
-                    .padding(8.dp)
-            ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(14.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "התחברות למודל אוניברסיטת תל אביב 🎓",
-                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = PastelLavenderDark
-                        )
-                        IconButton(onClick = { showWebViewLogin = false }) {
-                            Icon(Icons.Default.Close, contentDescription = "סגור")
-                        }
-                    }
-
-                    AndroidView(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        factory = { ctx ->
-                            WebView(ctx).apply {
-                                settings.javaScriptEnabled = true
-                                settings.domStorageEnabled = true
-                                webViewClient = object : WebViewClient() {
-                                    override fun onPageFinished(view: WebView?, url: String?) {
-                                        super.onPageFinished(view, url)
-                                        // Once logged in to TAU Moodle, we can extract cookies or direct link
-                                        if (url != null && url.contains("moodle.tau.ac.il") && !url.contains("login")) {
-                                            val cookies = CookieManager.getInstance().getCookie(url)
-                                            // Provide feedback
-                                        }
-                                    }
-                                }
-                                loadUrl("https://moodle.tau.ac.il/login/index.php")
-                            }
-                        }
-                    )
-                }
-            }
-        }
-        return
-    }
+    // Moodle login happens in the user's browser, never inside the app (no credentials pass through us)
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -337,22 +276,22 @@ fun MoodleSyncDialog(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // Alternative: In-App Browser Login
+                // Opens Moodle's calendar export page in the browser, where the user copies the iCal link
                 OutlinedButton(
-                    onClick = { showWebViewLogin = true },
+                    onClick = { uriHandler.openUri("https://moodle.tau.ac.il/calendar/export.php") },
                     shape = RoundedCornerShape(14.dp),
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(vertical = 10.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Lock,
+                        imageVector = Icons.Default.OpenInBrowser,
                         contentDescription = null,
                         tint = PastelSkyDark,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = "התחברות לאתו\"א בחלון פנימי 🔑",
+                        text = "פתיחת דף ייצוא לוח השנה ב-Moodle 🔗",
                         color = PastelSkyDark,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold

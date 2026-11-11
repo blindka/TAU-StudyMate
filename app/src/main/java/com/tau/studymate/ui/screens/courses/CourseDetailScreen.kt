@@ -162,11 +162,12 @@ fun CourseDetailScreen(
                                 RecordingCardItem(
                                     material = item,
                                     onOpenLink = {
+                                        val raw = item.contentOrUri.trim()
+                                        val url = if (raw.contains("://")) raw else "https://$raw" // users often paste "panopto.tau.ac.il/..."
                                         try {
-                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(item.contentOrUri))
-                                            context.startActivity(intent)
+                                            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                                         } catch (_: Exception) {
-                                            // Handle invalid uri gracefully
+                                            android.widget.Toast.makeText(context, "לא ניתן לפתוח את הקישור", android.widget.Toast.LENGTH_SHORT).show()
                                         }
                                     },
                                     onDelete = { viewModel.deleteStudyMaterial(item) }

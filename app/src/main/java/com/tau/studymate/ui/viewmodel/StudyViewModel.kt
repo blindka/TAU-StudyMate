@@ -172,31 +172,6 @@ class StudyViewModel(
     private val _celebrationReward = MutableStateFlow<CelebrationReward?>(null)
     val celebrationReward: StateFlow<CelebrationReward?> = _celebrationReward.asStateFlow()
 
-    // Study Habit Timer State
-    private val _isTimerRunning = MutableStateFlow(false)
-    val isTimerRunning: StateFlow<Boolean> = _isTimerRunning.asStateFlow()
-
-    // Timer Mode: Countdown (Pomodoro) or Stopwatch
-    private val _isCountdownMode = MutableStateFlow(true)
-    val isCountdownMode: StateFlow<Boolean> = _isCountdownMode.asStateFlow()
-
-    private val _targetMinutes = MutableStateFlow(25)
-    val targetMinutes: StateFlow<Int> = _targetMinutes.asStateFlow()
-
-    private val _timerSeconds = MutableStateFlow(25 * 60)
-    val timerSeconds: StateFlow<Int> = _timerSeconds.asStateFlow()
-
-    private val _timerCourseId = MutableStateFlow<Long?>(null)
-    val timerCourseId: StateFlow<Long?> = _timerCourseId.asStateFlow()
-
-    private val _timerTaskId = MutableStateFlow<Long?>(null)
-    val timerTaskId: StateFlow<Long?> = _timerTaskId.asStateFlow()
-
-    private val _timerFinishedDialog = MutableStateFlow<String?>(null)
-    val timerFinishedDialog: StateFlow<String?> = _timerFinishedDialog.asStateFlow()
-
-    private var timerJob: Job? = null
-
     // Motivational Hebrew messages for reward
     private val rewardQuotes = listOf(
         "אלוף/ה! עוד צעד משמעותי לעבר התואר! 🎓",
@@ -242,6 +217,15 @@ class StudyViewModel(
 
     fun dismissCelebration() {
         _celebrationReward.value = null
+    }
+
+    /** Undo for a delete: same id, so reminders and course links come back as they were. */
+    fun restoreTask(task: Task) {
+        viewModelScope.launch {
+            repository.insertTask(task)
+            val courseName = task.courseId?.let { repository.getCourseById(it)?.name }
+            TaskNotificationScheduler.scheduleTask(getApplication(), task, courseName)
+        }
     }
 
     fun deleteTask(task: Task) {
@@ -428,97 +412,6 @@ class StudyViewModel(
 
     fun getTasksForCourse(courseId: Long): Flow<List<Task>> {
         return repository.getTasksForCourse(courseId)
-    }
-
-    // Timer Controls
-    fun setTimerPreset(isCountdown: Boolean, minutes: Int) {
-        if (_isTimerRunning.value) return
-        _isCountdownMode.value = isCountdown
-        _targetMinutes.value = minutes
-        _timerSeconds.value = if (isCountdown) minutes * 60 else 0
-    }
-
-    fun startTimer(courseId: Long? = null, taskId: Long? = null) {
-        if (_isTimerRunning.value) return
-        _timerCourseId.value = courseId ?: _timerCourseId.value
-        _timerTaskId.value = taskId ?: _timerTaskId.value
-        _isTimerRunning.value = true
-
-        if (_isCountdownMode.value && _timerSeconds.value <= 0) {
-            _timerSeconds.value = _targetMinutes.value * 60
-        }
-
-        timerJob = viewModelScope.launch {
-            if (_isCountdownMode.value) {
-                while (_isTimerRunning.value && _timerSeconds.value > 0) {
-                    delay(1000)
-                    _timerSeconds.value -= 1
-                }
-                if (_isTimerRunning.value && _timerSeconds.value <= 0) {
-                    _isTimerRunning.value = false
-                    // השמעת סאונד סיום טיימר
-                    SoundManager.playTimerFinishedSound(getApplication())
-                    // שליחת התראה
-                    NotificationHelper.showTimerNotification(
-                        getApplication(),
-                        "זמן הלמידה הסתיים! ⏰",
-                        "כל הכבוד על פוקוס של ${_targetMinutes.value} דקות! הגיע הזמן להפסקה קלה."
-                    )
-                    // תיעוד סשן למידה אוטומטי
-                    repository.logStudySession(
-                        courseId = _timerCourseId.value,
-                        taskId = _timerTaskId.value,
-                        durationMinutes = _targetMinutes.value,
-                        notes = "סשן פוקוס הושלם בהצלחה"
-                    )
-                    _timerFinishedDialog.value = "השלמת בהצלחה סשן למידה של ${_targetMinutes.value} דקות! 🎯"
-                }
-            } else {
-                while (_isTimerRunning.value) {
-                    delay(1000)
-                    _timerSeconds.value += 1
-                }
-            }
-        }
-    }
-
-    fun pauseTimer() {
-        _isTimerRunning.value = false
-        timerJob?.cancel()
-    }
-
-    fun resetTimer() {
-        pauseTimer()
-        _timerSeconds.value = if (_isCountdownMode.value) _targetMinutes.value * 60 else 0
-    }
-
-    fun dismissTimerFinishedDialog() {
-        _timerFinishedDialog.value = null
-        resetTimer()
-    }
-
-    fun finishTimerSession(notes: String = "") {
-        val totalMinutes = if (_isCountdownMode.value) {
-            val elapsed = (_targetMinutes.value * 60) - _timerSeconds.value
-            (elapsed / 60).coerceAtLeast(1)
-        } else {
-            (_timerSeconds.value / 60).coerceAtLeast(1)
-        }
-        val courseId = _timerCourseId.value
-        val taskId = _timerTaskId.value
-
-        viewModelScope.launch {
-            // השמעת צליל סיום
-            SoundManager.playTimerFinishedSound(getApplication())
-
-            repository.logStudySession(
-                courseId = courseId,
-                taskId = taskId,
-                durationMinutes = totalMinutes,
-                notes = notes
-            )
-            resetTimer()
-        }
     }
 
     fun getExportText(): String {

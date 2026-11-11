@@ -49,14 +49,15 @@ object SoundManager {
                 // רטט התרעה
                 vibrate(context, longArrayOf(0, 180, 100, 180, 100, 250), intArrayOf(0, 220, 0, 220, 0, 255))
 
-                val toneGen = ToneGenerator(AudioManager.STREAM_ALARM, 95)
+                // Notification stream, not ALARM: alarm ignores silent mode (would beep in a lecture or library)
+                val toneGen = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 90)
                 for (i in 0 until 3) {
                     toneGen.startTone(ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD, 220)
                     delay(320)
                 }
                 toneGen.release()
             } catch (_: Exception) {
-                playSystemAlarm(context)
+                playSystemNotification(context)
             }
         }
     }
@@ -77,15 +78,6 @@ object SoundManager {
     private fun playSystemNotification(context: Context) {
         try {
             val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            val ringtone = RingtoneManager.getRingtone(context.applicationContext, uri)
-            ringtone?.play()
-        } catch (_: Exception) {}
-    }
-
-    private fun playSystemAlarm(context: Context) {
-        try {
-            val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
             val ringtone = RingtoneManager.getRingtone(context.applicationContext, uri)
             ringtone?.play()
         } catch (_: Exception) {}

@@ -37,12 +37,13 @@ private data class PresetItem(
 @Composable
 fun HabitsAnalyticsScreen(
     viewModel: StudyViewModel,
+    timerViewModel: com.tau.studymate.ui.viewmodel.TimerViewModel,
     modifier: Modifier = Modifier
 ) {
-    val isRunning by viewModel.isTimerRunning.collectAsState()
-    val timerSeconds by viewModel.timerSeconds.collectAsState()
-    val isCountdown by viewModel.isCountdownMode.collectAsState()
-    val targetMinutes by viewModel.targetMinutes.collectAsState()
+    val isRunning by timerViewModel.isTimerRunning.collectAsState()
+    val timerSeconds by timerViewModel.timerSeconds.collectAsState()
+    val isCountdown by timerViewModel.isCountdownMode.collectAsState()
+    val targetMinutes by timerViewModel.targetMinutes.collectAsState()
     val courses by viewModel.courses.collectAsState()
     val tasks by viewModel.filteredTasks.collectAsState()
     val sessions by viewModel.studySessions.collectAsState()
@@ -67,6 +68,30 @@ fun HabitsAnalyticsScreen(
         if (comm + labor == 0) 0.5f else comm.toFloat() / (comm + labor)
     }
     val commPct = (commShare * 100).toInt()
+
+    // Insights computed from the user's own data (previously hardcoded text)
+    val streak by viewModel.streakDays.collectAsState()
+    val tracked = remember(tasks) { tasks.filter { it.actualMinutes > 0 && it.estimatedMinutes > 0 } }
+    val velocityKnown = tracked.size >= 2
+    val velocityText = remember(tracked) {
+        if (!velocityKnown) "כשתריץ/י טיימר על לפחות שתי מטלות, נשווה כאן בין הזמן שהערכת לזמן שלקח בפועל."
+        else {
+            val pct = ((tracked.sumOf { it.actualMinutes }.toDouble() / tracked.sumOf { it.estimatedMinutes } - 1) * 100).toInt()
+            when {
+                pct > 10 -> "מטלות לוקחות לך בממוצע $pct% יותר מהזמן שהערכת (לפי ${tracked.size} מטלות). כדאי להתחיל אותן מוקדם יותר."
+                pct < -10 -> "את/ה מסיים/ת מטלות ב-${-pct}% פחות זמן ממה שהערכת (לפי ${tracked.size} מטלות). אפשר להעריך בצורה פחות שמרנית."
+                else -> "ההערכות שלך מדויקות: הפער בין הזמן המשוער לזמן בפועל הוא פחות מ-10% (לפי ${tracked.size} מטלות)."
+            }
+        }
+    }
+    val weekAgo = remember { System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000 }
+    val weekSessions = remember(sessions) { sessions.count { it.timestamp >= weekAgo } }
+    val weekMinutes = remember(sessions) { sessions.filter { it.timestamp >= weekAgo }.sumOf { it.durationMinutes } }
+    val consistencyText = when {
+        weekSessions == 0 -> "עוד לא היו סשנים של למידה השבוע. סשן קצר של 25 דקות הוא התחלה מצוינת."
+        streak >= 2 -> "$streak ימים ברצף של למידה, ו-$weekSessions סשנים ($weekMinutes דק׳) בשבוע האחרון. המשך/י כך!"
+        else -> "$weekSessions סשנים ($weekMinutes דק׳) בשבוע האחרון. סשן קצר כל יום עוזר לבנות רצף."
+    }
 
     val presets = remember {
         listOf(
@@ -152,7 +177,7 @@ fun HabitsAnalyticsScreen(
                         presets.forEach { preset ->
                             val isSelected = (isCountdown == preset.isCount) && (!preset.isCount || targetMinutes == preset.mins)
                             Surface(
-                                onClick = { if (!isRunning) viewModel.setTimerPreset(preset.isCount, preset.mins) },
+                                onClick = { if (!isRunning) timerViewModel.setTimerPreset(preset.isCount, preset.mins) },
                                 enabled = !isRunning,
                                 shape = RoundedCornerShape(14.dp),
                                 color = if (isSelected) PastelLavenderDark else MaterialTheme.colorScheme.surface,
@@ -200,7 +225,7 @@ fun HabitsAnalyticsScreen(
                     ) {
                         if (!isRunning) {
                             Button(
-                                onClick = { viewModel.startTimer(courseId = selectedCourseId) },
+                                onClick = { timerViewModel.startTimer(courseId = selectedCourseId) },
                                 shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = PastelLavenderDark,
@@ -216,7 +241,7 @@ fun HabitsAnalyticsScreen(
                         } else {
                             // Pause button in Pastel Butter
                             Button(
-                                onClick = { viewModel.pauseTimer() },
+                                onClick = { timerViewModel.pauseTimer() },
                                 shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = PastelButter,
@@ -232,7 +257,7 @@ fun HabitsAnalyticsScreen(
 
                             // Finish & Save button in Pastel Mint
                             Button(
-                                onClick = { viewModel.finishTimerSession() },
+                                onClick = { timerViewModel.finishTimerSession() },
                                 shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = PastelMint,
@@ -253,7 +278,7 @@ fun HabitsAnalyticsScreen(
                                 color = MaterialTheme.colorScheme.surfaceVariant,
                                 modifier = Modifier.size(46.dp)
                             ) {
-                                IconButton(onClick = { viewModel.resetTimer() }) {
+                                IconButton(onClick = { timerViewModel.resetTimer() }) {
                                     Icon(
                                         imageVector = Icons.Default.Refresh,
                                         contentDescription = "איפוס",
@@ -385,8 +410,8 @@ fun HabitsAnalyticsScreen(
             PastelInsightCard(
                 icon = Icons.Default.AutoGraph,
                 title = "מדד דיוק הערכת זמן (Velocity)",
-                description = "שמנו לב שמטלות כתיבה לוקחות לך בממוצע 20% יותר מהזמן שהוערך. מומלץ לתזמן סשן עבודה 3 ימים לפני מועד ההגשה במקום יום לפני.",
-                badgeText = "המלצה מותאמת",
+                description = velocityText,
+                badgeText = if (velocityKnown) "מהנתונים שלך" else "צריך עוד נתונים",
                 cardColor = PastelRose.copy(alpha = 0.5f),
                 borderColor = PastelRoseBorder,
                 badgeBg = PastelRose,
@@ -399,8 +424,8 @@ fun HabitsAnalyticsScreen(
             PastelInsightCard(
                 icon = Icons.Default.Psychology,
                 title = "עקביות ותדירות שימוש",
-                description = "נכנסת לאפליקציה 5 ימים ברציפות השבוע! הרגלי הלמידה שלך הולכים ומתייצבים. שמירה על סשן יומי קצר של 45 דקות מונעת עומס בתקופת הבחינות.",
-                badgeText = "מגמת שיפור",
+                description = consistencyText,
+                badgeText = if (weekSessions > 0) "השבוע" else "בואו נתחיל",
                 cardColor = PastelTeal.copy(alpha = 0.5f),
                 borderColor = PastelTealBorder,
                 badgeBg = PastelTeal,

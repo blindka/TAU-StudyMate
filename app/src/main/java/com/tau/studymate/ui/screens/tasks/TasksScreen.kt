@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.screens.tasks
 
+import kotlinx.coroutines.launch
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -69,8 +70,11 @@ fun TasksScreen(
         )
     }
 
+    val snackbar = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
     Scaffold(
         modifier = modifier.fillMaxSize(),
+        snackbarHost = { SnackbarHost(snackbar) },
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { showAddTaskDialog = true },
@@ -266,7 +270,14 @@ fun TasksScreen(
                             course = course,
                             dueDateFormatted = dateFormat.format(Date(task.dueDate)),
                             onToggle = { viewModel.toggleTaskCompletion(task) },
-                            onDelete = { viewModel.deleteTask(task) }
+                            onDelete = {
+                                viewModel.deleteTask(task)
+                                scope.launch {
+                                    snackbar.currentSnackbarData?.dismiss()
+                                    val res = snackbar.showSnackbar("המטלה נמחקה", actionLabel = "בטל", duration = SnackbarDuration.Short)
+                                    if (res == SnackbarResult.ActionPerformed) viewModel.restoreTask(task)
+                                }
+                            }
                         )
                     }
                 }

@@ -49,6 +49,10 @@ class MainActivity : ComponentActivity() {
         ViewModelFactory(application, (application as StudyMateApp).repository)
     }
 
+    private val timerViewModel: com.tau.studymate.ui.viewmodel.TimerViewModel by viewModels {
+        ViewModelFactory(application, (application as StudyMateApp).repository)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -56,7 +60,7 @@ class MainActivity : ComponentActivity() {
                 // Ensure RTL layout for full Hebrew support
                 CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
                     NotificationPermissionHandler()
-                    MainAppContent(viewModel = viewModel, readingsViewModel = readingsViewModel)
+                    MainAppContent(viewModel = viewModel, readingsViewModel = readingsViewModel, timerViewModel = timerViewModel)
                 }
             }
         }
@@ -84,7 +88,11 @@ private fun NotificationPermissionHandler() {
 }
 
 @Composable
-fun MainAppContent(viewModel: StudyViewModel, readingsViewModel: com.tau.studymate.ui.viewmodel.ReadingsViewModel) {
+fun MainAppContent(
+    viewModel: StudyViewModel,
+    readingsViewModel: com.tau.studymate.ui.viewmodel.ReadingsViewModel,
+    timerViewModel: com.tau.studymate.ui.viewmodel.TimerViewModel
+) {
     var currentRoute by remember { mutableStateOf(NavScreen.Home.route) }
     var openReadingId by remember { mutableStateOf<Long?>(null) }
     openReadingId?.let { id ->
@@ -94,7 +102,7 @@ fun MainAppContent(viewModel: StudyViewModel, readingsViewModel: com.tau.studyma
     var selectedCourseForDetail by remember { mutableStateOf<Course?>(null) }
 
     val celebrationReward by viewModel.celebrationReward.collectAsState()
-    val timerFinishedMessage by viewModel.timerFinishedDialog.collectAsState()
+    val timerFinishedMessage by timerViewModel.timerFinishedDialog.collectAsState()
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -146,6 +154,7 @@ fun MainAppContent(viewModel: StudyViewModel, readingsViewModel: com.tau.studyma
                     )
                     NavScreen.Habits.route -> HabitsAnalyticsScreen(
                         viewModel = viewModel,
+                        timerViewModel = timerViewModel,
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
@@ -162,7 +171,7 @@ fun MainAppContent(viewModel: StudyViewModel, readingsViewModel: com.tau.studyma
 
         // Timer Finished Pop-up Dialog
         timerFinishedMessage?.let { msg ->
-            Dialog(onDismissRequest = { viewModel.dismissTimerFinishedDialog() }) {
+            Dialog(onDismissRequest = { timerViewModel.dismissTimerFinishedDialog() }) {
                 Card(
                     shape = RoundedCornerShape(24.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
@@ -198,7 +207,7 @@ fun MainAppContent(viewModel: StudyViewModel, readingsViewModel: com.tau.studyma
                         )
                         Spacer(modifier = Modifier.height(20.dp))
                         Button(
-                            onClick = { viewModel.dismissTimerFinishedDialog() },
+                            onClick = { timerViewModel.dismissTimerFinishedDialog() },
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
