@@ -16,6 +16,7 @@ class StudyMateApp : Application() {
         if (android.os.Build.VERSION.SDK_INT >= 28 && android.os.Process.isIsolated()) return
         NotificationHelper.createNotificationChannels(this)
         com.tau.studymate.util.MoodleSync.schedule(this) // keeps the daily sync registered
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch { com.tau.studymate.util.TauAcademicCalendar.refresh(this@StudyMateApp) }
         // Keep the home-screen widget in step with tasks/readings (one place instead of every edit)
         @OptIn(kotlinx.coroutines.FlowPreview::class)
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default).launch {

@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.screens.readings
 
+import com.tau.studymate.ui.viewmodel.bookmarksOf
 import com.tau.studymate.R
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.edit
@@ -48,6 +49,7 @@ fun ReaderScreen(readingId: Long, viewModel: ReadingsViewModel, onBack: () -> Un
     val status by viewModel.summaryStatus.collectAsState()
     val message by viewModel.message.collectAsState()
     var tab by remember { mutableIntStateOf(0) }
+    var jumpTo by remember { mutableStateOf<Int?>(null) }
     BackHandler(onBack = onBack)
     val r = reading ?: return
 
@@ -67,19 +69,21 @@ fun ReaderScreen(readingId: Long, viewModel: ReadingsViewModel, onBack: () -> Un
                     Tab(tab == 0, { tab = 0 }, text = { Text(stringResource(R.string.tab_document)) })
                     Tab(tab == 1, { tab = 1 }, text = { Text(stringResource(R.string.tab_summary)) })
                     Tab(tab == 2, { tab = 2 }, text = { Text(stringResource(R.string.tab_translation)) })
+                    Tab(tab == 3, { tab = 3 }, text = { Text(stringResource(R.string.tab_notes)) })
                 }
             }
         }
         when (tab) {
-            0 -> PdfPages(r)
+            0 -> PdfPages(r, jumpTo, onJumped = { jumpTo = null }, onToggleBookmark = { viewModel.toggleBookmark(r, it) })
             1 -> SummaryPane(r, status, message, onSummarize = { viewModel.summarize(r) }, onClearMessage = viewModel::clearMessage, onCancel = viewModel::cancelWork)
-            else -> TranslationPane(r, viewModel)
+            2 -> TranslationPane(r, viewModel)
+            else -> NotesPane(r, viewModel, onOpenPage = { jumpTo = it; tab = 0 })
         }
     }
 }
 
 @Composable
-private fun PdfPages(r: Reading) {
+private fun PdfPages(r: Reading, jumpTo: Int?, onJumped: () -> Unit, onToggleBookmark: (Int) -> Unit) {
     val doc = remember(r.filePath) { runCatching { PdfStore.Document(r.filePath) }.getOrNull() }
     DisposableEffect(doc) { onDispose { doc?.close() } }
     if (doc == null) { Text(stringResource(R.string.err_open_file), Modifier.padding(24.dp)); return }
@@ -93,6 +97,7 @@ private fun PdfPages(r: Reading) {
         snapshotFlow { listState.firstVisibleItemIndex }.collect { prefs.edit { putInt(pageKey, it) } }
     }
     var viewport by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
+    LaunchedEffect(jumpTo) { jumpTo?.let { listState.scrollToItem(it.coerceIn(0, doc.pageCount - 1)); onJumped() } }
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     // Re-render pages sharper once the pinch settles. Capped at 2x: each page is an ARGB bitmap (~22MB at 2x).
@@ -131,12 +136,18 @@ private fun PdfPages(r: Reading) {
                 else Image(b.asImageBitmap(), stringResource(R.string.a11y_page, i + 1), Modifier.fillMaxWidth().aspectRatio(b.width.toFloat() / b.height), contentScale = ContentScale.FillWidth)
             }
         }
-        Text(
-            "${listState.firstVisibleItemIndex + 1} / ${doc.pageCount}",
-            color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
-                .background(Color(0xD91E1B2E), RoundedCornerShape(50)).padding(horizontal = 14.dp, vertical = 8.dp)
-        )
+        val page = listState.firstVisibleItemIndex
+        val marked = page in bookmarksOf(r)
+        Row(
+            Modifier.align(Alignment.BottomCenter).padding(16.dp)
+                .background(Color(0xD91E1B2E), RoundedCornerShape(50)).padding(start = 14.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("${page + 1} / ${doc.pageCount}", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+            IconButton(onClick = { onToggleBookmark(page) }) {
+                Icon(if (marked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder, stringResource(R.string.a11y_bookmark), tint = Color.White)
+            }
+        }
     }
 }
 
@@ -209,5 +220,30 @@ private fun TranslationPane(r: Reading, viewModel: ReadingsViewModel) {
             }
         }
         message?.let { item { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp) } }
+    }
+}
+
+@Composable
+private fun NotesPane(r: Reading, viewModel: ReadingsViewModel, onOpenPage: (Int) -> Unit) {
+    // Local text so typing is instant; saved to the database half a second after the user stops
+    var text by remember(r.id) { mutableStateOf(r.notes.orEmpty()) }
+    LaunchedEffect(text) { kotlinx.coroutines.delay(500); if (text != r.notes.orEmpty()) viewModel.setNotes(r, text) }
+    val pages = bookmarksOf(r)
+    LazyColumn(
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            OutlinedTextField(
+                value = text, onValueChange = { text = it }, label = { Text(stringResource(R.string.notes_label)) },
+                minLines = 6, modifier = Modifier.fillMaxWidth()
+            )
+        }
+        item { Text(stringResource(R.string.bookmarks_title), fontWeight = FontWeight.Bold) }
+        if (pages.isEmpty()) item { Text(stringResource(R.string.bookmarks_empty), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        items(pages.size) { i ->
+            AssistChip(onClick = { onOpenPage(pages[i]) }, label = { Text(stringResource(R.string.go_to_page, pages[i] + 1)) },
+                leadingIcon = { Icon(Icons.Default.Bookmark, null, Modifier.size(16.dp)) })
+        }
     }
 }

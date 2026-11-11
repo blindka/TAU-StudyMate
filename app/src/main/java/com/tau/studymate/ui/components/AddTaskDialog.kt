@@ -40,7 +40,8 @@ fun AddTaskDialog(
         department: Department,
         priority: Priority,
         estimatedMinutes: Int,
-        enableReminder: Boolean
+        enableReminder: Boolean,
+        repeatWeekly: Boolean
     ) -> Unit
 ) {
     var title by remember { mutableStateOf(initial?.title ?: "") }
@@ -61,6 +62,7 @@ fun AddTaskDialog(
     var showTimePicker by remember { mutableStateOf(false) }
     var estimatedMinutes by remember { mutableStateOf((initial?.estimatedMinutes ?: 60).toString()) }
     var enableReminder by remember { mutableStateOf(initial?.reminderEnabled ?: true) }
+    var repeatWeekly by remember { mutableStateOf(initial?.repeatWeekly ?: false) }
     val context = androidx.compose.ui.platform.LocalContext.current
 
     var expandedCourseDropdown by remember { mutableStateOf(false) }
@@ -105,7 +107,7 @@ fun AddTaskDialog(
                 ) {
                     val currentCourse = courses.find { it.id == selectedCourseId }
                     OutlinedTextField(
-                        value = currentCourse?.let { "${it.courseNumber} - ${it.name}" } ?: stringResource(R.string.no_course),
+                        value = currentCourse?.let { "${it.courseNumber} - ${com.tau.studymate.ui.components.courseLabel(it.name)}" } ?: stringResource(R.string.no_course),
                         onValueChange = {},
                         readOnly = true,
                         label = { Text(stringResource(R.string.task_course_label)) },
@@ -121,7 +123,7 @@ fun AddTaskDialog(
                     ) {
                         courses.forEach { course ->
                             DropdownMenuItem(
-                                text = { Text("${course.courseNumber} - ${course.name}") },
+                                text = { Text("${course.courseNumber} - ${com.tau.studymate.ui.components.courseLabel(course.name)}") },
                                 onClick = {
                                     selectedCourseId = course.id
                                     selectedDepartment = course.department
@@ -225,6 +227,10 @@ fun AddTaskDialog(
                         onCheckedChange = { enableReminder = it }
                     )
                 }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.repeat_weekly), Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    Switch(checked = repeatWeekly, onCheckedChange = { repeatWeekly = it })
+                }
                 // Android 14+ turns exact alarms off by default; without it reminders can arrive minutes late
                 if (enableReminder && android.os.Build.VERSION.SDK_INT >= 31 &&
                     context.getSystemService(android.app.AlarmManager::class.java)?.canScheduleExactAlarms() == false
@@ -258,7 +264,8 @@ fun AddTaskDialog(
                                     selectedDepartment,
                                     selectedPriority,
                                     minutes,
-                                    enableReminder
+                                    enableReminder,
+                                    repeatWeekly
                                 )
                             }
                         },

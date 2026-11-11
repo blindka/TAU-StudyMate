@@ -65,7 +65,7 @@ fun TaskRowCard(task: Task, course: Course?, onToggle: () -> Unit, showDescripti
                 }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        course?.name ?: stringResource(task.department.labelRes), color = chipFg, fontSize = 12.sp, fontWeight = FontWeight.Medium,
+                        course?.let { com.tau.studymate.ui.components.courseLabel(it.name) } ?: stringResource(task.department.labelRes), color = chipFg, fontSize = 12.sp, fontWeight = FontWeight.Medium,
                         maxLines = 1, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false).background(chipBg, RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 3.dp)
                     )

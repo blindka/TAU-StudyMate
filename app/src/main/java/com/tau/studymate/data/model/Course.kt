@@ -13,5 +13,7 @@ data class Course(
     val lecturer: String = "",
     val semester: String = "סמסטר א'",
     val credits: Float = 2.0f,
-    val colorHex: Long = 0xFF1E88E5
+    val colorHex: Long = 0xFF1E88E5,
+    /** Final grade (0–100), null until entered; used for the credit-weighted average. */
+    val grade: Float? = null
 )

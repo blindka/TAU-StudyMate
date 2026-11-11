@@ -75,6 +75,15 @@ class ReadingsViewModel(
 
     fun rename(r: Reading, title: String) = viewModelScope.launch { if (title.isNotBlank()) dao.update(r.copy(title = title.trim())) }
 
+    fun setNotes(r: Reading, notes: String) = viewModelScope.launch { dao.update(r.copy(notes = notes.ifBlank { null })) }
+
+    /** Adds or removes [page] (0-based) from the reading's bookmarks. */
+    fun toggleBookmark(r: Reading, page: Int) = viewModelScope.launch {
+        val pages = bookmarksOf(r).toMutableSet()
+        if (!pages.add(page)) pages.remove(page)
+        dao.update(r.copy(bookmarks = pages.sorted().joinToString(",")))
+    }
+
     fun toggleRead(r: Reading) = viewModelScope.launch { dao.update(r.copy(isRead = !r.isRead)) }
     fun markRead(r: Reading) = viewModelScope.launch { dao.update(r.copy(isRead = true)) }
 
@@ -155,3 +164,5 @@ class ReadingsViewModel(
         }
     }
 }
+
+fun bookmarksOf(r: Reading): List<Int> = r.bookmarks.split(',').mapNotNull { it.trim().toIntOrNull() }

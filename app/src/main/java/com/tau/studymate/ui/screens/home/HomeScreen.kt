@@ -50,6 +50,7 @@ fun HomeScreen(
     onNavigateToCourses: () -> Unit,
     onNavigateToHabits: () -> Unit,
     weekReadings: List<com.tau.studymate.data.model.Reading> = emptyList(),
+    onOpenSettings: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val tasks by viewModel.allTasks.collectAsState()
@@ -107,7 +108,8 @@ fun HomeScreen(
                 pendingCount = pendingTasks.size,
                 readingsDone = weekReadings.count { it.isRead },
                 readingsTotal = weekReadings.size,
-                onOpenProfile = { showProfileDialog = true }
+                onOpenProfile = { showProfileDialog = true },
+                onOpenSettings = onOpenSettings
             )
         }
         item {
@@ -180,7 +182,7 @@ fun HomeScreen(
                             )
                             if (course != null) {
                                 Text(
-                                    text = "${course.courseNumber} • ${course.name}",
+                                    text = "${course.courseNumber} • ${com.tau.studymate.ui.components.courseLabel(course.name)}",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -456,7 +458,8 @@ private fun HeaderCard(
     pendingCount: Int,
     readingsDone: Int,
     readingsTotal: Int,
-    onOpenProfile: () -> Unit
+    onOpenProfile: () -> Unit,
+    onOpenSettings: () -> Unit
 ) {
     val hour = remember { java.time.LocalTime.now().hour }
     val greeting = stringResource(when (hour) { in 5..11 -> R.string.greeting_morning; in 12..17 -> R.string.greeting_afternoon; else -> R.string.greeting_evening })
@@ -470,6 +473,7 @@ private fun HeaderCard(
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(greeting, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
+            IconButton(onClick = onOpenSettings) { Icon(Icons.Default.Settings, stringResource(R.string.a11y_settings), tint = Color.White) }
             Text(
                 pluralStringResource(R.plurals.streak_days, streakDays, streakDays), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 6.dp)

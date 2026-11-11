@@ -17,13 +17,16 @@ object TauAcademicCalendar {
         val endDate: LocalDate,
         @androidx.annotation.StringRes val kind: Int,
         @androidx.annotation.StringRes val year: Int,
+        /** Year label from the downloaded calendar (e.g. "תשפ״ח" / "2027/28"); built-in periods use [year]. */
+        val yearHe: String? = null,
+        val yearEn: String? = null,
         val datesDisplay: String,
         val isExam: Boolean,
         val isTeachingSemester: Boolean = false
     )
 
-    private val periods = listOf(
-        // shortcut: dates are hardcoded through Sept 2027 (5787); add תשפ"ח before Aug 2027 or the banner falls back to a generic status.
+    private val builtIn = listOf(
+        // Fallback when docs/calendar.json hasn't been downloaded yet. New years go in docs/calendar.json, not here.
         // תשפ"ז (2026-2027) - אוניברסיטת תל אביב
         Period(
             startDate = LocalDate.of(2026, 10, 18),
@@ -102,10 +105,53 @@ object TauAcademicCalendar {
         )
     )
 
+    /**
+     * Periods downloaded from docs/calendar.json (GitHub Pages) win over the built-in table, so new academic
+     * years can be published without an app update. Cached in filesDir; refreshed at most weekly.
+     */
+    @Volatile private var remote: List<Period>? = null
+    private val periods get() = remote ?: builtIn
+    private const val URL = "https://blindka.github.io/TAU-StudyMate/calendar.json"
+    private val KINDS = mapOf("sem_a" to R.string.cal_sem_a, "prep_a" to R.string.cal_prep_a, "exams_a" to R.string.cal_exams_a,
+        "sem_b" to R.string.cal_sem_b, "prep_b" to R.string.cal_prep_b, "exams_b" to R.string.cal_exams_b)
+
+    internal fun parse(json: String): List<Period> {
+        val arr = org.json.JSONObject(json).getJSONArray("periods")
+        val fmt = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")
+        return (0 until arr.length()).map { i ->
+            val o = arr.getJSONObject(i)
+            val start = LocalDate.parse(o.getString("start")); val end = LocalDate.parse(o.getString("end"))
+            Period(start, end, KINDS.getValue(o.getString("kind")), R.string.cal_year_5787,
+                yearHe = o.getString("yearHe"), yearEn = o.getString("yearEn"),
+                datesDisplay = if (start == end) start.format(fmt) else "${start.format(fmt)} – ${end.format(fmt)}",
+                isExam = o.getString("kind").startsWith("exams") || o.getString("kind").startsWith("prep"),
+                isTeachingSemester = o.getString("kind").startsWith("sem"))
+        }
+    }
+
+    /** Loads the cached calendar, then re-downloads it if the cache is a week old. Safe to call on every start. */
+    suspend fun refresh(context: Context) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val cache = java.io.File(context.filesDir, "calendar.json")
+        runCatching { if (cache.exists()) remote = parse(cache.readText()) }
+        if (cache.exists() && System.currentTimeMillis() - cache.lastModified() < 7L * 24 * 60 * 60 * 1000) return@withContext
+        runCatching {
+            val conn = (java.net.URL(URL).openConnection() as java.net.HttpURLConnection).apply { connectTimeout = 10_000; readTimeout = 10_000 }
+            try {
+                if (conn.responseCode == 200) {
+                    val text = conn.inputStream.bufferedReader().use { it.readText() }
+                    remote = parse(text) // validate before caching
+                    cache.writeText(text)
+                }
+            } finally { conn.disconnect() }
+        }
+    }
+
     fun getCurrentStatus(context: Context, date: LocalDate = LocalDate.now()): TauAcademicStatus {
         val p = periods.firstOrNull { !date.isBefore(it.startDate) && !date.isAfter(it.endDate) }
             ?: return TauAcademicStatus(context.getString(R.string.cal_default), isExamPeriod = false)
-        val kind = context.getString(p.kind); val year = context.getString(p.year)
+        val kind = context.getString(p.kind)
+        val hebrew = context.resources.configuration.locales[0].language.let { it == "iw" || it == "he" }
+        val year = (if (hebrew) p.yearHe else p.yearEn) ?: context.getString(p.year)
         val text = if (p.isTeachingSemester) {
             val week = (ChronoUnit.DAYS.between(p.startDate, date) / 7).toInt() + 1
             context.getString(R.string.cal_teaching, kind, year, p.datesDisplay, week)

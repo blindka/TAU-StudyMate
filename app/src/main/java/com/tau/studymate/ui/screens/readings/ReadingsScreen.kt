@@ -47,7 +47,7 @@ fun departmentColors(d: Department?) = when (d) {
 fun CourseChip(course: Course?, modifier: Modifier = Modifier) {
     val (bg, fg) = departmentColors(course?.department)
     Text(
-        course?.name ?: stringResource(R.string.no_course),
+        course?.let { com.tau.studymate.ui.components.courseLabel(it.name) } ?: stringResource(R.string.no_course),
         color = fg, fontSize = 12.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis,
         modifier = modifier.background(bg, RoundedCornerShape(50)).padding(horizontal = 10.dp, vertical = 3.dp)
     )
@@ -109,7 +109,7 @@ fun ReadingsScreen(viewModel: ReadingsViewModel, onOpen: (Reading) -> Unit, modi
             if (weekCourses.size > 1) item {
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     item { FilterChip(selected = filter == null, onClick = { viewModel.setCourseFilter(null) }, label = { Text(stringResource(R.string.filter_all)) }) }
-                    items(weekCourses) { c -> FilterChip(selected = filter == c.id, onClick = { viewModel.setCourseFilter(c.id) }, label = { Text(c.name, maxLines = 1) }) }
+                    items(weekCourses) { c -> FilterChip(selected = filter == c.id, onClick = { viewModel.setCourseFilter(c.id) }, label = { Text(com.tau.studymate.ui.components.courseLabel(c.name), maxLines = 1) }) }
                 }
             }
             if (all.size > 3) item {
@@ -207,12 +207,12 @@ private fun AddReadingDialog(courses: List<Course>, week: LocalDate, onDismiss: 
                 Text(stringResource(R.string.add_readings_hint), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = it }) {
                     OutlinedTextField(
-                        value = courses.find { it.id == courseId }?.name ?: stringResource(R.string.no_course), onValueChange = {}, readOnly = true,
+                        value = courses.find { it.id == courseId }?.let { com.tau.studymate.ui.components.courseLabel(it.name) } ?: stringResource(R.string.no_course), onValueChange = {}, readOnly = true,
                         label = { Text(stringResource(R.string.course_label)) }, trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
                         modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth()
                     )
                     ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        (courses.map { it.id to it.name } + (null to stringResource(R.string.no_course))).forEach { (id, name) ->
+                        (courses.map { it.id to com.tau.studymate.ui.components.courseLabel(it.name) } + (null to stringResource(R.string.no_course))).forEach { (id, name) ->
                             DropdownMenuItem(text = { Text(name) }, onClick = { courseId = id; expanded = false })
                         }
                     }

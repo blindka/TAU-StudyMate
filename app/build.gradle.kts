@@ -1,4 +1,4 @@
-val appVersion = "0.3.0"
+val appVersion = "0.4.0"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -114,6 +114,10 @@ dependencies {
     implementation(libs.androidx.pdf.document.service)
     implementation(libs.kotlinx.serialization.core)
     testImplementation(libs.junit)
+    testImplementation(libs.org.json)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)

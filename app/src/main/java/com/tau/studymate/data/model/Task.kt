@@ -33,5 +33,8 @@ data class Task(
     @androidx.room.ColumnInfo(defaultValue = "1")
     val reminderEnabled: Boolean = true,
     /** Moodle calendar event UID, so a changed deadline updates the task instead of duplicating it. */
-    val externalId: String? = null
+    val externalId: String? = null,
+    /** When checked off, a copy is created for the same time next week. */
+    @androidx.room.ColumnInfo(defaultValue = "0")
+    val repeatWeekly: Boolean = false
 )

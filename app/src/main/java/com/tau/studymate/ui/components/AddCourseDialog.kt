@@ -29,7 +29,8 @@ fun AddCourseDialog(
         department: Department,
         lecturer: String,
         semester: String,
-        credits: Float
+        credits: Float,
+        grade: Float?
     ) -> Unit
 ) {
     var courseNumber by remember { mutableStateOf(initial?.courseNumber ?: "") }
@@ -38,6 +39,10 @@ fun AddCourseDialog(
     var lecturer by remember { mutableStateOf(initial?.lecturer ?: "") }
     var semester by remember { mutableStateOf(initial?.semester ?: defaultSemester) }
     var credits by remember { mutableStateOf((initial?.credits ?: 4.0f).toString()) }
+    var grade by remember { mutableStateOf(initial?.grade?.let { if (it % 1f == 0f) it.toInt().toString() else it.toString() } ?: "") }
+    // Empty = no grade yet; otherwise must be 0–100
+    val gradeValue = grade.trim().replace(',', '.').toFloatOrNull()?.takeIf { it in 0f..100f }
+    val gradeInvalid = grade.isNotBlank() && gradeValue == null
     // Hebrew keyboards type "4,5"; accept it. Reject nonsense instead of silently saving 2.0
     val creditsValue = credits.trim().replace(',', '.').toFloatOrNull()?.takeIf { it > 0f && it <= 30f }
     val duplicate = courseNumber.trim() in existingNumbers && courseNumber.trim() != initial?.courseNumber
@@ -147,6 +152,16 @@ fun AddCourseDialog(
                     )
                 }
 
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = grade, onValueChange = { grade = it },
+                    label = { Text(stringResource(R.string.grade_label)) },
+                    modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(12.dp), singleLine = true,
+                    isError = gradeInvalid,
+                    supportingText = if (gradeInvalid) { { Text(stringResource(R.string.grade_invalid)) } } else null,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Decimal)
+                )
+
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Row(
@@ -159,18 +174,19 @@ fun AddCourseDialog(
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(
                         onClick = {
-                            if (name.isNotBlank() && courseNumber.isNotBlank() && !duplicate && creditsValue != null) {
+                            if (name.isNotBlank() && courseNumber.isNotBlank() && !duplicate && creditsValue != null && !gradeInvalid) {
                                 onConfirm(
                                     courseNumber.trim(),
                                     name.trim(),
                                     department,
                                     lecturer.trim(),
                                     semester.trim(),
-                                    creditsValue
+                                    creditsValue,
+                                    gradeValue
                                 )
                             }
                         },
-                        enabled = name.isNotBlank() && courseNumber.isNotBlank() && !duplicate && creditsValue != null,
+                        enabled = name.isNotBlank() && courseNumber.isNotBlank() && !duplicate && creditsValue != null && !gradeInvalid,
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))

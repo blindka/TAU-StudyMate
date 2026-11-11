@@ -14,7 +14,7 @@ import com.tau.studymate.data.model.Task
 
 @Database(
     entities = [Course::class, Task::class, StudyMaterial::class, StudySession::class, Reading::class],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -47,6 +47,15 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        internal val MIGRATION_4_5 = object : androidx.room.migration.Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN repeatWeekly INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE courses ADD COLUMN grade REAL")
+                db.execSQL("ALTER TABLE readings ADD COLUMN notes TEXT")
+                db.execSQL("ALTER TABLE readings ADD COLUMN bookmarks TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -57,7 +66,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "tau_study_mate_db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .build()
                 INSTANCE = instance
                 instance

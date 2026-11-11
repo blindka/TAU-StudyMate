@@ -41,10 +41,13 @@ object MoodleSync {
     /** Daily sync on any network; a no-op until the user has synced once (no saved link). */
     fun schedule(context: Context) {
         if (savedUrl(context).isBlank()) return
+        if (!context.appPrefs().getBoolean("moodle_daily_sync", true)) {
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME); return
+        }
         val request = PeriodicWorkRequestBuilder<Worker>(1, TimeUnit.DAYS)
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .build()
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork("moodle_daily_sync", ExistingPeriodicWorkPolicy.KEEP, request)
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
     }
 
     class Worker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -62,4 +65,5 @@ object MoodleSync {
     }
 
     private const val KEY_URL = "moodle_feed_url"
+    private const val WORK_NAME = "moodle_daily_sync"
 }

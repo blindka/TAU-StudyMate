@@ -64,4 +64,19 @@ class CoreLogicTest {
         assertEquals("סמסטר ב'", cal.getCurrentSemesterName(LocalDate.of(2027, 4, 1)))
         assertEquals("סמסטר ב'", cal.getCurrentSemesterName(LocalDate.of(2027, 7, 20))) // B exams, not summer
     }
+
+    @Test fun weightedAverageUsesCredits() {
+        val c = { g: Float?, cr: Float -> com.tau.studymate.data.model.Course(courseNumber = "1", name = "x", department = com.tau.studymate.data.model.Department.GENERAL, credits = cr, grade = g) }
+        val (avg, credits) = com.tau.studymate.ui.screens.courses.weightedAverage(listOf(c(90f, 4f), c(70f, 2f), c(null, 3f)))!!
+        assertEquals(83.33f, avg, 0.01f) // (90*4 + 70*2) / 6
+        assertEquals(6f, credits, 0f)
+        assertEquals(null, com.tau.studymate.ui.screens.courses.weightedAverage(listOf(c(null, 3f))))
+    }
+
+    @Test fun calendarJsonParses() {
+        val json = java.io.File("../docs/calendar.json").readText()
+        val periods = com.tau.studymate.util.TauAcademicCalendar.parse(json)
+        assertEquals(10, periods.size)
+        assertEquals(true, periods.first { it.yearEn == "2026/27" }.isTeachingSemester)
+    }
 }

@@ -68,7 +68,7 @@ fun CourseDetailScreen(
                 title = {
                     Column {
                         Text(
-                            text = "${course.courseNumber} - ${course.name}",
+                            text = "${course.courseNumber} - ${com.tau.studymate.ui.components.courseLabel(course.name)}",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             maxLines = 1
                         )

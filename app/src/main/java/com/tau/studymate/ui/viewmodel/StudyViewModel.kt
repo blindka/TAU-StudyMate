@@ -202,6 +202,13 @@ class StudyViewModel(
     fun toggleTaskCompletion(task: Task) {
         viewModelScope.launch {
             val newlyCompleted = repository.toggleTaskCompletion(task)
+            if (newlyCompleted && task.repeatWeekly) {
+                // Recurring task: next week's copy appears as soon as this one is done
+                val next = task.copy(id = 0, dueDate = task.dueDate + 7L * 24 * 60 * 60 * 1000, isCompleted = false,
+                    completedAt = null, actualMinutes = 0, externalId = null)
+                val id = repository.insertTask(next)
+                TaskNotificationScheduler.scheduleTask(getApplication(), next.copy(id = id), task.courseId?.let { repository.getCourseById(it)?.name })
+            }
             if (newlyCompleted) {
                 // נגן צליל הצלחה
                 SoundManager.playTaskCompletedSound(getApplication())
@@ -212,7 +219,7 @@ class StudyViewModel(
                 // Celebrate only the first completion of the day; a popup on every ✓ gets tiresome
                 val today = java.time.LocalDate.now().toString()
                 val prefs = getApplication<Application>().appPrefs()
-                if (prefs.getString("last_celebration_day", null) == today) return@launch
+                if (!prefs.getBoolean("celebrations_enabled", true) || prefs.getString("last_celebration_day", null) == today) return@launch
                 prefs.edit { putString("last_celebration_day", today) }
                 val randomQuote = getApplication<Application>().getString(rewardQuotes.random())
                 _celebrationReward.value = CelebrationReward(
@@ -226,6 +233,14 @@ class StudyViewModel(
                 val courseName = task.courseId?.let { repository.getCourseById(it)?.name }
                 TaskNotificationScheduler.scheduleTask(getApplication(), task.copy(isCompleted = false), courseName)
             }
+        }
+    }
+
+    /** Re-plans alarms for all open tasks (after the reminder times change in Settings). */
+    fun rescheduleAllReminders() {
+        viewModelScope.launch {
+            val names = repository.allCourses.first().associate { it.id to it.name }
+            repository.pendingTasks.first().forEach { TaskNotificationScheduler.scheduleTask(getApplication(), it, it.courseId?.let(names::get)) }
         }
     }
 
@@ -269,7 +284,8 @@ class StudyViewModel(
         department: Department,
         priority: Priority,
         estimatedMinutes: Int,
-        enableReminder: Boolean = true
+        enableReminder: Boolean = true,
+        repeatWeekly: Boolean = false
     ) {
         viewModelScope.launch {
             val task = Task(
@@ -280,7 +296,8 @@ class StudyViewModel(
                 department = department,
                 priority = priority,
                 estimatedMinutes = estimatedMinutes,
-                reminderEnabled = enableReminder
+                reminderEnabled = enableReminder,
+                repeatWeekly = repeatWeekly
             )
             val insertedId = repository.insertTask(task)
             val course = courseId?.let { repository.getCourseById(it) }
@@ -372,10 +389,12 @@ class StudyViewModel(
         department: Department,
         lecturer: String,
         semester: String,
-        credits: Float
+        credits: Float,
+        grade: Float? = null
     ) {
         viewModelScope.launch {
             val course = Course(
+                grade = grade,
                 courseNumber = courseNumber,
                 name = name,
                 department = department,

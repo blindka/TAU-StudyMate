@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.screens.tasks
 
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.tau.studymate.R
 import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
@@ -79,6 +81,8 @@ fun TasksScreen(
     val undoLabel = stringResource(R.string.undo)
     val requestNotifications = com.tau.studymate.ui.components.rememberNotificationPermissionRequest()
     var editing by remember { mutableStateOf<Task?>(null) }
+    var calendarMode by rememberSaveable { mutableStateOf(false) }
+    var selectedDay by remember { mutableStateOf(java.time.LocalDate.now()) }
     val allTasks by viewModel.allTasks.collectAsState()
     LaunchedEffect(openTaskId, allTasks) {
         if (openTaskId != null) allTasks.find { it.id == openTaskId }?.let { editing = it; onOpenTaskHandled() }
@@ -103,10 +107,28 @@ fun TasksScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            Text(
-                stringResource(R.string.tasks_title), fontSize = 24.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp)
-            )
+            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.tasks_title), fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                IconButton(onClick = { calendarMode = !calendarMode }) {
+                    Icon(
+                        if (calendarMode) Icons.AutoMirrored.Filled.List else Icons.Default.CalendarMonth,
+                        stringResource(if (calendarMode) R.string.a11y_list_view else R.string.a11y_calendar_view)
+                    )
+                }
+            }
+            if (calendarMode) {
+                // Month view: dots show busy days; the list below shows the selected day
+                val zone = java.time.ZoneId.systemDefault()
+                val dayTasks = allTasks.filter { java.time.Instant.ofEpochMilli(it.dueDate).atZone(zone).toLocalDate() == selectedDay }
+                LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    item { com.tau.studymate.ui.components.TaskCalendar(allTasks, selectedDay, onSelect = { selectedDay = it }) }
+                    if (dayTasks.isEmpty()) item { Text(stringResource(R.string.calendar_day_empty), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp)) }
+                    items(dayTasks, key = { it.id }) { task ->
+                        com.tau.studymate.ui.components.TaskRowCard(task = task, course = courseMap[task.courseId], onToggle = { viewModel.toggleTaskCompletion(task) }, onClick = { editing = task })
+                    }
+                }
+                return@Column
+            }
             // Search & Pastel Export / Alert Buttons
             Row(
                 modifier = Modifier
@@ -302,7 +324,7 @@ fun TasksScreen(
         AddTaskDialog(
             courses = courses,
             onDismiss = { showAddTaskDialog = false },
-            onConfirm = { title, desc, dueDate, courseId, dept, priority, estimatedMins, enableReminder ->
+            onConfirm = { title, desc, dueDate, courseId, dept, priority, estimatedMins, enableReminder, repeatWeekly ->
                 viewModel.addTask(
                     title = title,
                     description = desc,
@@ -311,7 +333,8 @@ fun TasksScreen(
                     department = dept,
                     priority = priority,
                     estimatedMinutes = estimatedMins,
-                    enableReminder = enableReminder
+                    enableReminder = enableReminder,
+                    repeatWeekly = repeatWeekly
                 )
                 if (enableReminder) requestNotifications()
                 showAddTaskDialog = false
@@ -324,8 +347,8 @@ fun TasksScreen(
             courses = courses,
             initial = task,
             onDismiss = { editing = null },
-            onConfirm = { title, desc, dueDate, courseId, dept, priority, estimatedMins, enableReminder ->
-                viewModel.updateTask(task.copy(title = title, description = desc, dueDate = dueDate, courseId = courseId,
+            onConfirm = { title, desc, dueDate, courseId, dept, priority, estimatedMins, enableReminder, repeatWeekly ->
+                viewModel.updateTask(task.copy(repeatWeekly = repeatWeekly, title = title, description = desc, dueDate = dueDate, courseId = courseId,
                     department = dept, priority = priority, estimatedMinutes = estimatedMins, reminderEnabled = enableReminder))
                 editing = null
             }

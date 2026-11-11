@@ -45,13 +45,14 @@ fun CoursesScreen(
     val openTaskCounts by viewModel.openTaskCountByCourse.collectAsState()
     var courseToDelete by remember { mutableStateOf<Course?>(null) }
     var courseToEdit by remember { mutableStateOf<Course?>(null) }
+    val gpa = remember(courses) { weightedAverage(courses) }
     courseToEdit?.let { course ->
         AddCourseDialog(
             existingNumbers = courses.map { it.courseNumber }.toSet(),
             initial = course,
             onDismiss = { courseToEdit = null },
-            onConfirm = { number, name, dept, lecturer, semester, credits ->
-                viewModel.updateCourse(course.copy(courseNumber = number, name = name, department = dept, lecturer = lecturer, semester = semester, credits = credits))
+            onConfirm = { number, name, dept, lecturer, semester, credits, grade ->
+                viewModel.updateCourse(course.copy(courseNumber = number, name = name, department = dept, lecturer = lecturer, semester = semester, credits = credits, grade = grade))
                 courseToEdit = null
             }
         )
@@ -60,7 +61,7 @@ fun CoursesScreen(
         AlertDialog(
             onDismissRequest = { courseToDelete = null },
             title = { Text(stringResource(R.string.course_delete_title)) },
-            text = { Text(stringResource(R.string.course_delete_body, course.name)) },
+            text = { Text(stringResource(R.string.course_delete_body, com.tau.studymate.ui.components.courseLabel(course.name))) },
             confirmButton = { TextButton(onClick = { viewModel.deleteCourse(course); courseToDelete = null }) { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) } },
             dismissButton = { TextButton(onClick = { courseToDelete = null }) { Text(stringResource(R.string.cancel)) } }
         )
@@ -191,10 +192,15 @@ fun CoursesScreen(
                         text = stringResource(R.string.courses_degree_line, com.tau.studymate.ui.components.degreeLabel(academicProfile.degreeName), com.tau.studymate.ui.components.profileLabel(academicProfile.year), com.tau.studymate.ui.components.profileLabel(academicProfile.semester)),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = TauPurpleDark
+                        color = TauPurpleDark,
+                        // Takes the remaining width and ellipsizes, so the button never gets squeezed
+                        maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
+                    Spacer(Modifier.width(8.dp))
                     Text(
                         text = stringResource(R.string.courses_switch_degree),
+                        maxLines = 1, softWrap = false,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         color = TauPurplePrimary
@@ -262,6 +268,16 @@ fun CoursesScreen(
                     contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    gpa?.let { (avg, credits) ->
+                        item {
+                            Surface(shape = RoundedCornerShape(16.dp), color = PastelLavender, modifier = Modifier.fillMaxWidth()) {
+                                Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(stringResource(R.string.gpa_title), fontWeight = FontWeight.Bold, color = PastelLavenderDeep, modifier = Modifier.weight(1f))
+                                    Text(stringResource(R.string.gpa_value, avg, credits.toString()), color = PastelLavenderDeep)
+                                }
+                            }
+                        }
+                    }
                     items(filteredCourses, key = { it.id }) { course ->
                         CourseCard(
                             course = course,
@@ -280,14 +296,15 @@ fun CoursesScreen(
         AddCourseDialog(
             existingNumbers = courses.map { it.courseNumber }.toSet(),
             onDismiss = { showAddCourseDialog = false },
-            onConfirm = { courseNumber, name, dept, lecturer, semester, credits ->
+            onConfirm = { courseNumber, name, dept, lecturer, semester, credits, grade ->
                 viewModel.addCourse(
                     courseNumber = courseNumber,
                     name = name,
                     department = dept,
                     lecturer = lecturer,
                     semester = semester,
-                    credits = credits
+                    credits = credits,
+                    grade = grade
                 )
                 showAddCourseDialog = false
             }
@@ -365,7 +382,7 @@ private fun CourseCard(
                     Icon(Icons.Default.DeleteOutline, stringResource(R.string.a11y_delete_course), tint = MaterialTheme.colorScheme.outline, modifier = Modifier.size(18.dp))
                 }
             }
-            Text(course.name, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text(com.tau.studymate.ui.components.courseLabel(course.name), fontSize = 17.sp, fontWeight = FontWeight.Bold)
             Text(
                 listOfNotNull(course.lecturer.takeIf { it.isNotBlank() }, com.tau.studymate.ui.components.profileLabel(course.semester), stringResource(R.string.credits_short, course.credits.toString())).joinToString(" · "),
                 fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -376,6 +393,13 @@ private fun CourseCard(
                     color = PastelLavenderDeep, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.background(PastelLavender, RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 5.dp)
                 )
+                course.grade?.let { g ->
+                    Text(
+                        stringResource(R.string.grade_chip, if (g % 1f == 0f) g.toInt().toString() else g.toString()),
+                        color = PastelMintDark, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.background(PastelMint, RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 5.dp)
+                    )
+                }
                 Text(
                     stringResource(R.string.course_materials_pill), color = chipFg, fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.background(chipBg, RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 5.dp)
@@ -383,4 +407,12 @@ private fun CourseCard(
             }
         }
     }
+}
+
+/** Credit-weighted average of graded courses, and the credits it covers; null when nothing is graded. */
+internal fun weightedAverage(courses: List<Course>): Pair<Float, Float>? {
+    val graded = courses.filter { it.grade != null && it.credits > 0f }
+    val credits = graded.sumOf { it.credits.toDouble() }.toFloat()
+    if (credits == 0f) return null
+    return (graded.sumOf { (it.grade!! * it.credits).toDouble() } / credits).toFloat() to credits
 }

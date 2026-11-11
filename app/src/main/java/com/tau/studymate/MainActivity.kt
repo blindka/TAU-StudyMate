@@ -91,6 +91,11 @@ fun MainAppContent(
 ) {
     var currentRoute by remember { mutableStateOf(NavScreen.Home.route) }
     var openReadingId by remember { mutableStateOf<Long?>(null) }
+    var showSettings by remember { mutableStateOf(false) }
+    if (showSettings) {
+        com.tau.studymate.ui.screens.settings.SettingsScreen(onBack = { showSettings = false }, onRemindersChanged = viewModel::rescheduleAllReminders)
+        return
+    }
     LaunchedEffect(openTaskId.value) { if (openTaskId.value != null) currentRoute = NavScreen.Tasks.route }
     openReadingId?.let { id ->
         com.tau.studymate.ui.screens.readings.ReaderScreen(id, readingsViewModel, onBack = { openReadingId = null })
@@ -133,6 +138,7 @@ fun MainAppContent(
                         onNavigateToCourses = { currentRoute = NavScreen.Courses.route },
                         onNavigateToHabits = { currentRoute = NavScreen.Habits.route },
                         weekReadings = readingsViewModel.currentWeek.collectAsState().value,
+                        onOpenSettings = { showSettings = true },
                         modifier = Modifier.padding(paddingValues)
                     )
                     NavScreen.Tasks.route -> TasksScreen(

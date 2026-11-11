@@ -138,7 +138,7 @@ fun HabitsAnalyticsScreen(
                     ) {
                         val current = courses.find { it.id == selectedCourseId }
                         OutlinedTextField(
-                            value = current?.let { "${it.courseNumber} - ${it.name}" } ?: stringResource(R.string.choose_course),
+                            value = current?.let { "${it.courseNumber} - ${com.tau.studymate.ui.components.courseLabel(it.name)}" } ?: stringResource(R.string.choose_course),
                             onValueChange = {},
                             readOnly = true,
                             label = { Text(stringResource(R.string.studying_for)) },
@@ -160,7 +160,7 @@ fun HabitsAnalyticsScreen(
                         ) {
                             courses.forEach { course ->
                                 DropdownMenuItem(
-                                    text = { Text("${course.courseNumber} - ${course.name}") },
+                                    text = { Text("${course.courseNumber} - ${com.tau.studymate.ui.components.courseLabel(course.name)}") },
                                     onClick = {
                                         selectedCourseId = course.id
                                         expandedCourseDropdown = false

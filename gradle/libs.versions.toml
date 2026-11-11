@@ -13,6 +13,7 @@ mlkitGenaiPrompt = "1.0.0-beta5"
 mlkitTranslate = "17.0.3"
 serialization = "1.13.0"
 junit = "4.13.2"
+orgJson = "20240303"
 work = "2.12.0"
 glance = "1.2.0"
 benchmark = "1.5.0"
@@ -63,6 +64,10 @@ androidx-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomato
 
 # Tests
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+# Real org.json for JVM unit tests (Android's copy is a stub off-device)
+org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
