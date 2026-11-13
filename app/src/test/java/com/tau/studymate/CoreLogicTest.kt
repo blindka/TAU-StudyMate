@@ -79,4 +79,21 @@ class CoreLogicTest {
         assertEquals(10, periods.size)
         assertEquals(true, periods.first { it.yearEn == "2026/27" }.isTeachingSemester)
     }
+
+    @Test fun courseShareRoundTripDropsPrivateData() {
+        val m = com.tau.studymate.data.model.Department.COMMUNICATION
+        val course = com.tau.studymate.data.model.Course(id = 9, courseNumber = "1082.1100", name = "Mass Comm", department = m, credits = 4f, grade = 95f, examA = 123L)
+        val open = com.tau.studymate.data.model.Task(id = 1, title = "Essay", dueDate = 500, courseId = 9, repeatWeekly = true)
+        val done = open.copy(id = 2, title = "Old", isCompleted = true)
+        val slot = com.tau.studymate.data.model.ClassSlot(courseId = 9, dayOfWeek = 7, startMinute = 600, endMinute = 720, room = "144")
+        val json = com.tau.studymate.util.CourseShare.toJson(com.tau.studymate.util.CourseShare.Bundle(course, listOf(open, done), emptyList(), listOf(slot)))
+        val back = com.tau.studymate.util.CourseShare.fromJson(json)
+        assertEquals("1082.1100", back.course.courseNumber)
+        assertEquals(null, back.course.grade)          // grades stay private
+        assertEquals(123L, back.course.examA)
+        assertEquals(listOf("Essay"), back.tasks.map { it.title }) // completed tasks aren't shared
+        assertEquals(true, back.tasks[0].repeatWeekly)
+        assertEquals(600, back.slots[0].startMinute)
+        assertEquals(true, runCatching { com.tau.studymate.util.CourseShare.fromJson("{}") }.isFailure)
+    }
 }

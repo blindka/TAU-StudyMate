@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.screens.courses
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.BorderStroke
@@ -130,6 +131,15 @@ fun CoursesScreen(
                     singleLine = true
                 )
 
+                // Import a course file a classmate shared
+                val importCtx = androidx.compose.ui.platform.LocalContext.current
+                val importLauncher = rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+                    if (uri != null) viewModel.importCourse(uri) { msg -> android.widget.Toast.makeText(importCtx, msg, android.widget.Toast.LENGTH_LONG).show() }
+                }
+                IconButton(onClick = { importLauncher.launch(arrayOf("application/json", "application/octet-stream", "text/plain")) }) {
+                    Icon(Icons.Default.FileDownload, stringResource(R.string.a11y_import_course), tint = TauPurplePrimary)
+                }
+
                 // Quick Schedule Button
                 IconButton(
                     onClick = {
@@ -181,6 +191,7 @@ fun CoursesScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
+                    .heightIn(min = 48.dp) // minimum touch target
                     .clickable { showProfileDialog = true }
             ) {
                 Row(
@@ -211,19 +222,20 @@ fun CoursesScreen(
             Spacer(modifier = Modifier.height(4.dp))
 
             // Department Filters
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+            // Wraps instead of scrolling sideways: no chip is ever half off-screen (accessibility check)
+            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+            FlowRow(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                item {
+                run {
                     FilterChip(
                         selected = selectedDept == null,
                         onClick = { selectedDept = null },
                         label = { Text(stringResource(R.string.courses_all, courses.size)) }
                     )
                 }
-                items(Department.entries) { dept ->
+                Department.entries.forEach { dept ->
                     val count = courses.count { it.department == dept }
                     FilterChip(
                         selected = selectedDept == dept,

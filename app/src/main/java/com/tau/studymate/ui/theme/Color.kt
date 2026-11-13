@@ -65,3 +65,11 @@ val LaborGreen = PastelMintDark
 val SuccessGold = PastelButterDark
 val UrgentRed = PastelCoralDark
 val TauBluePrimary = PastelLavenderDeep
+
+/**
+ * Pastel tile colors for the current theme. Light: pastel background + dark text.
+ * Dark: a faint tint of the pastel + the pastel itself as text (readable, not glaring).
+ */
+@androidx.compose.runtime.Composable
+fun pastel(bg: Color, fg: Color): Pair<Color, Color> =
+    if (androidx.compose.foundation.isSystemInDarkTheme()) bg.copy(alpha = 0.16f) to bg else bg to fg

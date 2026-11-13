@@ -8,6 +8,7 @@
     <string name="a11y_bookmark">סימון העמוד</string>
     <string name="a11y_calendar_view">תצוגת לוח שנה</string>
     <string name="a11y_clear">נקה</string>
+    <string name="a11y_clear_date">ניקוי תאריך</string>
     <string name="a11y_delete">מחק</string>
     <string name="a11y_delete_course">מחק קורס</string>
     <string name="a11y_delete_task">מחק מטלה</string>
@@ -16,6 +17,7 @@
     <string name="a11y_edit_course">עריכת קורס</string>
     <string name="a11y_edit_profile">עריכת פרופיל</string>
     <string name="a11y_export">ייצוא</string>
+    <string name="a11y_import_course">ייבוא קורס ששותף</string>
     <string name="a11y_list_view">תצוגת רשימה</string>
     <string name="a11y_mark_read">סימון %1$s כנקרא</string>
     <string name="a11y_mark_task_done">סימון %1$s כהושלמה</string>
@@ -30,6 +32,7 @@
     <string name="a11y_schedule_image">תמונת מערכת שעות</string>
     <string name="a11y_semester_switch">מעבר סמסטר</string>
     <string name="a11y_settings">הגדרות</string>
+    <string name="a11y_share_course">שיתוף הקורס עם חברים</string>
     <string name="a11y_switch_degree">החלפת תואר ומערכת שעות</string>
     <string name="a11y_sync_moodle">סנכרן ממודל</string>
     <string name="a11y_test_notification">בדיקת התראה</string>
@@ -39,6 +42,7 @@
     <string name="action_moodle">סנכרון Moodle</string>
     <string name="action_schedule">מערכת שעות</string>
     <string name="add">הוסף</string>
+    <string name="add_class">+ הוספת שעת שיעור</string>
     <string name="add_course_button">הוסף קורס</string>
     <string name="add_pdf">הוספת PDF</string>
     <string name="add_readings_hint">אפשר לבחור כמה קבצי PDF בבת אחת. מצגות צריך לשמור קודם כ-PDF.</string>
@@ -82,6 +86,10 @@
     <string name="check_internet_for_model">בדוק חיבור לאינטרנט להורדת המודל</string>
     <string name="choose_course">בחר קורס ללמידה</string>
     <string name="choose_files">בחירת קבצים</string>
+    <string name="class_day">יום</string>
+    <string name="class_end">מסתיים %1$s</string>
+    <string name="class_room">חדר (לא חובה)</string>
+    <string name="class_start">מתחיל %1$s</string>
     <string name="close">סגור</string>
     <string name="consistency_none">עוד לא היו סשנים של למידה השבוע. סשן קצר של 25 דקות הוא התחלה מצוינת.</string>
     <string name="consistency_streak">%1$d ימים ברצף של למידה, ו-%2$d סשנים (%3$d דק׳) בשבוע האחרון. המשך/י כך!</string>
@@ -155,6 +163,11 @@
     <string name="err_write_file">לא ניתן לכתוב את הקובץ</string>
     <string name="estimate_label">הערכת זמן ביצוע בדקות (להרגלי למידה)</string>
     <string name="exact_alarm_link">להפעלת תזכורות בזמן המדויק ←</string>
+    <string name="exam_a">מועד א\'</string>
+    <string name="exam_b">מועד ב\'</string>
+    <string name="exam_not_set">לא נקבע</string>
+    <string name="exam_today">היום!</string>
+    <string name="exams_title">מבחנים</string>
     <string name="export_created">נוצר בתאריך: %1$s</string>
     <string name="export_details">   פירוט: %1$s</string>
     <string name="export_dialog_hint">ניתן לשתף את הדוח בוואטסאפ, במייל או להעתיק ללוח:</string>
@@ -188,14 +201,27 @@
     <string name="home_missing_title">תזכורת: מה חסר לי להשלים? (%1$d)</string>
     <string name="home_no_open">אין מטלות פתוחות כרגע! זמן מצוין לנוח ☕</string>
     <string name="home_readings_progress">נקראו %1$d מתוך %2$d מאמרים השבוע</string>
+    <string name="home_today_classes">השיעורים של היום</string>
     <string name="home_upcoming">מטלות קרובות להגשה</string>
+    <string name="home_upcoming_exams">מבחנים קרובים</string>
     <string name="hours_decimal">%1$.1f שעות</string>
+    <string name="import_course_done">יובא \"%1$s\": %2$d מטלות, %3$d חומרים, %4$d שעות שיעור</string>
+    <string name="import_course_failed">זה לא קובץ קורס של StudyMate</string>
     <string name="import_failed">שגיאה בייבוא קובץ</string>
     <string name="insight_consistency_title">עקביות ותדירות שימוש</string>
     <string name="insight_tip_body">שילוב הפסקה של 5 דקות בין סשנים של פומודורו הוכח כמסייע להטמעת חומר הלימוד בזיכרון לטווח ארוך ולמניעת עייפות.</string>
     <string name="insight_tip_title">טיפ לפוקוס ורענון מחשבתי</string>
     <string name="insight_velocity_title">מדד דיוק הערכת זמן (Velocity)</string>
     <string name="insights_title">תובנות הרגלי למידה מותאמות אישית 📊</string>
+    <string name="intro_1_body">קורסים, מטלות, מאמרים ומבחנים – מסודרים לפי שבוע וסמסטר.</string>
+    <string name="intro_1_title">כל הלימודים במקום אחד</string>
+    <string name="intro_2_body">Moodle מסנכרן את מועדי ההגשה אוטומטית, והתזכורות מגיעות מתי שבחרת.</string>
+    <string name="intro_2_title">לא מפספסים הגשה</string>
+    <string name="intro_3_body">פותחים PDF בתוך האפליקציה, רושמים הערות ולומדים עם טיימר הפוקוס.</string>
+    <string name="intro_3_title">קוראים ומתרכזים</string>
+    <string name="intro_next">הבא</string>
+    <string name="intro_skip">דלג</string>
+    <string name="intro_start">בואו נתחיל</string>
     <string name="invite_chooser">הזמנת בודקים</string>
     <string name="invite_message">הצטרפו לגרסת הבדיקה של StudyMate (מנהל לימודים לסטודנטים). 1) נרשמים בקישור: %1$s  2) מתקינים מ-Google Play ומשאירים מותקן 14 יום. תודה!</string>
     <string name="invite_testers">הזמנת חברים לבדוק את האפליקציה 🤝</string>
@@ -250,6 +276,7 @@
     <string name="nav_home">היום שלי</string>
     <string name="nav_readings">קריאה</string>
     <string name="nav_tasks">מטלות</string>
+    <string name="no_classes">עוד לא הוזנו שעות שיעור</string>
     <string name="no_course">ללא קורס</string>
     <string name="no_text_in_pdf">לא ניתן לחלץ טקסט מהקובץ (קובץ סרוק, או Android 8).</string>
     <string name="not_a_link">זה לא נראה כמו קישור</string>
@@ -325,6 +352,7 @@
     <string name="settings_title">הגדרות</string>
     <string name="settings_version">גרסה %1$s</string>
     <string name="share">שתף</string>
+    <string name="share_course_chooser">שיתוף קורס</string>
     <string name="share_report">שתף דוח לימודים</string>
     <string name="single_major">תואר חד-חוגי</string>
     <string name="start_studying">התחל למידה</string>
@@ -355,6 +383,7 @@
     <string name="tab_materials">סיכומים וחומרים</string>
     <string name="tab_notes">הערות 📝</string>
     <string name="tab_recordings">הקלטות וקישורים</string>
+    <string name="tab_schedule">מבחנים ומערכת</string>
     <string name="tab_summary">סיכום ✨</string>
     <string name="tab_translation">תרגום 🌐</string>
     <string name="take_photo">צלם תמונה 📸</string>
@@ -395,7 +424,10 @@
     <string name="week_of">שבוע של %1$s</string>
     <string name="week_progress">%1$s – %2$s · %3$d מתוך %4$d הושלמו</string>
     <string name="week_range">שבוע %1$s – %2$s</string>
+    <string name="weekly_classes">שיעורים שבועיים</string>
+    <string name="widget_class">🕘 %1$s %2$s</string>
     <string name="widget_description">הגשות קרובות ומאמרים לשבוע</string>
+    <string name="widget_next_exam">📝 %1$s %2$s</string>
     <string name="widget_no_deadlines">אין הגשות קרובות 🎉</string>
     <string name="widget_readings">📄 %1$d מתוך %2$d מאמרים השבוע</string>
     <string name="x_of_y">%1$d מתוך %2$d</string>
@@ -434,6 +466,12 @@
         <item quantity="two">✅ שתי מטלות פתוחות</item>
         <item quantity="many">✅ %1$d מטלות פתוחות</item>
         <item quantity="other">✅ %1$d מטלות פתוחות</item>
+    </plurals>
+    <plurals name="exam_in_days">
+        <item quantity="one">מחר</item>
+        <item quantity="two">בעוד יומיים</item>
+        <item quantity="many">בעוד %1$d ימים</item>
+        <item quantity="other">בעוד %1$d ימים</item>
     </plurals>
     <plurals name="headline_readings">
         <item quantity="one">מאמר אחד פתוח</item>

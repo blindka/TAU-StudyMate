@@ -21,7 +21,8 @@ class StudyMateApp : Application() {
         @OptIn(kotlinx.coroutines.FlowPreview::class)
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default).launch {
             kotlinx.coroutines.flow.combine(repository.allTasks, database.readingDao().getForWeek(
-                com.tau.studymate.ui.viewmodel.weekStartOf(java.time.LocalDate.now()).toEpochDay())) { _, _ -> }
+                com.tau.studymate.ui.viewmodel.weekStartOf(java.time.LocalDate.now()).toEpochDay()),
+                repository.allCourses, database.classSlotDao().getAll()) { _, _, _, _ -> }
                 .drop(1).debounce(1000)
                 .collect { com.tau.studymate.widget.UpcomingWidget.refresh(this@StudyMateApp) }
         }

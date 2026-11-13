@@ -73,10 +73,11 @@ fun TaskRowCard(task: Task, course: Course?, onToggle: () -> Unit, showDescripti
                 }
             }
             Spacer(Modifier.width(10.dp))
+            val (pillBg, pillFg) = if (urgent) pastel(PastelCoral, PastelCoralDark) else pastel(PastelLavender, PastelLavenderDeep)
             Text(
                 dueLabel, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1,
-                color = if (urgent) PastelCoralDark else PastelLavenderDeep,
-                modifier = Modifier.background(if (urgent) PastelCoral else PastelLavender, RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 4.dp)
+                color = pillFg,
+                modifier = Modifier.background(pillBg, RoundedCornerShape(10.dp)).padding(horizontal = 10.dp, vertical = 4.dp)
             )
         }
     }

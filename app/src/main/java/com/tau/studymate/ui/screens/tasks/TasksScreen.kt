@@ -206,19 +206,20 @@ fun TasksScreen(
             }
 
             // Department Filters (All / Communication / Labor Studies / General)
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+            // Wraps instead of scrolling sideways: no chip is ever half off-screen (accessibility check)
+            @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+            FlowRow(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                item {
+                run {
                     FilterChip(
                         selected = selectedDept == null,
                         onClick = { viewModel.setDepartmentFilter(null) },
                         label = { Text(stringResource(R.string.filter_all_departments)) }
                     )
                 }
-                items(Department.entries) { dept ->
+                Department.entries.forEach { dept ->
                     FilterChip(
                         selected = selectedDept == dept,
                         onClick = { viewModel.setDepartmentFilter(dept) },

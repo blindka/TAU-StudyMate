@@ -410,6 +410,53 @@ class StudyViewModel(
         viewModelScope.launch { repository.updateCourse(course) }
     }
 
+    private val slotDao = (application as com.tau.studymate.StudyMateApp).database.classSlotDao()
+    fun classSlotsFor(courseId: Long) = slotDao.forCourse(courseId)
+    val allClassSlots: StateFlow<List<com.tau.studymate.data.model.ClassSlot>> = slotDao.getAll()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    fun addClassSlot(slot: com.tau.studymate.data.model.ClassSlot) { viewModelScope.launch { slotDao.insert(slot) } }
+    fun deleteClassSlot(slot: com.tau.studymate.data.model.ClassSlot) { viewModelScope.launch { slotDao.delete(slot) } }
+
+    /** Writes the course bundle to a shareable file and returns its content Uri. */
+    suspend fun exportCourse(course: Course): android.net.Uri = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val app = getApplication<Application>()
+        val bundle = com.tau.studymate.util.CourseShare.Bundle(
+            course, repository.getTasksForCourse(course.id).first(), repository.getMaterialsForCourse(course.id).first(), slotDao.forCourse(course.id).first())
+        val dir = java.io.File(app.cacheDir, "shared").apply { mkdirs() }
+        val file = java.io.File(dir, "${course.courseNumber.replace(Regex("[^0-9A-Za-z.]"), "_")}.studymate.json")
+        file.writeText(com.tau.studymate.util.CourseShare.toJson(bundle))
+        androidx.core.content.FileProvider.getUriForFile(app, "${app.packageName}.files", file)
+    }
+
+    /** Adds a shared course; merges into an existing course with the same number and skips duplicates. */
+    fun importCourse(uri: android.net.Uri, onDone: (String) -> Unit) {
+        viewModelScope.launch {
+            val app = getApplication<Application>()
+            val result = runCatching {
+                val text = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                    app.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }.orEmpty()
+                }
+                val b = com.tau.studymate.util.CourseShare.fromJson(text)
+                val existing = repository.allCourses.first().find { it.courseNumber == b.course.courseNumber }
+                val courseId = existing?.id ?: repository.insertCourse(b.course)
+                val haveTasks = repository.getTasksForCourse(courseId).first().map { it.title to it.dueDate }.toSet()
+                val newTasks = b.tasks.filter { (it.title to it.dueDate) !in haveTasks }
+                newTasks.forEach { t ->
+                    val id = repository.insertTask(t.copy(courseId = courseId))
+                    TaskNotificationScheduler.scheduleTask(app, t.copy(id = id, courseId = courseId), b.course.name)
+                }
+                val haveMat = repository.getMaterialsForCourse(courseId).first().map { it.title }.toSet()
+                val newMat = b.materials.filter { it.title !in haveMat }
+                newMat.forEach { repository.insertMaterial(it.copy(courseId = courseId)) }
+                val haveSlots = slotDao.forCourse(courseId).first().map { it.dayOfWeek to it.startMinute }.toSet()
+                val newSlots = b.slots.filter { (it.dayOfWeek to it.startMinute) !in haveSlots }
+                newSlots.forEach { slotDao.insert(it.copy(courseId = courseId)) }
+                app.getString(R.string.import_course_done, b.course.name, newTasks.size, newMat.size, newSlots.size)
+            }
+            onDone(result.getOrElse { app.getString(R.string.import_course_failed) })
+        }
+    }
+
     fun deleteCourse(course: Course) {
         viewModelScope.launch {
             repository.deleteCourse(course)
