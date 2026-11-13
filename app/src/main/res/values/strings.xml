@@ -34,6 +34,7 @@
     <string name="a11y_sync_moodle">Sync from Moodle</string>
     <string name="a11y_test_notification">Test notification</string>
     <string name="a11y_timetable">Timetable</string>
+    <string name="about_disclaimer">StudyMate is an independent app built by a student. It is not an official Tel Aviv University app and is not affiliated with the university.</string>
     <string name="action_focus">Focus session</string>
     <string name="action_moodle">Moodle sync</string>
     <string name="action_schedule">Timetable</string>
@@ -196,6 +197,9 @@
     <string name="insight_tip_title">Focus tip</string>
     <string name="insight_velocity_title">Estimate accuracy</string>
     <string name="insights_title">Your study habits 📊</string>
+    <string name="invite_chooser">Invite testers</string>
+    <string name="invite_message">Join the StudyMate beta (study planner for students). 1) Join with this link: %1$s  2) Install from Google Play and keep it for 14 days. Thanks!</string>
+    <string name="invite_testers">Invite friends to test the app 🤝</string>
     <string name="lead_1">1 hour before</string>
     <string name="lead_24">1 day before</string>
     <string name="lead_3">3 hours before</string>
@@ -309,6 +313,7 @@
     <string name="semester_transition_title">On to %1$s! 🎓</string>
     <string name="semester_wish">Good luck this semester! May it be productive and interesting in every course and exam! 🌱</string>
     <string name="session_completed_note">Focus session completed</string>
+    <string name="settings_about">About</string>
     <string name="settings_celebrations">Celebrate the first task done each day</string>
     <string name="settings_data">Your data</string>
     <string name="settings_general">General</string>

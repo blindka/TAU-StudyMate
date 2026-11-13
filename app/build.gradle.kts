@@ -1,4 +1,4 @@
-val appVersion = "0.4.0"
+val appVersion = "0.4.1"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -109,6 +109,7 @@ dependencies {
     implementation(libs.mlkit.translate)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.glance.appwidget)
+    implementation(libs.play.review.ktx)
     implementation(libs.androidx.profileinstaller)
     baselineProfile(project(":baselineprofile"))
     implementation(libs.androidx.pdf.document.service)

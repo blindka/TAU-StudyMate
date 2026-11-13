@@ -74,9 +74,20 @@ fun SettingsScreen(onBack: () -> Unit, onRemindersChanged: () -> Unit) {
         }
 
         Section(stringResource(R.string.settings_data))
+        // Closed-testing opt-in page; testers must join here before the Play listing shows them the app
+        val inviteText = stringResource(R.string.invite_message, "https://play.google.com/apps/testing/${context.packageName}")
+        val chooserTitle = stringResource(R.string.invite_chooser)
+        TextButton(onClick = {
+            val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, inviteText)
+            context.startActivity(Intent.createChooser(send, chooserTitle))
+        }) { Text(stringResource(R.string.invite_testers)) }
         BackupSection()
         val uri = LocalUriHandler.current
         TextButton(onClick = { uri.openUri("https://blindka.github.io/TAU-StudyMate/privacy.html") }) { Text(stringResource(R.string.privacy_policy)) }
+
+        Section(stringResource(R.string.settings_about))
+        // Shown in-app as well as in the store listing (Play impersonation policy: the name includes "TAU")
+        Text(stringResource(R.string.about_disclaimer), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(stringResource(R.string.settings_version, version), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

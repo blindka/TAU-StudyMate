@@ -34,6 +34,7 @@
     <string name="a11y_sync_moodle">סנכרן ממודל</string>
     <string name="a11y_test_notification">בדיקת התראה</string>
     <string name="a11y_timetable">מערכת שעות</string>
+    <string name="about_disclaimer">StudyMate היא אפליקציה עצמאית שנבנתה על ידי סטודנט. היא אינה אפליקציה רשמית של אוניברסיטת תל אביב ואינה קשורה לאוניברסיטה.</string>
     <string name="action_focus">סשן פוקוס</string>
     <string name="action_moodle">סנכרון Moodle</string>
     <string name="action_schedule">מערכת שעות</string>
@@ -195,6 +196,9 @@
     <string name="insight_tip_title">טיפ לפוקוס ורענון מחשבתי</string>
     <string name="insight_velocity_title">מדד דיוק הערכת זמן (Velocity)</string>
     <string name="insights_title">תובנות הרגלי למידה מותאמות אישית 📊</string>
+    <string name="invite_chooser">הזמנת בודקים</string>
+    <string name="invite_message">הצטרפו לגרסת הבדיקה של StudyMate (מנהל לימודים לסטודנטים). 1) נרשמים בקישור: %1$s  2) מתקינים מ-Google Play ומשאירים מותקן 14 יום. תודה!</string>
+    <string name="invite_testers">הזמנת חברים לבדוק את האפליקציה 🤝</string>
     <string name="lead_1">שעה לפני</string>
     <string name="lead_24">יום לפני</string>
     <string name="lead_3">3 שעות לפני</string>
@@ -308,6 +312,7 @@
     <string name="semester_transition_title">מעבר ל-%1$s! 🎓</string>
     <string name="semester_wish">מאחלים לך המון בהצלחה בסמסטר החדש! שיהיה סמסטר פורה, מעניין ומוצלח בכל הקורסים והבחינות! 🌱</string>
     <string name="session_completed_note">סשן פוקוס הושלם בהצלחה</string>
+    <string name="settings_about">אודות</string>
     <string name="settings_celebrations">חגיגה על המטלה הראשונה שהושלמה בכל יום</string>
     <string name="settings_data">הנתונים שלך</string>
     <string name="settings_general">כללי</string>

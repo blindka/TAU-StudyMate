@@ -1,5 +1,6 @@
 package com.tau.studymate
 
+import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import android.Manifest
 import android.content.pm.PackageManager
@@ -168,9 +169,14 @@ fun MainAppContent(
 
         // Gamified Celebration Pop-up Alert when completing assignments
         celebrationReward?.let { reward ->
+            val activity = androidx.activity.compose.LocalActivity.current
+            val scope = rememberCoroutineScope()
             CelebrationDialog(
                 reward = reward,
-                onDismiss = { viewModel.dismissCelebration() }
+                onDismiss = {
+                    viewModel.dismissCelebration()
+                    activity?.let { scope.launch { com.tau.studymate.util.RatingPrompt.maybeAsk(it, reward.streakDays) } }
+                }
             )
         }
 
