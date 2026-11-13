@@ -43,6 +43,10 @@ class UpcomingWidget : GlanceAppWidget() {
             .take(3)
         val readings = app.database.readingDao().getForWeek(weekStartOf(LocalDate.now()).toEpochDay()).first()
         val fmt = DateTimeFormatter.ofPattern("dd/MM")
+        val coursesById = app.repository.allCourses.first().associateBy { it.id }
+        val todayClasses = app.database.classSlotDao().getAll().first().filter { it.dayOfWeek == LocalDate.now().dayOfWeek.value }.sortedBy { it.startMinute }.take(2)
+        val nextExam = coursesById.values.flatMap { c -> listOfNotNull(c.examA, c.examB).map { c.name to it } }
+            .filter { it.second >= startOfToday }.minByOrNull { it.second }
 
         provideContent {
             val white = ColorProvider(Color.White)
@@ -62,6 +66,14 @@ class UpcomingWidget : GlanceAppWidget() {
                         style = TextStyle(color = white, fontSize = 13.sp, textAlign = TextAlign.End),
                         modifier = GlanceModifier.fillMaxWidth().padding(vertical = 2.dp)
                     )
+                }
+                todayClasses.forEach { s ->
+                    Text(context.getString(R.string.widget_class, "%02d:%02d".format(s.startMinute / 60, s.startMinute % 60), coursesById[s.courseId]?.name.orEmpty()),
+                        maxLines = 1, style = TextStyle(color = ColorProvider(Color(0xFFEDE9FE)), fontSize = 12.sp))
+                }
+                nextExam?.let { (name, at) ->
+                    Text(context.getString(R.string.widget_next_exam, Instant.ofEpochMilli(at).atZone(zone).toLocalDate().format(fmt), name),
+                        maxLines = 1, style = TextStyle(color = ColorProvider(Color(0xFFEDE9FE)), fontSize = 12.sp))
                 }
                 if (readings.isNotEmpty()) {
                     Spacer(GlanceModifier.height(6.dp))

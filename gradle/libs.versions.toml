@@ -72,6 +72,7 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 # Real org.json for JVM unit tests (Android's copy is a stub off-device)
 org-json = { group = "org.json", name = "json", version.ref = "orgJson" }
 androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-compose-ui-test-junit4-accessibility = { group = "androidx.compose.ui", name = "ui-test-junit4-accessibility" }
 androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-room-testing = { group = "androidx.room", name = "room-testing", version.ref = "room" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }

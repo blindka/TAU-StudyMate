@@ -55,6 +55,7 @@ fun HomeScreen(
 ) {
     val tasks by viewModel.allTasks.collectAsState()
     val courses by viewModel.courses.collectAsState()
+    val classSlots by viewModel.allClassSlots.collectAsState()
     val missingMaterials by viewModel.missingMaterials.collectAsState()
     val academicProfile by viewModel.academicProfile.collectAsState()
     val scheduleBitmap by viewModel.scheduleBitmap.collectAsState()
@@ -121,6 +122,37 @@ fun HomeScreen(
                     if (scheduleBitmap != null || scheduleFileName != null) showScheduleViewer = true else showProfileDialog = true
                 }
             )
+        }
+
+        // Today's classes and the next exams (from each course's schedule tab)
+        val today = java.time.LocalDate.now()
+        val todaysClasses = classSlots.filter { it.dayOfWeek == today.dayOfWeek.value }.sortedBy { it.startMinute }
+        val zone = java.time.ZoneId.systemDefault()
+        val upcomingExams = courses.flatMap { c -> listOfNotNull(c.examA, c.examB).map { c to java.time.Instant.ofEpochMilli(it).atZone(zone).toLocalDate() } }
+            .filter { !it.second.isBefore(today) }.sortedBy { it.second }.take(3)
+        if (todaysClasses.isNotEmpty() || upcomingExams.isNotEmpty()) item {
+            Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surface, border = BorderStroke(1.dp, PastelLavenderBorder), modifier = Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    if (todaysClasses.isNotEmpty()) {
+                        Text(stringResource(R.string.home_today_classes), fontWeight = FontWeight.Bold)
+                        todaysClasses.forEach { slot ->
+                            Text("${com.tau.studymate.ui.screens.courses.minutesText(slot.startMinute)}  ${courseMap[slot.courseId]?.let { com.tau.studymate.ui.components.courseLabel(it.name) }.orEmpty()}" +
+                                if (slot.room.isNotBlank()) " · ${slot.room}" else "", fontSize = 14.sp)
+                        }
+                    }
+                    if (upcomingExams.isNotEmpty()) {
+                        Text(stringResource(R.string.home_upcoming_exams), fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = if (todaysClasses.isEmpty()) 0.dp else 8.dp))
+                        upcomingExams.forEach { (c, d) ->
+                            val days = java.time.temporal.ChronoUnit.DAYS.between(today, d).toInt()
+                            Row {
+                                Text(com.tau.studymate.ui.components.courseLabel(c.name), Modifier.weight(1f), fontSize = 14.sp)
+                                Text(if (days == 0) stringResource(R.string.exam_today) else pluralStringResource(R.plurals.exam_in_days, days, days),
+                                    fontSize = 14.sp, fontWeight = FontWeight.SemiBold, color = if (days <= 7) PastelCoralDark else PastelLavenderDark)
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // Section: "מה חסר לי" (Study gaps & alerts in Pastel Coral)
@@ -519,7 +551,8 @@ private fun QuickActions(hasSchedule: Boolean, onFocus: () -> Unit, onMoodle: ()
             Triple(stringResource(R.string.action_moodle), Icons.Default.Sync, Triple(PastelSky, PastelSkyDark, onMoodle)),
             Triple(stringResource(R.string.action_schedule), if (hasSchedule) Icons.Default.CalendarMonth else Icons.Default.AddAPhoto, Triple(PastelMint, PastelMintDark, onSchedule))
         ).forEach { (label, icon, style) ->
-            val (bg, fg, onClick) = style
+            val (rawBg, rawFg, onClick) = style
+            val (bg, fg) = pastel(rawBg, rawFg)
             Column(
                 Modifier.weight(1f).background(bg, RoundedCornerShape(18.dp)).clickable(onClick = onClick).padding(vertical = 14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)

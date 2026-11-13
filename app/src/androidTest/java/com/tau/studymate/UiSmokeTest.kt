@@ -1,6 +1,7 @@
 package com.tau.studymate
 
 import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.junit4.accessibility.enableAccessibilityChecks
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.performClick
@@ -24,10 +25,16 @@ class UiSmokeTest {
         Thread.sleep(1500)
     }
 
-    private fun walkTabs(degree: String, apply: String, tabs: List<String>) {
+    private fun walkTabs(skip: String, degree: String, apply: String, tabs: List<String>) {
         ActivityScenario.launch(MainActivity::class.java).use {
+            // Accessibility Test Framework (same engine as Play's pre-launch report): every
+            // interaction below fails the test on small touch targets, missing labels, low contrast…
+            compose.enableAccessibilityChecks()
             compose.waitForIdle()
-            // First launch shows onboarding
+            // First launch: intro tour, then onboarding
+            if (compose.onAllNodesWithText(skip).fetchSemanticsNodes().isNotEmpty()) {
+                compose.onAllNodesWithText(skip).onFirst().performClick(); compose.waitForIdle()
+            }
             // First launch shows onboarding: pick a catalog degree, then apply (the field starts empty)
             if (compose.onAllNodesWithText(apply).fetchSemanticsNodes().isNotEmpty()) {
                 compose.onAllNodesWithText(degree).onFirst().performClick()
@@ -43,12 +50,12 @@ class UiSmokeTest {
 
     @Test fun english() {
         setLanguage("en")
-        walkTabs("Communication & Labor Studies", "Apply", listOf("Tasks", "Courses", "Readings", "Focus", "Today"))
+        walkTabs("Skip", "Communication & Labor Studies", "Apply", listOf("Tasks", "Courses", "Readings", "Focus", "Today"))
     }
 
     @Test fun hebrew() {
         setLanguage("he")
-        walkTabs("תקשורת ולימודי עבודה", "החל והתאם קורסים", listOf("מטלות", "קורסים", "קריאה", "פוקוס", "היום שלי"))
+        walkTabs("דלג", "תקשורת ולימודי עבודה", "החל והתאם קורסים", listOf("מטלות", "קורסים", "קריאה", "פוקוס", "היום שלי"))
     }
 
     @After fun resetLanguage() = setLanguage("\"\"")

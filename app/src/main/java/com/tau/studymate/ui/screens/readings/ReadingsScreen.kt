@@ -37,10 +37,11 @@ import java.time.format.DateTimeFormatter
 
 private val dayMonth = DateTimeFormatter.ofPattern("d.M")
 
+@Composable
 fun departmentColors(d: Department?) = when (d) {
-    Department.COMMUNICATION -> PastelSky to PastelSkyDark
-    Department.LABOR_STUDIES -> PastelMint to PastelMintDark
-    else -> PastelLavender to PastelLavenderDark
+    Department.COMMUNICATION -> pastel(PastelSky, PastelSkyDark)
+    Department.LABOR_STUDIES -> pastel(PastelMint, PastelMintDark)
+    else -> pastel(PastelLavender, PastelLavenderDark)
 }
 
 @Composable

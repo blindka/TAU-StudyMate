@@ -1,5 +1,6 @@
 package com.tau.studymate
 
+import com.tau.studymate.util.appPrefs
 import kotlinx.coroutines.launch
 import androidx.compose.ui.res.stringResource
 import android.Manifest
@@ -93,6 +94,16 @@ fun MainAppContent(
     var currentRoute by remember { mutableStateOf(NavScreen.Home.route) }
     var openReadingId by remember { mutableStateOf<Long?>(null) }
     var showSettings by remember { mutableStateOf(false) }
+    val introContext = androidx.compose.ui.platform.LocalContext.current
+    val introPrefs = remember { introContext.appPrefs() }
+    var showIntro by remember { mutableStateOf(!introPrefs.getBoolean("intro_seen", false) && !introPrefs.getBoolean("has_completed_onboarding", false)) }
+    if (showIntro) {
+        com.tau.studymate.ui.screens.IntroTour(onDone = {
+            introPrefs.edit().putBoolean("intro_seen", true).apply()
+            showIntro = false
+        })
+        return
+    }
     if (showSettings) {
         com.tau.studymate.ui.screens.settings.SettingsScreen(onBack = { showSettings = false }, onRemindersChanged = viewModel::rescheduleAllReminders)
         return
@@ -123,7 +134,9 @@ fun MainAppContent(
     ) { paddingValues ->
         Crossfade(
             targetState = selectedCourseForDetail to currentRoute,
-            label = "screen_transition"
+            label = "screen_transition",
+            // Tablets / foldables / landscape: keep content a readable phone-like column, centered
+            modifier = Modifier.fillMaxSize().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 720.dp)
         ) { (courseDetail, route) ->
             if (courseDetail != null) {
                 CourseDetailScreen(

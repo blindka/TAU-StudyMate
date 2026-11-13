@@ -188,9 +188,12 @@ fun AcademicProfileDialog(
                     color = MaterialTheme.colorScheme.outline
                 )
                 Spacer(modifier = Modifier.height(4.dp))
-                Row(
+                // Wraps: in English the third name didn't fit and was cut off (invisible and unlabeled)
+                @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+                FlowRow(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     AcademicCatalog.AVAILABLE_PROGRAMS.take(3).forEach { prog ->
                         val progLabel = com.tau.studymate.ui.components.degreeLabel(prog.name)

@@ -13,8 +13,8 @@ import com.tau.studymate.data.model.StudySession
 import com.tau.studymate.data.model.Task
 
 @Database(
-    entities = [Course::class, Task::class, StudyMaterial::class, StudySession::class, Reading::class],
-    version = 5,
+    entities = [Course::class, Task::class, StudyMaterial::class, StudySession::class, Reading::class, com.tau.studymate.data.model.ClassSlot::class],
+    version = 6,
     exportSchema = true
 )
 @TypeConverters(Converters::class)
@@ -25,6 +25,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun studyMaterialDao(): StudyMaterialDao
     abstract fun studySessionDao(): StudySessionDao
     abstract fun readingDao(): ReadingDao
+    abstract fun classSlotDao(): ClassSlotDao
 
     companion object {
         internal val MIGRATION_1_2 = object : androidx.room.migration.Migration(1, 2) {
@@ -56,6 +57,15 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        internal val MIGRATION_5_6 = object : androidx.room.migration.Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE courses ADD COLUMN examA INTEGER")
+                db.execSQL("ALTER TABLE courses ADD COLUMN examB INTEGER")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `class_slots` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `courseId` INTEGER NOT NULL, `dayOfWeek` INTEGER NOT NULL, `startMinute` INTEGER NOT NULL, `endMinute` INTEGER NOT NULL, `room` TEXT NOT NULL, FOREIGN KEY(`courseId`) REFERENCES `courses`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_class_slots_courseId` ON `class_slots` (`courseId`)")
+            }
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
@@ -66,7 +76,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "tau_study_mate_db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .build()
                 INSTANCE = instance
                 instance
