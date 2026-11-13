@@ -5,6 +5,8 @@ data class AcademicTrack(
     val name: String,
     val faculty: String,
     val isDoubleMajor: Boolean = false,
+    /** Name in the UI language; [name] stays the stored (Hebrew) value. */
+    @androidx.annotation.StringRes val labelRes: Int = 0,
     val defaultCourses: List<CourseTemplate> = emptyList()
 )
 
@@ -18,7 +20,7 @@ data class CourseTemplate(
 )
 
 data class UserAcademicProfile(
-    val degreeName: String = "תקשורת ולימודי עבודה",
+    val degreeName: String = "", // empty until onboarding; a Hebrew default looked wrong in English
     val isDoubleMajor: Boolean = true,
     val year: String = "שנה א'",
     val semester: String = "סמסטר א'",
@@ -31,6 +33,7 @@ object AcademicCatalog {
         AcademicTrack(
             id = "comm_labor",
             name = "תקשורת ולימודי עבודה",
+            labelRes = com.tau.studymate.R.string.degree_comm_labor,
             faculty = "הפקולטה למדעי החברה",
             isDoubleMajor = true,
             defaultCourses = listOf(
@@ -59,6 +62,7 @@ object AcademicCatalog {
         AcademicTrack(
             id = "cs",
             name = "מדעי המחשב",
+            labelRes = com.tau.studymate.R.string.degree_cs,
             faculty = "הפקולטה למדעים מדויקים",
             isDoubleMajor = false,
             defaultCourses = listOf(
@@ -79,6 +83,7 @@ object AcademicCatalog {
         AcademicTrack(
             id = "law",
             name = "משפטים",
+            labelRes = com.tau.studymate.R.string.degree_law,
             faculty = "הפקולטה למשפטים ע\"ש בוכמן",
             isDoubleMajor = false,
             defaultCourses = listOf(
@@ -99,6 +104,7 @@ object AcademicCatalog {
         AcademicTrack(
             id = "psychology_comm",
             name = "פסיכולוגיה ותקשורת",
+            labelRes = com.tau.studymate.R.string.degree_psychology_comm,
             faculty = "הפקולטה למדעי החברה",
             isDoubleMajor = true,
             defaultCourses = listOf(
@@ -119,6 +125,7 @@ object AcademicCatalog {
         AcademicTrack(
             id = "economics_management",
             name = "כלכלה וניהול",
+            labelRes = com.tau.studymate.R.string.degree_economics_management,
             faculty = "מדעי החברה וניהול ע\"ש קולר",
             isDoubleMajor = true,
             defaultCourses = listOf(
@@ -138,10 +145,15 @@ object AcademicCatalog {
         )
     )
 
-    /** Exact name match only (ignoring spaces/case). Partial matching mapped "מדעי המדינה" to "מדעי המחשב". */
-    fun findProgram(query: String): AcademicTrack? {
+    /**
+     * Exact name match only (ignoring spaces/case), in Hebrew or in the UI language, so an English user
+     * typing "Computer Science" finds the same track. Partial matching mapped "מדעי המדינה" to "מדעי המחשב".
+     */
+    fun findProgram(query: String, context: android.content.Context? = null): AcademicTrack? {
         val key = query.normalized()
-        return AVAILABLE_PROGRAMS.find { it.name.normalized() == key }
+        return AVAILABLE_PROGRAMS.find { t ->
+            t.name.normalized() == key || (context != null && t.labelRes != 0 && context.getString(t.labelRes).normalized() == key)
+        }
     }
 
     private fun String.normalized() = trim().replace(Regex("\\s+"), " ").lowercase()

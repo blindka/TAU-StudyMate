@@ -1,5 +1,7 @@
 package com.tau.studymate
 
+import kotlinx.coroutines.launch
+import androidx.compose.ui.res.stringResource
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -74,10 +76,8 @@ class MainActivity : ComponentActivity() {
         readIntent(intent)
         setContent {
             TAUStudyMateTheme {
-                // Ensure RTL layout for full Hebrew support
-                CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-                    MainAppContent(viewModel = viewModel, readingsViewModel = readingsViewModel, timerViewModel = timerViewModel, openTaskId = openTaskId)
-                }
+                // Layout direction follows the language: RTL in Hebrew, LTR in English (android:supportsRtl)
+                MainAppContent(viewModel = viewModel, readingsViewModel = readingsViewModel, timerViewModel = timerViewModel, openTaskId = openTaskId)
             }
         }
     }
@@ -92,6 +92,11 @@ fun MainAppContent(
 ) {
     var currentRoute by remember { mutableStateOf(NavScreen.Home.route) }
     var openReadingId by remember { mutableStateOf<Long?>(null) }
+    var showSettings by remember { mutableStateOf(false) }
+    if (showSettings) {
+        com.tau.studymate.ui.screens.settings.SettingsScreen(onBack = { showSettings = false }, onRemindersChanged = viewModel::rescheduleAllReminders)
+        return
+    }
     LaunchedEffect(openTaskId.value) { if (openTaskId.value != null) currentRoute = NavScreen.Tasks.route }
     openReadingId?.let { id ->
         com.tau.studymate.ui.screens.readings.ReaderScreen(id, readingsViewModel, onBack = { openReadingId = null })
@@ -134,6 +139,7 @@ fun MainAppContent(
                         onNavigateToCourses = { currentRoute = NavScreen.Courses.route },
                         onNavigateToHabits = { currentRoute = NavScreen.Habits.route },
                         weekReadings = readingsViewModel.currentWeek.collectAsState().value,
+                        onOpenSettings = { showSettings = true },
                         modifier = Modifier.padding(paddingValues)
                     )
                     NavScreen.Tasks.route -> TasksScreen(
@@ -163,9 +169,14 @@ fun MainAppContent(
 
         // Gamified Celebration Pop-up Alert when completing assignments
         celebrationReward?.let { reward ->
+            val activity = androidx.activity.compose.LocalActivity.current
+            val scope = rememberCoroutineScope()
             CelebrationDialog(
                 reward = reward,
-                onDismiss = { viewModel.dismissCelebration() }
+                onDismiss = {
+                    viewModel.dismissCelebration()
+                    activity?.let { scope.launch { com.tau.studymate.util.RatingPrompt.maybeAsk(it, reward.streakDays) } }
+                }
             )
         }
 
@@ -194,7 +205,7 @@ fun MainAppContent(
                         )
                         Spacer(modifier = Modifier.height(16.dp))
                         Text(
-                            text = "זמן הלמידה הסתיים! ⏰",
+                            text = stringResource(R.string.timer_done_title),
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -211,7 +222,7 @@ fun MainAppContent(
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("סיום ומעבר להפסקה", fontWeight = FontWeight.Bold)
+                            Text(stringResource(R.string.timer_done_button), fontWeight = FontWeight.Bold)
                         }
                     }
                 }

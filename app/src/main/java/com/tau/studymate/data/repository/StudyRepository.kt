@@ -1,5 +1,6 @@
 package com.tau.studymate.data.repository
 
+import com.tau.studymate.R
 import com.tau.studymate.data.local.CourseDao
 import com.tau.studymate.data.local.StudyMaterialDao
 import com.tau.studymate.data.local.StudySessionDao
@@ -108,40 +109,41 @@ class StudyRepository(
     }
 
     // Export Functionality (Formatted text for WhatsApp / Email / Notes / Files)
-    fun generateExportSummary(tasks: List<Task>, courses: List<Course>): String {
+    fun generateExportSummary(context: android.content.Context, tasks: List<Task>, courses: List<Course>): String {
+        fun s(id: Int, vararg a: Any) = context.getString(id, *a)
         val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
         val courseMap = courses.associateBy { it.id }
 
         val sb = StringBuilder()
-        sb.append("📋 דוח משימות ולימודים - אוניברסיטת תל אביב\n")
-        sb.append("נוצר בתאריך: ${dateFormat.format(Date())}\n")
+        sb.append(s(R.string.export_title)).append("\n")
+        sb.append(s(R.string.export_created, dateFormat.format(Date()))).append("\n")
         sb.append("═══════════════════════════════\n\n")
 
         val pending = tasks.filter { !it.isCompleted }
         val completed = tasks.filter { it.isCompleted }
 
-        sb.append("⏳ מטלות פתוחות (${pending.size}):\n")
+        sb.append(s(R.string.export_open_header, pending.size)).append("\n")
         if (pending.isEmpty()) {
-            sb.append("אין מטלות פתוחות! כל הכבוד 🎉\n")
+            sb.append(s(R.string.export_none_open)).append("\n")
         } else {
             pending.forEachIndexed { index, task ->
-                val courseName = task.courseId?.let { courseMap[it]?.name } ?: "כללי"
+                val courseName = task.courseId?.let { courseMap[it]?.name } ?: s(R.string.export_general)
                 val dueDateStr = dateFormat.format(Date(task.dueDate))
-                sb.append("${index + 1}. [${task.department.displayName}] $courseName: ${task.title}\n")
-                sb.append("   תאריך יעד: $dueDateStr | עדיפות: ${task.priority.displayName}\n")
+                sb.append("${index + 1}. [${s(task.department.labelRes)}] $courseName: ${task.title}\n")
+                sb.append(s(R.string.export_due_line, dueDateStr, s(task.priority.labelRes))).append("\n")
                 if (task.description.isNotBlank()) {
-                    sb.append("   פירוט: ${task.description}\n")
+                    sb.append(s(R.string.export_details, task.description)).append("\n")
                 }
                 sb.append("\n")
             }
         }
 
         sb.append("═══════════════════════════════\n")
-        sb.append("✅ מטלות שהושלמו (${completed.size}):\n")
+        sb.append(s(R.string.export_done_header, completed.size)).append("\n")
         completed.forEachIndexed { index, task ->
-            val courseName = task.courseId?.let { courseMap[it]?.name } ?: "כללי"
+            val courseName = task.courseId?.let { courseMap[it]?.name } ?: s(R.string.export_general)
             val completedDateStr = task.completedAt?.let { dateFormat.format(Date(it)) } ?: "-"
-            sb.append("${index + 1}. [${task.department.displayName}] $courseName: ${task.title} (הושלם ב-$completedDateStr)\n")
+            sb.append(s(R.string.export_done_line, index + 1, s(task.department.labelRes), courseName, task.title, completedDateStr)).append("\n")
         }
 
         return sb.toString()

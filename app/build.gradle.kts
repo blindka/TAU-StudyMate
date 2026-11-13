@@ -1,4 +1,4 @@
-val appVersion = "0.2.0"
+val appVersion = "0.4.1"
 
 plugins {
     alias(libs.plugins.android.application)
@@ -73,7 +73,7 @@ kotlin {
 
 // Room schema history; used by the migration test (app/src/androidTest)
 ksp { arg("room.schemaLocation", "$projectDir/schemas") }
-android.sourceSets.getByName("androidTest").assets.srcDir("$projectDir/schemas")
+android.sourceSets.getByName("androidTest").assets.directories.add("$projectDir/schemas")
 
 // Output files: TAU-StudyMate-v0.0.1-release.aab / .apk
 base { archivesName.set("TAU-StudyMate-v$appVersion") }
@@ -108,11 +108,16 @@ dependencies {
     implementation(libs.mlkit.translate)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.glance.appwidget)
+    implementation(libs.play.review.ktx)
     implementation(libs.androidx.profileinstaller)
     baselineProfile(project(":baselineprofile"))
     implementation(libs.androidx.pdf.document.service)
     implementation(libs.kotlinx.serialization.core)
     testImplementation(libs.junit)
+    testImplementation(libs.org.json)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    debugImplementation(libs.androidx.compose.ui.test.manifest)
     androidTestImplementation(libs.androidx.room.testing)
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)

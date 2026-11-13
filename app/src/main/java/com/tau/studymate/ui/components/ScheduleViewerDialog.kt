@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.components
 
+import com.tau.studymate.R
+import androidx.compose.ui.res.stringResource
 import android.graphics.Bitmap
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -80,12 +82,12 @@ fun ScheduleViewerDialog(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "מערכת השעות שלי 📅",
+                                text = stringResource(R.string.my_schedule),
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = fileName ?: "צילום מערכת שעות",
+                                text = fileName ?: stringResource(R.string.a11y_schedule_image),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.outline
                             )
@@ -93,7 +95,7 @@ fun ScheduleViewerDialog(
                     }
 
                     IconButton(onClick = onDismiss) {
-                        Icon(Icons.Default.Close, contentDescription = "סגור")
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.close))
                     }
                 }
 
@@ -112,7 +114,7 @@ fun ScheduleViewerDialog(
                     if (bitmap != null) {
                         Image(
                             bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "תמונת מערכת השעות",
+                            contentDescription = stringResource(R.string.a11y_schedule_image),
                             contentScale = ContentScale.Fit,
                             modifier = Modifier.fillMaxSize()
                         )
@@ -137,7 +139,7 @@ fun ScheduleViewerDialog(
                             )
                             Spacer(modifier = Modifier.height(6.dp))
                             Text(
-                                text = "קובץ מערכת השעות נטען והקורסים מותאמים באפליקציה.",
+                                text = stringResource(R.string.schedule_file_loaded),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.outline,
                                 textAlign = TextAlign.Center
@@ -157,7 +159,7 @@ fun ScheduleViewerDialog(
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Text(
-                                text = "טרם צולמה או הועלתה מערכת שעות",
+                                text = stringResource(R.string.schedule_none),
                                 fontWeight = FontWeight.Medium,
                                 style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.outline
@@ -175,7 +177,7 @@ fun ScheduleViewerDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = onDismiss) {
-                        Text("סגור")
+                        Text(stringResource(R.string.close))
                     }
 
                     Button(
@@ -193,7 +195,7 @@ fun ScheduleViewerDialog(
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (bitmap != null || fileName != null) "החלף או עדכן מערכת" else "העלה מערכת שעות",
+                            text = stringResource(if (bitmap != null || fileName != null) R.string.schedule_replace else R.string.schedule_upload),
                             fontWeight = FontWeight.Bold
                         )
                     }

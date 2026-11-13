@@ -1,5 +1,6 @@
 package com.tau.studymate.ui.viewmodel
 
+import com.tau.studymate.R
 import androidx.core.content.edit
 import com.tau.studymate.util.appPrefs
 import com.tau.studymate.util.decodeScaled
@@ -83,7 +84,7 @@ class StudyViewModel(
         }
     }
 
-    fun saveSchedulePhoto(bitmap: Bitmap, fileName: String = "צילום_מערכת_שעות.jpg") {
+    fun saveSchedulePhoto(bitmap: Bitmap, fileName: String = "schedule.jpg") {
         viewModelScope.launch {
             try {
                 val file = File(getApplication<Application>().filesDir, "saved_schedule_photo.jpg")
@@ -182,11 +183,8 @@ class StudyViewModel(
 
     // Motivational Hebrew messages for reward
     private val rewardQuotes = listOf(
-        "אלוף/ה! עוד צעד משמעותי לעבר התואר! 🎓",
-        "מטלה נוספת נמחקה! מגיע לך הפסקת קפה בבניין נפתלי ☕",
-        "התמדה מנצחת! ההרגלים שלך משתפרים מיום ליום ✨",
-        "וואו, איזה קצב! הראש פנוי לעוד הישג 🚀",
-        "מעולה! תקשורת ולימודי עבודה קטנים עליך! 💪"
+        R.string.celebration_quote_1, R.string.celebration_quote_2, R.string.celebration_quote_3,
+        R.string.celebration_quote_4, R.string.celebration_quote_5
     )
 
     fun setDepartmentFilter(dept: Department?) {
@@ -204,6 +202,13 @@ class StudyViewModel(
     fun toggleTaskCompletion(task: Task) {
         viewModelScope.launch {
             val newlyCompleted = repository.toggleTaskCompletion(task)
+            if (newlyCompleted && task.repeatWeekly) {
+                // Recurring task: next week's copy appears as soon as this one is done
+                val next = task.copy(id = 0, dueDate = task.dueDate + 7L * 24 * 60 * 60 * 1000, isCompleted = false,
+                    completedAt = null, actualMinutes = 0, externalId = null)
+                val id = repository.insertTask(next)
+                TaskNotificationScheduler.scheduleTask(getApplication(), next.copy(id = id), task.courseId?.let { repository.getCourseById(it)?.name })
+            }
             if (newlyCompleted) {
                 // נגן צליל הצלחה
                 SoundManager.playTaskCompletedSound(getApplication())
@@ -214,11 +219,11 @@ class StudyViewModel(
                 // Celebrate only the first completion of the day; a popup on every ✓ gets tiresome
                 val today = java.time.LocalDate.now().toString()
                 val prefs = getApplication<Application>().appPrefs()
-                if (prefs.getString("last_celebration_day", null) == today) return@launch
+                if (!prefs.getBoolean("celebrations_enabled", true) || prefs.getString("last_celebration_day", null) == today) return@launch
                 prefs.edit { putString("last_celebration_day", today) }
-                val randomQuote = rewardQuotes.random()
+                val randomQuote = getApplication<Application>().getString(rewardQuotes.random())
                 _celebrationReward.value = CelebrationReward(
-                    title = "מטלה הושלמה בהצלחה!",
+                    title = getApplication<Application>().getString(R.string.celebration_title),
                     message = randomQuote,
                     completedTaskTitle = task.title,
                     streakDays = calculateStreakDays()
@@ -228,6 +233,14 @@ class StudyViewModel(
                 val courseName = task.courseId?.let { repository.getCourseById(it)?.name }
                 TaskNotificationScheduler.scheduleTask(getApplication(), task.copy(isCompleted = false), courseName)
             }
+        }
+    }
+
+    /** Re-plans alarms for all open tasks (after the reminder times change in Settings). */
+    fun rescheduleAllReminders() {
+        viewModelScope.launch {
+            val names = repository.allCourses.first().associate { it.id to it.name }
+            repository.pendingTasks.first().forEach { TaskNotificationScheduler.scheduleTask(getApplication(), it, it.courseId?.let(names::get)) }
         }
     }
 
@@ -271,7 +284,8 @@ class StudyViewModel(
         department: Department,
         priority: Priority,
         estimatedMinutes: Int,
-        enableReminder: Boolean = true
+        enableReminder: Boolean = true,
+        repeatWeekly: Boolean = false
     ) {
         viewModelScope.launch {
             val task = Task(
@@ -282,7 +296,8 @@ class StudyViewModel(
                 department = department,
                 priority = priority,
                 estimatedMinutes = estimatedMinutes,
-                reminderEnabled = enableReminder
+                reminderEnabled = enableReminder,
+                repeatWeekly = repeatWeekly
             )
             val insertedId = repository.insertTask(task)
             val course = courseId?.let { repository.getCourseById(it) }
@@ -310,7 +325,7 @@ class StudyViewModel(
         if (trimmed.isEmpty()) return false
         // Any degree is accepted. Catalog degrees come with their course list; others start with the
         // user's current courses, which they add by hand or through Moodle.
-        val foundTrack = AcademicCatalog.findProgram(trimmed)
+        val foundTrack = AcademicCatalog.findProgram(trimmed, getApplication())
         val trackCourses = importedCourses?.takeIf { it.isNotEmpty() } ?: foundTrack?.defaultCourses
 
         val oldProfile = _academicProfile.value
@@ -374,10 +389,12 @@ class StudyViewModel(
         department: Department,
         lecturer: String,
         semester: String,
-        credits: Float
+        credits: Float,
+        grade: Float? = null
     ) {
         viewModelScope.launch {
             val course = Course(
+                grade = grade,
                 courseNumber = courseNumber,
                 name = name,
                 department = department,
@@ -439,6 +456,7 @@ class StudyViewModel(
 
     fun getExportText(): String {
         return repository.generateExportSummary(
+            getApplication(),
             tasks = filteredTasks.value,
             courses = courses.value
         )

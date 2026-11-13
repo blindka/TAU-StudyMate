@@ -1,5 +1,6 @@
 package com.tau.studymate.util
 
+import com.tau.studymate.R
 import android.content.Context
 import androidx.core.content.edit
 import androidx.work.*
@@ -16,7 +17,7 @@ object MoodleSync {
     suspend fun syncAndStore(app: StudyMateApp, url: String): Pair<MoodleSyncResult, Int> {
         val repo = app.repository
         val courses = repo.allCourses.first()
-        val result = MoodleSyncService.fetchAndSyncMoodle(url, courses)
+        val result = MoodleSyncService.fetchAndSyncMoodle(app, url, courses)
         if (!result.success) return result to 0
         val names = courses.associate { it.id to it.name }
         val (inserts, updates) = MoodleSyncService.merge(repo.allTasks.first(), result.tasks)
@@ -40,10 +41,13 @@ object MoodleSync {
     /** Daily sync on any network; a no-op until the user has synced once (no saved link). */
     fun schedule(context: Context) {
         if (savedUrl(context).isBlank()) return
+        if (!context.appPrefs().getBoolean("moodle_daily_sync", true)) {
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME); return
+        }
         val request = PeriodicWorkRequestBuilder<Worker>(1, TimeUnit.DAYS)
             .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
             .build()
-        WorkManager.getInstance(context).enqueueUniquePeriodicWork("moodle_daily_sync", ExistingPeriodicWorkPolicy.KEEP, request)
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, request)
     }
 
     class Worker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -53,7 +57,7 @@ object MoodleSync {
             val (result, added) = syncAndStore(app, url)
             if (added > 0) {
                 NotificationHelper.showTimerNotification(
-                    app, "נוספו $added מטלות מ-Moodle 📚", "הסנכרון היומי מצא מועדי הגשה חדשים"
+                    app, app.resources.getQuantityString(R.plurals.moodle_new_tasks_title, added, added), app.getString(R.string.moodle_new_tasks_body)
                 )
             }
             return if (result.success) Result.success() else Result.retry()
@@ -61,4 +65,5 @@ object MoodleSync {
     }
 
     private const val KEY_URL = "moodle_feed_url"
+    private const val WORK_NAME = "moodle_daily_sync"
 }

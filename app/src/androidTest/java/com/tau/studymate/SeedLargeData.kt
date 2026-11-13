@@ -6,6 +6,7 @@ import com.tau.studymate.data.model.Department
 import com.tau.studymate.data.model.Priority
 import com.tau.studymate.data.model.StudySession
 import com.tau.studymate.data.model.Task
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assume.assumeTrue
 import org.junit.Test
@@ -17,6 +18,26 @@ import org.junit.runner.RunWith
  */
 @RunWith(AndroidJUnit4::class)
 class SeedLargeData {
+    /** A few realistic tasks for store screenshots: -e demo true */
+    @Test
+    fun demo() = runBlocking {
+        assumeTrue(InstrumentationRegistry.getArguments().getString("demo") == "true")
+        val app = InstrumentationRegistry.getInstrumentation().targetContext.applicationContext as StudyMateApp
+        val courses = app.repository.allCourses.first()
+        val day = 24 * 60 * 60 * 1000L
+        val now = System.currentTimeMillis()
+        listOf(
+            Triple("Response paper: McLuhan, The Medium is the Message", 1L, Priority.HIGH),
+            Triple("Midterm essay: the global labor market", 3L, Priority.HIGH),
+            Triple("Problem set 2: communication models", 5L, Priority.MEDIUM),
+            Triple("Group presentation: agenda-setting theory", 9L, Priority.MEDIUM)
+        ).forEachIndexed { i, (title, d, p) ->
+            val c = courses.getOrNull(i % courses.size)
+            app.repository.insertTask(Task(title = title, dueDate = now + d * day, courseId = c?.id, department = c?.department ?: Department.GENERAL, priority = p, reminderEnabled = false))
+        }
+        repeat(5) { app.repository.logStudySession(null, null, 25 + it * 10, "") }
+    }
+
     @Test
     fun seed() = runBlocking {
         assumeTrue(InstrumentationRegistry.getArguments().getString("seed") == "true")

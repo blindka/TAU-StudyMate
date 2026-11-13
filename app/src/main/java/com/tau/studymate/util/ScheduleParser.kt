@@ -18,13 +18,13 @@ object ScheduleParser {
             if (numMatch != null) {
                 val currentNumber = numMatch.value
                 var currentName = trimmed.replace(numMatch.value, "").trim(' ', '-', ':', '\t')
-                if (currentName.isBlank()) currentName = "קורס $currentNumber"
+                if (currentName.isBlank()) currentName = currentNumber
                 courses.add(
                     CourseTemplate(
                         courseNumber = currentNumber,
                         name = currentName,
                         department = Department.GENERAL,
-                        lecturer = "סגל הקורס",
+                        lecturer = "",
                         semester = targetSemester,
                         credits = 3.0f
                     )

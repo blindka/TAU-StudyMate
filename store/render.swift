@@ -58,3 +58,14 @@ render("feature-1024x500.png", 1024, 500) { _, _ in
     text("כל הלימודים שלך במקום אחד", rightX: 950, baselineY: 250, size: 46, bold: true)
     text("משימות · Moodle · תזכורות · טיימר פוקוס", rightX: 950, baselineY: 320, size: 32, bold: false, alpha: 0.85)
 }
+
+// English listing graphic
+render("feature-1024x500-en.png", 1024, 500) { _, _ in
+    NSColor.white.withAlphaComponent(0.08).setFill()
+    NSBezierPath(ovalIn: NSRect(x: 790, y: -80, width: 280, height: 280)).fill()
+    NSBezierPath(ovalIn: NSRect(x: -40, y: 340, width: 240, height: 240)).fill()
+    drawCap(x: 70, y: 90, size: 320)
+    text("StudyMate", rightX: 950, baselineY: 140, size: 88, bold: true)
+    text("All your studies in one place", rightX: 950, baselineY: 250, size: 44, bold: true)
+    text("Tasks · Moodle · Reminders · Readings", rightX: 950, baselineY: 320, size: 32, bold: false, alpha: 0.85)
+}

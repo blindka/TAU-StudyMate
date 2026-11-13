@@ -29,5 +29,10 @@ data class Reading(
     val weekStartEpochDay: Long,
     val isRead: Boolean = false,
     val summary: String? = null,
+    /** The user's own notes on this reading. */
+    val notes: String? = null,
+    /** Bookmarked page indexes, comma-separated (e.g. "2,7"). */
+    @androidx.room.ColumnInfo(defaultValue = "")
+    val bookmarks: String = "",
     val addedAt: Long = System.currentTimeMillis()
 )

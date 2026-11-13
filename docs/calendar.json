@@ -1,0 +1,15 @@
+{
+  "_comment": "TAU academic calendar read by the app (refreshed weekly). Add the next year here; no app update needed. kind: sem_a, prep_a, exams_a, sem_b, prep_b, exams_b",
+  "periods": [
+    { "start": "2025-10-26", "end": "2026-01-25", "kind": "sem_a", "yearHe": "תשפ\"ו", "yearEn": "2025/26" },
+    { "start": "2026-01-26", "end": "2026-03-13", "kind": "exams_a", "yearHe": "תשפ\"ו", "yearEn": "2025/26" },
+    { "start": "2026-03-15", "end": "2026-06-26", "kind": "sem_b", "yearHe": "תשפ\"ו", "yearEn": "2025/26" },
+    { "start": "2026-06-27", "end": "2026-09-18", "kind": "exams_b", "yearHe": "תשפ\"ו", "yearEn": "2025/26" },
+    { "start": "2026-10-18", "end": "2027-01-18", "kind": "sem_a", "yearHe": "תשפ\"ז", "yearEn": "2026/27" },
+    { "start": "2027-01-19", "end": "2027-01-19", "kind": "prep_a", "yearHe": "תשפ\"ז", "yearEn": "2026/27" },
+    { "start": "2027-01-20", "end": "2027-03-08", "kind": "exams_a", "yearHe": "תשפ\"ז", "yearEn": "2026/27" },
+    { "start": "2027-03-09", "end": "2027-06-27", "kind": "sem_b", "yearHe": "תשפ\"ז", "yearEn": "2026/27" },
+    { "start": "2027-06-28", "end": "2027-06-28", "kind": "prep_b", "yearHe": "תשפ\"ז", "yearEn": "2026/27" },
+    { "start": "2027-06-29", "end": "2027-09-17", "kind": "exams_b", "yearHe": "תשפ\"ז", "yearEn": "2026/27" }
+  ]
+}

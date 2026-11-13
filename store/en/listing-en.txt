@@ -1,0 +1,42 @@
+=== Short description (max 80) ===
+Your study planner: tasks, Moodle sync, weekly readings, reminders and focus
+
+=== Full description (max 4000) ===
+StudyMate keeps all of your university studies in one place – no missed deadlines, no folders full of PDFs.
+
+📚 Courses and materials
+• All your courses by year and semester, with lecturers and credits
+• Summaries, recordings and links for every course
+• "What am I missing" list for notes or recordings you still need
+• Grades and a credit-weighted average
+
+✅ Tasks and deadlines
+• Pick the exact due date and time, edit anytime
+• Weekly recurring tasks (homework every week)
+• Month calendar view to spot busy weeks
+• Search, filters, and export to WhatsApp or email
+
+🔄 Moodle sync
+• Paste your Moodle calendar link once
+• Deadlines arrive automatically every day – no duplicates, extensions update in place
+
+📄 Weekly readings
+• Upload the week's articles and slides as PDFs, per course
+• Read them inside the app, check them off, bookmark pages and keep notes
+• On-device summaries (supported phones) and English → Hebrew translation
+
+🔔 Reminders
+• Choose when to be reminded: 3 days, 1 day, 3 hours or 1 hour before
+• Reminders survive a phone restart
+
+⏱️ Focus timer and habits
+• Pomodoro 25/45/60 or a free stopwatch, keeps running with the screen locked
+• Study streak and insights from your own data
+
+🏠 Home-screen widget with your next deadlines
+🌐 English and Hebrew
+
+🔒 Privacy
+Everything stays on your phone. No sign-up, no ads, no tracking.
+
+Note: StudyMate is an independent app built by a student. It is not an official Tel Aviv University app and is not affiliated with it.

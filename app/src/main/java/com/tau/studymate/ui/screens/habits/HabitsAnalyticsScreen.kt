@@ -1,5 +1,7 @@
 package com.tau.studymate.ui.screens.habits
 
+import com.tau.studymate.R
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -68,14 +70,17 @@ fun HabitsAnalyticsScreen(
     val requestNotifications = com.tau.studymate.ui.components.rememberNotificationPermissionRequest()
     val tracked = remember(tasks) { tasks.filter { it.actualMinutes > 0 && it.estimatedMinutes > 0 } }
     val velocityKnown = tracked.size >= 2
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    // Configuration-aware resources (follow a language change)
+    val res = androidx.compose.ui.platform.LocalResources.current
     val velocityText = remember(tracked) {
-        if (!velocityKnown) "כשתריץ/י טיימר על לפחות שתי מטלות, נשווה כאן בין הזמן שהערכת לזמן שלקח בפועל."
+        if (!velocityKnown) res.getString(R.string.velocity_need_data)
         else {
             val pct = ((tracked.sumOf { it.actualMinutes }.toDouble() / tracked.sumOf { it.estimatedMinutes } - 1) * 100).toInt()
             when {
-                pct > 10 -> "מטלות לוקחות לך בממוצע $pct% יותר מהזמן שהערכת (לפי ${tracked.size} מטלות). כדאי להתחיל אותן מוקדם יותר."
-                pct < -10 -> "את/ה מסיים/ת מטלות ב-${-pct}% פחות זמן ממה שהערכת (לפי ${tracked.size} מטלות). אפשר להעריך בצורה פחות שמרנית."
-                else -> "ההערכות שלך מדויקות: הפער בין הזמן המשוער לזמן בפועל הוא פחות מ-10% (לפי ${tracked.size} מטלות)."
+                pct > 10 -> res.getString(R.string.velocity_over, pct, tracked.size)
+                pct < -10 -> res.getString(R.string.velocity_under, -pct, tracked.size)
+                else -> res.getString(R.string.velocity_ok, tracked.size)
             }
         }
     }
@@ -83,9 +88,9 @@ fun HabitsAnalyticsScreen(
     val weekSessions = remember(sessions) { sessions.count { it.timestamp >= weekAgo } }
     val weekMinutes = remember(sessions) { sessions.filter { it.timestamp >= weekAgo }.sumOf { it.durationMinutes } }
     val consistencyText = when {
-        weekSessions == 0 -> "עוד לא היו סשנים של למידה השבוע. סשן קצר של 25 דקות הוא התחלה מצוינת."
-        streak >= 2 -> "$streak ימים ברצף של למידה, ו-$weekSessions סשנים ($weekMinutes דק׳) בשבוע האחרון. המשך/י כך!"
-        else -> "$weekSessions סשנים ($weekMinutes דק׳) בשבוע האחרון. סשן קצר כל יום עוזר לבנות רצף."
+        weekSessions == 0 -> stringResource(R.string.consistency_none)
+        streak >= 2 -> stringResource(R.string.consistency_streak, streak, weekSessions, weekMinutes)
+        else -> androidx.compose.ui.res.pluralStringResource(R.plurals.consistency_some, weekSessions, weekSessions, weekMinutes)
     }
 
     val presets = remember {
@@ -119,7 +124,7 @@ fun HabitsAnalyticsScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "סשן פוקוס",
+                        text = stringResource(R.string.focus_title),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         color = PastelLavenderDark
                     )
@@ -133,10 +138,10 @@ fun HabitsAnalyticsScreen(
                     ) {
                         val current = courses.find { it.id == selectedCourseId }
                         OutlinedTextField(
-                            value = current?.let { "${it.courseNumber} - ${it.name}" } ?: "בחר קורס ללמידה",
+                            value = current?.let { "${it.courseNumber} - ${com.tau.studymate.ui.components.courseLabel(it.name)}" } ?: stringResource(R.string.choose_course),
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("למידה עבור קורס") },
+                            label = { Text(stringResource(R.string.studying_for)) },
                             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedCourseDropdown) },
                             modifier = Modifier
                                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
@@ -155,7 +160,7 @@ fun HabitsAnalyticsScreen(
                         ) {
                             courses.forEach { course ->
                                 DropdownMenuItem(
-                                    text = { Text("${course.courseNumber} - ${course.name}") },
+                                    text = { Text("${course.courseNumber} - ${com.tau.studymate.ui.components.courseLabel(course.name)}") },
                                     onClick = {
                                         selectedCourseId = course.id
                                         expandedCourseDropdown = false
@@ -205,7 +210,7 @@ fun HabitsAnalyticsScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(timerDisplay, fontSize = 48.sp, fontWeight = FontWeight.Bold, color = PastelLavenderDeep)
                             Text(
-                                if (isCountdown) "מתוך $targetMinutes דק׳" else "סטופר חופשי",
+                                if (isCountdown) stringResource(R.string.of_minutes, targetMinutes) else stringResource(R.string.stopwatch),
                                 fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -231,7 +236,7 @@ fun HabitsAnalyticsScreen(
                             ) {
                                 Icon(Icons.Default.PlayArrow, contentDescription = null, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("התחל למידה", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                Text(stringResource(R.string.start_studying), fontWeight = FontWeight.Bold, fontSize = 15.sp)
                             }
                         } else {
                             // Pause button in Pastel Butter
@@ -247,7 +252,7 @@ fun HabitsAnalyticsScreen(
                             ) {
                                 Icon(Icons.Default.Pause, contentDescription = null)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("השהה", fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.pause), fontWeight = FontWeight.Bold)
                             }
 
                             // Finish & Save button in Pastel Mint
@@ -263,7 +268,7 @@ fun HabitsAnalyticsScreen(
                             ) {
                                 Icon(Icons.Default.Check, contentDescription = null)
                                 Spacer(modifier = Modifier.width(6.dp))
-                                Text("סיים ושמור", fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.finish_and_save), fontWeight = FontWeight.Bold)
                             }
                         }
 
@@ -276,7 +281,7 @@ fun HabitsAnalyticsScreen(
                                 IconButton(onClick = { timerViewModel.resetTimer() }) {
                                     Icon(
                                         imageVector = Icons.Default.Refresh,
-                                        contentDescription = "איפוס",
+                                        contentDescription = stringResource(R.string.a11y_reset),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
@@ -290,7 +295,7 @@ fun HabitsAnalyticsScreen(
         // Adaptive Habits & Insights Section
         item {
             Text(
-                text = "תובנות הרגלי למידה מותאמות אישית 📊",
+                text = stringResource(R.string.insights_title),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
         }
@@ -303,8 +308,8 @@ fun HabitsAnalyticsScreen(
             ) {
                 PastelStatCard(
                     modifier = Modifier.weight(1f),
-                    title = "זמן למידה כולל",
-                    value = if (totalMinutesStudied < 60) "$totalMinutesStudied דק׳" else "%.1f שעות".format(totalMinutesStudied / 60.0),
+                    title = stringResource(R.string.stat_total_time),
+                    value = if (totalMinutesStudied < 60) stringResource(R.string.minutes_short, totalMinutesStudied) else stringResource(R.string.hours_decimal, totalMinutesStudied / 60.0),
                     icon = Icons.Default.AccessTime,
                     containerColor = PastelSky,
                     borderColor = PastelSkyBorder,
@@ -312,8 +317,8 @@ fun HabitsAnalyticsScreen(
                 )
                 PastelStatCard(
                     modifier = Modifier.weight(1f),
-                    title = "מטלות שהושלמו",
-                    value = "${tasks.count { it.isCompleted }} מתוך ${tasks.size}",
+                    title = stringResource(R.string.stat_tasks_done),
+                    value = stringResource(R.string.x_of_y, tasks.count { it.isCompleted }, tasks.size),
                     icon = Icons.Default.DoneAll,
                     containerColor = PastelMint,
                     borderColor = PastelMintBorder,
@@ -337,7 +342,7 @@ fun HabitsAnalyticsScreen(
                         .padding(18.dp)
                 ) {
                     Text(
-                        text = "חלוקת זמן לפי חוג בתואר הדו-חוגי",
+                        text = stringResource(R.string.track_split_title),
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
                     )
 
@@ -376,7 +381,7 @@ fun HabitsAnalyticsScreen(
                             border = BorderStroke(1.dp, PastelSkyBorder)
                         ) {
                             Text(
-                                text = "🔵 תקשורת: $commPct%",
+                                text = stringResource(R.string.track_share, "🔵", stringResource(Department.COMMUNICATION.labelRes), commPct),
                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                                 color = PastelSkyDark,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -389,7 +394,7 @@ fun HabitsAnalyticsScreen(
                             border = BorderStroke(1.dp, PastelMintBorder)
                         ) {
                             Text(
-                                text = "🟢 לימודי עבודה: ${100 - commPct}%",
+                                text = stringResource(R.string.track_share, "🟢", stringResource(Department.LABOR_STUDIES.labelRes), 100 - commPct),
                                 style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                                 color = PastelMintDark,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -404,9 +409,9 @@ fun HabitsAnalyticsScreen(
         item {
             PastelInsightCard(
                 icon = Icons.Default.AutoGraph,
-                title = "מדד דיוק הערכת זמן (Velocity)",
+                title = stringResource(R.string.insight_velocity_title),
                 description = velocityText,
-                badgeText = if (velocityKnown) "מהנתונים שלך" else "צריך עוד נתונים",
+                badgeText = stringResource(if (velocityKnown) R.string.badge_from_your_data else R.string.badge_need_data),
                 cardColor = PastelRose.copy(alpha = 0.5f),
                 borderColor = PastelRoseBorder,
                 badgeBg = PastelRose,
@@ -418,9 +423,9 @@ fun HabitsAnalyticsScreen(
         item {
             PastelInsightCard(
                 icon = Icons.Default.Psychology,
-                title = "עקביות ותדירות שימוש",
+                title = stringResource(R.string.insight_consistency_title),
                 description = consistencyText,
-                badgeText = if (weekSessions > 0) "השבוע" else "בואו נתחיל",
+                badgeText = stringResource(if (weekSessions > 0) R.string.badge_this_week else R.string.badge_lets_start),
                 cardColor = PastelTeal.copy(alpha = 0.5f),
                 borderColor = PastelTealBorder,
                 badgeBg = PastelTeal,
@@ -432,9 +437,9 @@ fun HabitsAnalyticsScreen(
         item {
             PastelInsightCard(
                 icon = Icons.Default.Lightbulb,
-                title = "טיפ לפוקוס ורענון מחשבתי",
-                description = "שילוב הפסקה של 5 דקות בין סשנים של פומודורו הוכח כמסייע להטמעת חומר הלימוד בזיכרון לטווח ארוך ולמניעת עייפות.",
-                badgeText = "טיפ שבועי",
+                title = stringResource(R.string.insight_tip_title),
+                description = stringResource(R.string.insight_tip_body),
+                badgeText = stringResource(R.string.badge_tip),
                 cardColor = PastelButter.copy(alpha = 0.45f),
                 borderColor = PastelButterBorder,
                 badgeBg = PastelButter,

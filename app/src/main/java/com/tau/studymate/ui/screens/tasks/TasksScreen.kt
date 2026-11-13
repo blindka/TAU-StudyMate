@@ -1,5 +1,9 @@
 package com.tau.studymate.ui.screens.tasks
 
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.tau.studymate.R
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.launch
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
@@ -38,7 +42,7 @@ import java.util.*
 
 private data class TaskFilterTab(
     val filter: TaskFilter,
-    val label: String,
+    @androidx.annotation.StringRes val label: Int,
     val bg: Color,
     val text: Color
 )
@@ -66,15 +70,19 @@ fun TasksScreen(
 
     val filterTabs = remember {
         listOf(
-            TaskFilterTab(TaskFilter.ALL, "הכל", PastelLavender, PastelLavenderDark),
-            TaskFilterTab(TaskFilter.PENDING, "ממתין לביצוע", PastelSky, PastelSkyDark),
-            TaskFilterTab(TaskFilter.COMPLETED, "הושלמו", PastelMint, PastelMintDark)
+            TaskFilterTab(TaskFilter.ALL, R.string.filter_all, PastelLavender, PastelLavenderDark),
+            TaskFilterTab(TaskFilter.PENDING, R.string.filter_pending, PastelSky, PastelSkyDark),
+            TaskFilterTab(TaskFilter.COMPLETED, R.string.filter_done, PastelMint, PastelMintDark)
         )
     }
 
     val snackbar = remember { SnackbarHostState() }
+    val deletedMsg = stringResource(R.string.task_deleted)
+    val undoLabel = stringResource(R.string.undo)
     val requestNotifications = com.tau.studymate.ui.components.rememberNotificationPermissionRequest()
     var editing by remember { mutableStateOf<Task?>(null) }
+    var calendarMode by rememberSaveable { mutableStateOf(false) }
+    var selectedDay by remember { mutableStateOf(java.time.LocalDate.now()) }
     val allTasks by viewModel.allTasks.collectAsState()
     LaunchedEffect(openTaskId, allTasks) {
         if (openTaskId != null) allTasks.find { it.id == openTaskId }?.let { editing = it; onOpenTaskHandled() }
@@ -90,7 +98,7 @@ fun TasksScreen(
                 contentColor = Color.White,
                 shape = RoundedCornerShape(18.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "הוסף מטלה")
+                Icon(Icons.Default.Add, contentDescription = stringResource(R.string.a11y_add_task))
             }
         }
     ) { paddingValues ->
@@ -99,10 +107,28 @@ fun TasksScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            Text(
-                "מטלות", fontSize = 24.sp, fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 20.dp)
-            )
+            Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.tasks_title), fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                IconButton(onClick = { calendarMode = !calendarMode }) {
+                    Icon(
+                        if (calendarMode) Icons.AutoMirrored.Filled.List else Icons.Default.CalendarMonth,
+                        stringResource(if (calendarMode) R.string.a11y_list_view else R.string.a11y_calendar_view)
+                    )
+                }
+            }
+            if (calendarMode) {
+                // Month view: dots show busy days; the list below shows the selected day
+                val zone = java.time.ZoneId.systemDefault()
+                val dayTasks = allTasks.filter { java.time.Instant.ofEpochMilli(it.dueDate).atZone(zone).toLocalDate() == selectedDay }
+                LazyColumn(contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 80.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    item { com.tau.studymate.ui.components.TaskCalendar(allTasks, selectedDay, onSelect = { selectedDay = it }) }
+                    if (dayTasks.isEmpty()) item { Text(stringResource(R.string.calendar_day_empty), color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(8.dp)) }
+                    items(dayTasks, key = { it.id }) { task ->
+                        com.tau.studymate.ui.components.TaskRowCard(task = task, course = courseMap[task.courseId], onToggle = { viewModel.toggleTaskCompletion(task) }, onClick = { editing = task })
+                    }
+                }
+                return@Column
+            }
             // Search & Pastel Export / Alert Buttons
             Row(
                 modifier = Modifier
@@ -114,14 +140,14 @@ fun TasksScreen(
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { viewModel.setSearchQuery(it) },
-                    placeholder = { Text("חיפוש מטלה…", maxLines = 1) },
+                    placeholder = { Text(stringResource(R.string.tasks_search), maxLines = 1) },
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = null, tint = PastelLavenderDark)
                     },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { viewModel.setSearchQuery("") }) {
-                                Icon(Icons.Default.Clear, contentDescription = "נקה")
+                                Icon(Icons.Default.Clear, contentDescription = stringResource(R.string.a11y_clear))
                             }
                         }
                     },
@@ -141,7 +167,7 @@ fun TasksScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Sync,
-                        contentDescription = "סנכרן ממודל",
+                        contentDescription = stringResource(R.string.a11y_sync_moodle),
                         tint = PastelLavenderDark
                     )
                 }
@@ -157,7 +183,7 @@ fun TasksScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Share,
-                        contentDescription = "ייצוא",
+                        contentDescription = stringResource(R.string.a11y_export),
                         tint = PastelSkyDark
                     )
                 }
@@ -173,7 +199,7 @@ fun TasksScreen(
                 ) {
                     Icon(
                         imageVector = Icons.Default.NotificationsActive,
-                        contentDescription = "בדיקת התראה",
+                        contentDescription = stringResource(R.string.a11y_test_notification),
                         tint = PastelButterDark
                     )
                 }
@@ -189,14 +215,14 @@ fun TasksScreen(
                     FilterChip(
                         selected = selectedDept == null,
                         onClick = { viewModel.setDepartmentFilter(null) },
-                        label = { Text("כל החוגים") }
+                        label = { Text(stringResource(R.string.filter_all_departments)) }
                     )
                 }
                 items(Department.entries) { dept ->
                     FilterChip(
                         selected = selectedDept == dept,
                         onClick = { viewModel.setDepartmentFilter(dept) },
-                        label = { Text(dept.displayName) }
+                        label = { Text(stringResource(dept.labelRes)) }
                     )
                 }
             }
@@ -224,7 +250,7 @@ fun TasksScreen(
                             .clickable { viewModel.setTaskFilter(tab.filter) }
                     ) {
                         Text(
-                            text = tab.label,
+                            text = stringResource(tab.label),
                             modifier = Modifier.padding(vertical = 8.dp),
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                             fontSize = 12.sp,
@@ -254,12 +280,12 @@ fun TasksScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "לא נמצאו מטלות ברשימה",
+                            text = stringResource(R.string.tasks_empty),
                             style = MaterialTheme.typography.titleMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "לחץ על + למטה כדי להוסיף מטלה חדשה",
+                            text = stringResource(R.string.tasks_empty_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.outline
                         )
@@ -283,7 +309,7 @@ fun TasksScreen(
                                 viewModel.deleteTask(task)
                                 scope.launch {
                                     snackbar.currentSnackbarData?.dismiss()
-                                    val res = snackbar.showSnackbar("המטלה נמחקה", actionLabel = "בטל", duration = SnackbarDuration.Short)
+                                    val res = snackbar.showSnackbar(deletedMsg, actionLabel = undoLabel, duration = SnackbarDuration.Short)
                                     if (res == SnackbarResult.ActionPerformed) viewModel.restoreTask(task)
                                 }
                             }
@@ -298,7 +324,7 @@ fun TasksScreen(
         AddTaskDialog(
             courses = courses,
             onDismiss = { showAddTaskDialog = false },
-            onConfirm = { title, desc, dueDate, courseId, dept, priority, estimatedMins, enableReminder ->
+            onConfirm = { title, desc, dueDate, courseId, dept, priority, estimatedMins, enableReminder, repeatWeekly ->
                 viewModel.addTask(
                     title = title,
                     description = desc,
@@ -307,7 +333,8 @@ fun TasksScreen(
                     department = dept,
                     priority = priority,
                     estimatedMinutes = estimatedMins,
-                    enableReminder = enableReminder
+                    enableReminder = enableReminder,
+                    repeatWeekly = repeatWeekly
                 )
                 if (enableReminder) requestNotifications()
                 showAddTaskDialog = false
@@ -320,8 +347,8 @@ fun TasksScreen(
             courses = courses,
             initial = task,
             onDismiss = { editing = null },
-            onConfirm = { title, desc, dueDate, courseId, dept, priority, estimatedMins, enableReminder ->
-                viewModel.updateTask(task.copy(title = title, description = desc, dueDate = dueDate, courseId = courseId,
+            onConfirm = { title, desc, dueDate, courseId, dept, priority, estimatedMins, enableReminder, repeatWeekly ->
+                viewModel.updateTask(task.copy(repeatWeekly = repeatWeekly, title = title, description = desc, dueDate = dueDate, courseId = courseId,
                     department = dept, priority = priority, estimatedMinutes = estimatedMins, reminderEnabled = enableReminder))
                 editing = null
             }
@@ -393,7 +420,7 @@ private fun TaskItemCard(
             ) {
                 Icon(
                     imageVector = Icons.Default.Delete,
-                    contentDescription = "מחק מטלה",
+                    contentDescription = stringResource(R.string.a11y_delete_task),
                     tint = Color.White
                 )
             }

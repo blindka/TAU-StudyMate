@@ -1,5 +1,8 @@
 package com.tau.studymate.ui.screens.readings
 
+import com.tau.studymate.ui.viewmodel.bookmarksOf
+import com.tau.studymate.R
+import androidx.compose.ui.res.stringResource
 import androidx.core.content.edit
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
@@ -46,6 +49,7 @@ fun ReaderScreen(readingId: Long, viewModel: ReadingsViewModel, onBack: () -> Un
     val status by viewModel.summaryStatus.collectAsState()
     val message by viewModel.message.collectAsState()
     var tab by remember { mutableIntStateOf(0) }
+    var jumpTo by remember { mutableStateOf<Int?>(null) }
     BackHandler(onBack = onBack)
     val r = reading ?: return
 
@@ -53,34 +57,36 @@ fun ReaderScreen(readingId: Long, viewModel: ReadingsViewModel, onBack: () -> Un
         Surface(color = MaterialTheme.colorScheme.surface, shadowElevation = 2.dp) {
             Column(Modifier.statusBarsPadding()) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "חזרה") }
+                    IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.a11y_back)) }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Text(r.title, fontWeight = FontWeight.SemiBold, fontSize = 15.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         CourseChip(courses.find { it.id == r.courseId })
                     }
-                    if (r.isRead) AssistChip(onClick = { viewModel.toggleRead(r) }, label = { Text("✓ נקרא") })
-                    else Button(onClick = { viewModel.markRead(r); onBack() }, shape = RoundedCornerShape(12.dp), modifier = Modifier.padding(end = 8.dp)) { Text("✓ סיימתי") }
+                    if (r.isRead) AssistChip(onClick = { viewModel.toggleRead(r) }, label = { Text(stringResource(R.string.read_done_chip)) })
+                    else Button(onClick = { viewModel.markRead(r); onBack() }, shape = RoundedCornerShape(12.dp), modifier = Modifier.padding(end = 8.dp)) { Text(stringResource(R.string.mark_finished)) }
                 }
                 TabRow(selectedTabIndex = tab) {
-                    Tab(tab == 0, { tab = 0 }, text = { Text("מסמך") })
-                    Tab(tab == 1, { tab = 1 }, text = { Text("סיכום ✨") })
-                    Tab(tab == 2, { tab = 2 }, text = { Text("תרגום 🌐") })
+                    Tab(tab == 0, { tab = 0 }, text = { Text(stringResource(R.string.tab_document)) })
+                    Tab(tab == 1, { tab = 1 }, text = { Text(stringResource(R.string.tab_summary)) })
+                    Tab(tab == 2, { tab = 2 }, text = { Text(stringResource(R.string.tab_translation)) })
+                    Tab(tab == 3, { tab = 3 }, text = { Text(stringResource(R.string.tab_notes)) })
                 }
             }
         }
         when (tab) {
-            0 -> PdfPages(r)
+            0 -> PdfPages(r, jumpTo, onJumped = { jumpTo = null }, onToggleBookmark = { viewModel.toggleBookmark(r, it) })
             1 -> SummaryPane(r, status, message, onSummarize = { viewModel.summarize(r) }, onClearMessage = viewModel::clearMessage, onCancel = viewModel::cancelWork)
-            else -> TranslationPane(r, viewModel)
+            2 -> TranslationPane(r, viewModel)
+            else -> NotesPane(r, viewModel, onOpenPage = { jumpTo = it; tab = 0 })
         }
     }
 }
 
 @Composable
-private fun PdfPages(r: Reading) {
+private fun PdfPages(r: Reading, jumpTo: Int?, onJumped: () -> Unit, onToggleBookmark: (Int) -> Unit) {
     val doc = remember(r.filePath) { runCatching { PdfStore.Document(r.filePath) }.getOrNull() }
     DisposableEffect(doc) { onDispose { doc?.close() } }
-    if (doc == null) { Text("לא ניתן לפתוח את הקובץ", Modifier.padding(24.dp)); return }
+    if (doc == null) { Text(stringResource(R.string.err_open_file), Modifier.padding(24.dp)); return }
 
     val widthPx = with(LocalDensity.current) { (LocalConfiguration.current.screenWidthDp.dp - 16.dp).roundToPx() }
     // Reopen at the page where the user stopped
@@ -91,6 +97,7 @@ private fun PdfPages(r: Reading) {
         snapshotFlow { listState.firstVisibleItemIndex }.collect { prefs.edit { putInt(pageKey, it) } }
     }
     var viewport by remember { mutableStateOf(androidx.compose.ui.unit.IntSize.Zero) }
+    LaunchedEffect(jumpTo) { jumpTo?.let { listState.scrollToItem(it.coerceIn(0, doc.pageCount - 1)); onJumped() } }
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(androidx.compose.ui.geometry.Offset.Zero) }
     // Re-render pages sharper once the pinch settles. Capped at 2x: each page is an ARGB bitmap (~22MB at 2x).
@@ -126,15 +133,21 @@ private fun PdfPages(r: Reading) {
                 }
                 val b = bmp
                 if (b == null) Box(Modifier.fillMaxWidth().aspectRatio(0.707f).background(Color.White))
-                else Image(b.asImageBitmap(), "עמוד ${i + 1}", Modifier.fillMaxWidth().aspectRatio(b.width.toFloat() / b.height), contentScale = ContentScale.FillWidth)
+                else Image(b.asImageBitmap(), stringResource(R.string.a11y_page, i + 1), Modifier.fillMaxWidth().aspectRatio(b.width.toFloat() / b.height), contentScale = ContentScale.FillWidth)
             }
         }
-        Text(
-            "${listState.firstVisibleItemIndex + 1} / ${doc.pageCount}",
-            color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp)
-                .background(Color(0xD91E1B2E), RoundedCornerShape(50)).padding(horizontal = 14.dp, vertical = 8.dp)
-        )
+        val page = listState.firstVisibleItemIndex
+        val marked = page in bookmarksOf(r)
+        Row(
+            Modifier.align(Alignment.BottomCenter).padding(16.dp)
+                .background(Color(0xD91E1B2E), RoundedCornerShape(50)).padding(start = 14.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("${page + 1} / ${doc.pageCount}", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+            IconButton(onClick = { onToggleBookmark(page) }) {
+                Icon(if (marked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder, stringResource(R.string.a11y_bookmark), tint = Color.White)
+            }
+        }
     }
 }
 
@@ -143,21 +156,21 @@ private fun SummaryPane(r: Reading, status: String?, message: String?, onSummari
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Row(Modifier.fillMaxWidth().background(PastelMint, RoundedCornerShape(12.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
             Text("🔒 ", fontSize = 14.sp)
-            Text("הסיכום נוצר בתוך הטלפון (Gemini Nano). שום דבר לא נשלח החוצה.", color = PastelMintDark, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.summary_privacy), color = PastelMintDark, fontSize = 12.sp, fontWeight = FontWeight.Medium)
         }
         when {
             status != null -> Row(verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp); Spacer(Modifier.width(12.dp)); Text(status, Modifier.weight(1f))
-                TextButton(onClick = onCancel) { Text("עצור") }
+                TextButton(onClick = onCancel) { Text(stringResource(R.string.stop)) }
             }
             r.summary != null -> {
                 Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
                     Text(r.summary, Modifier.padding(16.dp), fontSize = 14.sp, lineHeight = 21.sp)
                 }
-                TextButton(onClick = onSummarize) { Icon(Icons.Default.Refresh, null); Spacer(Modifier.width(4.dp)); Text("סיכום מחדש") }
-                Text("סיכום אוטומטי עלול לפספס או לטעות. כדאי לבדוק מול המסמך.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                TextButton(onClick = onSummarize) { Icon(Icons.Default.Refresh, null); Spacer(Modifier.width(4.dp)); Text(stringResource(R.string.summarize_again)) }
+                Text(stringResource(R.string.summary_disclaimer), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-            else -> Button(onClick = onSummarize, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) { Text("✨ צור סיכום") }
+            else -> Button(onClick = onSummarize, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.create_summary)) }
         }
         message?.let {
             Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp)
@@ -181,31 +194,56 @@ private fun TranslationPane(r: Reading, viewModel: ReadingsViewModel) {
         item {
             Row(Modifier.fillMaxWidth().background(PastelMint, RoundedCornerShape(12.dp)).padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Text("🔒 ", fontSize = 14.sp)
-                Text("תרגום מאנגלית לעברית בתוך הטלפון. הטקסט לא נשלח החוצה.", color = PastelMintDark, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Text(stringResource(R.string.translation_privacy), color = PastelMintDark, fontSize = 12.sp, fontWeight = FontWeight.Medium)
             }
         }
         when {
             status != null -> item {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp); Spacer(Modifier.width(12.dp)); Text(status!!, Modifier.weight(1f))
-                    TextButton(onClick = viewModel::cancelWork) { Text("עצור") }
+                    TextButton(onClick = viewModel::cancelWork) { Text(stringResource(R.string.stop)) }
                 }
             }
             pages == null -> item {
-                Button(onClick = { viewModel.translate(r) }, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) { Text("🌐 תרגם לעברית") }
+                Button(onClick = { viewModel.translate(r) }, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.translate_to_hebrew)) }
             }
             else -> {
                 items(pages.size) { i ->
                     if (pages[i].isNotBlank()) Surface(shape = RoundedCornerShape(18.dp), color = MaterialTheme.colorScheme.surface, modifier = Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("עמוד ${i + 1}", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.a11y_page, i + 1), fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(pages[i], fontSize = 15.sp, lineHeight = 23.sp)
                         }
                     }
                 }
-                item { Text("תרגום אוטומטי עלול לטעות במונחים מקצועיים. כדאי לבדוק מול המקור.", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                item { Text(stringResource(R.string.translation_disclaimer), fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
         }
         message?.let { item { Text(it, color = MaterialTheme.colorScheme.error, fontSize = 13.sp) } }
+    }
+}
+
+@Composable
+private fun NotesPane(r: Reading, viewModel: ReadingsViewModel, onOpenPage: (Int) -> Unit) {
+    // Local text so typing is instant; saved to the database half a second after the user stops
+    var text by remember(r.id) { mutableStateOf(r.notes.orEmpty()) }
+    LaunchedEffect(text) { kotlinx.coroutines.delay(500); if (text != r.notes.orEmpty()) viewModel.setNotes(r, text) }
+    val pages = bookmarksOf(r)
+    LazyColumn(
+        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
+        contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            OutlinedTextField(
+                value = text, onValueChange = { text = it }, label = { Text(stringResource(R.string.notes_label)) },
+                minLines = 6, modifier = Modifier.fillMaxWidth()
+            )
+        }
+        item { Text(stringResource(R.string.bookmarks_title), fontWeight = FontWeight.Bold) }
+        if (pages.isEmpty()) item { Text(stringResource(R.string.bookmarks_empty), fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        items(pages.size) { i ->
+            AssistChip(onClick = { onOpenPage(pages[i]) }, label = { Text(stringResource(R.string.go_to_page, pages[i] + 1)) },
+                leadingIcon = { Icon(Icons.Default.Bookmark, null, Modifier.size(16.dp)) })
+        }
     }
 }

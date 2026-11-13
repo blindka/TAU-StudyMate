@@ -1,5 +1,6 @@
 package com.tau.studymate.receiver
 
+import com.tau.studymate.R
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -16,7 +17,7 @@ class TaskAlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val taskId = intent.getLongExtra(EXTRA_TASK_ID, -1L)
-        val title = intent.getStringExtra(EXTRA_TASK_TITLE) ?: "תזכורת למטלה"
+        val title = intent.getStringExtra(EXTRA_TASK_TITLE) ?: context.getString(R.string.reminder_default_title)
         val desc = intent.getStringExtra(EXTRA_TASK_DESC) ?: ""
         val courseName = intent.getStringExtra(EXTRA_COURSE_NAME)
 

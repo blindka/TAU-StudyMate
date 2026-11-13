@@ -36,7 +36,7 @@ object BackupManager {
                     zip.putNextEntry(ZipEntry(name)); file.inputStream().use { it.copyTo(zip) }; zip.closeEntry()
                 }
             }
-        } ?: error("לא ניתן לכתוב את הקובץ")
+        } ?: error(app.getString(com.tau.studymate.R.string.err_write_file))
     }
 
     /** Throws if the file isn't a StudyMate backup. On success the app restarts. */
@@ -56,8 +56,8 @@ object BackupManager {
                     if (e.name == "databases/$DB") hasDb = true
                 }
             }
-        } ?: error("לא ניתן לקרוא את הקובץ")
-        require(hasDb) { "זה לא קובץ גיבוי של StudyMate" }
+        } ?: error(app.getString(com.tau.studymate.R.string.err_read_file))
+        require(hasDb) { app.getString(com.tau.studymate.R.string.err_not_backup) }
 
         app.database.close()
         File(app.getDatabasePath(DB).path + "-wal").delete(); File(app.getDatabasePath(DB).path + "-shm").delete()
